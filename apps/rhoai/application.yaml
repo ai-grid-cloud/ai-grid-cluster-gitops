@@ -10,10 +10,89 @@ spec:
       # TODO: revert to main once the maasConsumerPortal change merges upstream
       targetRevision: ai-grid
       path: charts/rhai-on-openshift-chart
-      helm:
-        releaseName: rhai-on-openshift
-        valueFiles:
-          - $values/apps/rhoai/values.yaml
+      plugin:
+        env:
+          - name: BASE_VALUES
+            value: |
+              skipCrdCheck: true
+              profile: maas
+              operator:
+                type: rhoai
+                rhoai:
+                  olm:
+                    # Nightly catalog (image ref managed in apps/rhoai/nightly.yaml);
+                    # requires the quay.io/rhoai mirror + pull secret from bootstrap.sh.
+                    source: rhoai-catalog-dev
+                    channel: stable-3.6
+              # Workaround for https://redhat.atlassian.net/browse/RHOAIENG-99507:
+              # RHACM's multicluster-observability-addon also installs COO with its own
+              # OperatorGroup (named after the namespace), which conflicts with the chart's
+              # (named after the package) and blocks CSV installs/upgrades. Let RHACM own
+              # COO on this cluster until the OG naming is standardized in odh-gitops.
+              dependencies:
+                clusterObservability:
+                  enabled: false
+              services:
+                monitoring:
+                  dsci:
+                    managementState: Managed
+                    # Minimal dev config: metrics need storage size; traces require a
+                    # storage backend (pv = ephemeral-ish local dev storage, no S3 needed).
+                    metrics:
+                      storage:
+                        size: 20Gi
+                      exporters:
+                        prometheus/rhacm:
+                          endpoint: 0.0.0.0:8890
+                    traces:
+                      storage:
+                        backend: pv
+                        size: 10Gi
+              components:
+                dashboard:
+                  dsc:
+                    managementState: Managed
+                    maasConsumerPortal:
+                      managementState: Managed
+                kserve:
+                  gateway:
+                    spec:
+                      listeners:
+                        - name: https
+                          port: 443
+                          # hostname: <HOSTNAME> # Uncomment this line to use a specific hostname.
+                          protocol: HTTPS
+                          allowedRoutes:
+                            namespaces:
+                              # The following is an example of how to restrict the namespaces to the interested ones.
+                              from: Selector
+                              selector:
+                                matchExpressions:
+                                - key: kubernetes.io/metadata.name
+                                  operator: In
+                                  values:
+                                  - openshift-ingress
+                                  # TODO - <LLM_INFERENCE_SERVICE_NAMESPACE>
+                aigateway:
+                  modelsAsAService:
+                    gateway:
+                      spec:
+                        listeners:
+                          - name: https
+                            port: 443
+                            # hostname: <HOSTNAME> # Uncomment this line to use a specific hostname.
+                            protocol: HTTPS
+                            allowedRoutes:
+                              namespaces:
+                                # The following is an example of how to restrict the namespaces to the interested ones.
+                                from: Selector
+                                selector:
+                                  matchExpressions:
+                                  - key: kubernetes.io/metadata.name
+                                    operator: In
+                                    values:
+                                    - openshift-ingress
+                                    # TODO - <LLM_INFERENCE_SERVICE_NAMESPACE>
     - repoURL: https://github.com/kahowell/ai-grid-tenant.git
       targetRevision: HEAD
       ref: values

@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhoai-cmp-config
+  namespace: openshift-gitops
+data:
+  plugin.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: helm-configmap-values
+    spec:
+      discover:
+        fileName: Chart.yaml
+      generate:
+        command:
+          - /bin/sh
+          - /usr/local/bin/render-helm-values
+  render-helm-values: |
+    set -eu
+    base_values=$(mktemp)
+    trap 'rm -f "$base_values"' 0
+    printf '%s\n' "$ARGOCD_ENV_BASE_VALUES" > "$base_values"
+
+    helm template "$ARGOCD_APP_NAME" . \
+      --namespace "$ARGOCD_APP_NAMESPACE" \
+      --kube-version "$KUBE_VERSION" \
+      --api-versions "$KUBE_API_VERSIONS" \
+      --include-crds \
+      --values "$base_values" \
+      --values /etc/rhoai-helm-values/values.yaml

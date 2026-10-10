@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ArgoCD
+metadata:
+  name: openshift-gitops
+  namespace: openshift-gitops
+spec:
+  repo:
+    volumes:
+      - name: rhoai-cmp-config
+        configMap:
+          name: rhoai-cmp-config
+      - name: rhoai-helm-values
+        configMap:
+          name: rhoai-helm-values
+          optional: false
+          items:
+            - key: values.yaml
+              path: values.yaml
+      - name: cmp-tmp
+        emptyDir: {}
+    sidecarContainers:
+      - name: helm-configmap-values
+        command:
+          - /var/run/argocd/argocd-cmp-server
+        volumeMounts:
+          - name: var-files
+            mountPath: /var/run/argocd
+          - name: plugins
+            mountPath: /home/argocd/cmp-server/plugins
+          - name: cmp-tmp
+            mountPath: /tmp
+          - name: rhoai-cmp-config
+            mountPath: /home/argocd/cmp-server/config/plugin.yaml
+            subPath: plugin.yaml
+            readOnly: true
+          - name: rhoai-cmp-config
+            mountPath: /usr/local/bin/render-helm-values
+            subPath: render-helm-values
+            readOnly: true
+          - name: rhoai-helm-values
+            mountPath: /etc/rhoai-helm-values
+            readOnly: true
