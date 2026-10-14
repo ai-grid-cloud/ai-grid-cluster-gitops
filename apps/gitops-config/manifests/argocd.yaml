@@ -12,10 +12,3 @@ spec:
         memory: 2Gi
       limits:
         memory: 4Gi
-  # Keep the operator defaults and grant the existing direct cluster-admin
-  # user access to the Argo CD UI.
-  rbac:
-    policy: |
-      g, system:cluster-admins, role:admin
-      g, cluster-admins, role:admin
-      g, pdipilat, role:admin
