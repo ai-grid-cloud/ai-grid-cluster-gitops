@@ -1,0 +1,35 @@
+# The AI Gateway operator applies the AI Grid operator's own ClusterRole, which
+# grants create on gridnetworks so the grid operator can write its local
+# records. Kubernetes refuses that apply unless the applier already holds the
+# verb, and the operator's own role does not until
+# https://github.com/opendatahub-io/ai-gateway-operator/pull/189 reaches a
+# bundle. Until then the AIGateway CR never provisions, so no grid CRDs and no
+# grid-operator Deployment appear. Drop this file once the bundle carries it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ai-gateway-operator-gridnetwork-create
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups:
+      - grid.praxis.fast
+    resources:
+      - gridnetworks
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ai-gateway-operator-gridnetwork-create
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ai-gateway-operator-gridnetwork-create
+subjects:
+  - kind: ServiceAccount
+    name: ai-gateway-operator
+    namespace: redhat-ods-applications
