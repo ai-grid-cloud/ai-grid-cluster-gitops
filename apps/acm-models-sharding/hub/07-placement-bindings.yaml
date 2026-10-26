@@ -1,0 +1,63 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: acm-models-sharding-common
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: acm-models-sharding-common-clusters
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: acm-models-sharding-common
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: acm-models-sharding-smollm2-135m-anchor
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: acm-models-sharding-smollm2-135m-anchor
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: acm-models-sharding-smollm2-135m-anchor
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: acm-models-sharding-smollm2-135m-instruct
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: acm-models-sharding-smollm2-135m-instruct
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: acm-models-sharding-smollm2-135m-instruct
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: acm-models-sharding-smollm2-360m-instruct
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: acm-models-sharding-smollm2-360m-instruct
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: acm-models-sharding-smollm2-360m-instruct

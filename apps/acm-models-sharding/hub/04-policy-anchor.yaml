@@ -1,0 +1,29 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: acm-models-sharding-smollm2-135m-anchor
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  disabled: false
+  remediationAction: enforce
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: acm-models-sharding-smollm2-135m-anchor
+        spec:
+          remediationAction: enforce
+          severity: low
+          pruneObjectBehavior: DeleteAll
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: cluster.open-cluster-management.io/v1alpha1
+                kind: ClusterClaim
+                metadata:
+                  name: acm-models-sharding-shard.opendatahub.io
+                spec:
+                  value: smollm2-135m-instruct

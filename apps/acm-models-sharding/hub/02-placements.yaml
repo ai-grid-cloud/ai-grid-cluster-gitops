@@ -1,0 +1,59 @@
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: acm-models-sharding-common-clusters
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  clusterSets:
+    - global
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: acm-models-sharding-smollm2-135m-anchor
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  clusterSets:
+    - global
+  numberOfClusters: 1
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: acm-models-sharding-smollm2-135m-instruct
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  clusterSets:
+    - global
+  numberOfClusters: 1
+  predicates:
+    - requiredClusterSelector:
+        claimSelector:
+          matchExpressions:
+            - key: acm-models-sharding-shard.opendatahub.io
+              operator: In
+              values:
+                - smollm2-135m-instruct
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: acm-models-sharding-smollm2-360m-instruct
+  namespace: acm-models-sharding
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        claimSelector:
+          matchExpressions:
+            - key: acm-models-sharding-shard.opendatahub.io
+              operator: DoesNotExist
