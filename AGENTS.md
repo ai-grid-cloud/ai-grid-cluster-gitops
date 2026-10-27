@@ -24,6 +24,7 @@ values. Use documented, parameterized scripts for unavoidable runtime inputs.
 helm lint cluster-config/chart -f cluster-config/values.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml
 bash -n bootstrap.sh docs/acm-cluster-onboarding/import-managed-cluster.sh
+make render   # every Application for this repository's deployment, offline; see hack/render/render.py
 ```
 
 Use `helm template` to inspect rendered resources. These checks do not touch a cluster. Do not run `./bootstrap.sh`,
@@ -40,8 +41,9 @@ test to an authorized operator.
 
 ## Testing Guidelines
 
-There is no automated unit-test suite. Validate YAML rendering and shell syntax locally before opening a PR. Do not make
-live changes to validate cluster-affecting work; describe intended operator validation in the PR.
+There is no automated unit-test suite. `make render` (also run in CI) renders every Application and fails on errors,
+shared objects and AppProject violations. Validate YAML rendering and shell syntax locally before opening a PR. Do not
+make live changes to validate cluster-affecting work; describe intended operator validation in the PR.
 
 ## Commit & Pull Request Guidelines
 

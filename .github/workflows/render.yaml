@@ -1,0 +1,27 @@
+# Render every Application offline on each pull request (hack/render): the
+# root ApplicationSet, nested ApplicationSets and every helm, kustomize and
+# directory source, for this repository's deployment.
+name: Render
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: hack/render/go.mod
+      # Helm 3, as Argo CD bundles.
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - name: Install kustomize and PyYAML
+        run: |
+          curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.0/kustomize_v5.8.0_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin kustomize
+          sudo apt-get install -y python3-yaml
+      - run: make render

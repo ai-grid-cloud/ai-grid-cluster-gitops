@@ -1,0 +1,4 @@
+[
+  {"name": "local-cluster", "labels": {"apps.open-cluster-management.io/acm-cluster": "true", "ai-grid/enabled": "true", "ai-grid/role": "combined"}},
+  {"name": "ai-grid-2", "labels": {"apps.open-cluster-management.io/acm-cluster": "true", "ai-grid/enabled": "true", "ai-grid/role": "combined"}}
+]
