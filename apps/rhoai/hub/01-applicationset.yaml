@@ -81,6 +81,11 @@ spec:
                 value: '{{ ne .name "local-cluster" | toString }}'
               - name: dependencies.loki.olm.createNamespace
                 value: '{{ ne .name "local-cluster" | toString }}'
+              # RHOAIENG-99507 is the hub's conflict: ACM's observability add-on
+              # installs COO there only. Other clusters need the chart's, or
+              # OpenShift AI's monitoring stack and MaaS usage never come up.
+              - name: dependencies.clusterObservability.enabled
+                value: '{{ if eq .name "local-cluster" }}false{{ else }}auto{{ end }}'
         # The enrollment service runs on the hub, so a managed cluster excludes these.
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD
