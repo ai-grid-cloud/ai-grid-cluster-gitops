@@ -10,6 +10,14 @@ metadata:
     argocd.argoproj.io/sync-options: Delete=false
 spec:
   instances: 3
+  # maas-api's egress NetworkPolicy (maas-api-egress-restrict, in builds that
+  # restrict egress) allows 5432 only to pods labelled app=postgres. That
+  # covers a database on maas-api's own cluster only: a remote spoke reaching
+  # the hub's primary by its clusterset name gets its own egress rule
+  # (maas-api-to-clusterset-db, hub/03-policies.yaml).
+  inheritedMetadata:
+    labels:
+      app: postgres
   certificates:
     serverAltDNSNames:
       - maas-db-rw.maas-db.svc.clusterset.local

@@ -1,0 +1,47 @@
+# A spoke's read replica: only its own pods, its cluster's maas-api, the
+# CloudNativePG operator and monitoring. It streams from the hub's primary,
+# outbound; nothing else connects in.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: maas-db-ingress
+  namespace: maas-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # The namespace's own pods: replication and the instance manager.
+    - from:
+        - podSelector: {}
+    # maas-api.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: redhat-ai-gateway-infra
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: redhat-ods-applications
+      ports:
+        - port: 5432
+          protocol: TCP
+    # The CloudNativePG operator (instance status) and cluster monitoring.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - port: 8000
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-monitoring
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-user-workload-monitoring
+      ports:
+        - port: 9187
+          protocol: TCP

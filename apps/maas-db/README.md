@@ -94,3 +94,22 @@ After the writable primary and every read replica are healthy, validate
 connectivity from the database namespace. The `maas-db-api-credentials` Policy
 and PlacementBinding can then remain enabled to create or update
 `maas-db-config` through GitOps.
+
+## Who can connect
+
+`maas-db-rw` is exported to every cluster in the cluster set. A
+NetworkPolicy (`40-network-policy.yaml`) keeps other pods on the hub out: it
+admits the namespace's own pods, maas-api's namespaces, the CloudNativePG
+operator, monitoring, the router on 8080 for Keycloak, and Submariner Globalnet
+addresses (242.0.0.0/8, the Broker's default range) on 5432 for other
+clusters' replicas and maas-api. Every pod on a joined cluster egresses from
+that range, so across clusters the boundary is the password: maas-api logs in
+with SCRAM bound to the TLS channel (`channel_binding=require`). A spoke's
+replica admits no other cluster.
+
+The database pods carry `app=postgres`, which maas-api's egress policy
+requires in MaaS builds that restrict egress. That covers a database on
+maas-api's own cluster; for a remote spoke's maas-api, which reaches the
+hub's primary by its clusterset name, the credential Policy also adds
+`maas-api-to-clusterset-db`, an egress rule for the primary's Globalnet
+address.
