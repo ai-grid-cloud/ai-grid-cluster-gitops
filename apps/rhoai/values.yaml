@@ -83,15 +83,14 @@ components:
             protocol: HTTP
             allowedRoutes:
               namespaces:
-                # The following is an example of how to restrict the namespaces to the interested ones.
+                # Model namespaces labelled for the grid
+                # (rhoai-prerequisites' Policy labels ai-grid-internal-models
+                # and openshift-ingress), so a new model namespace needs only
+                # the label, not an edit here.
                 from: Selector
                 selector:
-                  matchExpressions:
-                    - key: kubernetes.io/metadata.name
-                      operator: In
-                      values:
-                        - openshift-ingress
-                        - ai-grid-internal-models
+                  matchLabels:
+                    grid.opendatahub.io/allowed: "true"
 
           - name: https
             port: 443
@@ -99,15 +98,14 @@ components:
             protocol: HTTPS
             allowedRoutes:
               namespaces:
-                # The following is an example of how to restrict the namespaces to the interested ones.
+                # Model namespaces labelled for the grid
+                # (rhoai-prerequisites' Policy labels ai-grid-internal-models
+                # and openshift-ingress), so a new model namespace needs only
+                # the label, not an edit here.
                 from: Selector
                 selector:
-                  matchExpressions:
-                    - key: kubernetes.io/metadata.name
-                      operator: In
-                      values:
-                        - openshift-ingress
-                        - ai-grid-internal-models
+                  matchLabels:
+                    grid.opendatahub.io/allowed: "true"
   aigateway:
     dsc:
       aiGrid:

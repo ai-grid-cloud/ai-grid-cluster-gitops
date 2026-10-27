@@ -41,6 +41,20 @@ spec:
                   labels:
                     # Identifies the namespace as allowed for Grid routing (automatically creates InferenceProvider for each LLMInferenceService in this namespace).
                     grid.opendatahub.io/allowed: "true"
+            # The inference Gateway admits routes from namespaces with this label
+            # (apps/rhoai/values.yaml), and a label selector can't also match a
+            # name, so openshift-ingress gets the label too. musthave merges it
+            # into the existing namespace and leaves its other labels alone. It
+            # runs no LLMInferenceService, so the label creates no
+            # InferenceProvider there.
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  name: openshift-ingress
+                  labels:
+                    grid.opendatahub.io/allowed: "true"
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
         kind: ConfigurationPolicy
