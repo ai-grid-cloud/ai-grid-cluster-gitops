@@ -14,7 +14,9 @@ operator:
 # RHACM's multicluster-observability-addon also installs COO with its own
 # OperatorGroup (named after the namespace), which conflicts with the chart's
 # (named after the package) and blocks CSV installs/upgrades. Let RHACM own
-# COO on this cluster until the OG naming is standardized in odh-gitops.
+# COO on the hub until the OG naming is standardized in odh-gitops. The add-on
+# installs COO only on the hub, so hub/01-applicationset.yaml sets this to auto
+# on every other cluster.
 dependencies:
   rhcl:
     olm:
