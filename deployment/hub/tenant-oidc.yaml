@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhoai-tenant-oidc
+  namespace: redhat-ai-grid
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+# The tenants' OIDC realm and client, which the tenant Policy
+# (apps/rhoai/hub/02-tenant-policy.yaml) writes into each ingress spoke's
+# AITenant. With no issuerUrl key, the issuer is this deployment's Keycloak:
+# its Route's assigned host plus /realms/<realm>.
+data:
+  realm: saas
+  clientId: tenant-demo
+  audience: tenant-demo

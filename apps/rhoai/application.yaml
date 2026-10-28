@@ -7,26 +7,31 @@ metadata:
   namespace: openshift-gitops
 spec:
   project: default
-  source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
-    targetRevision: HEAD
-    path: apps/rhoai/hub
-    # The nested ApplicationSets read cluster values from the deployment
-    # repository. The root ApplicationSet fills these tokens in, and the
-    # generator's values hand them to the template as .values.*.
-    kustomize:
-      patches:
-        - target:
-            group: argoproj.io
-            kind: ApplicationSet
-            name: (rhoai|grid-provider)
-          patch: |-
-            - op: add
-              path: /spec/generators/0/matrix/generators/1/clusters/values
-              value:
-                deploymentRepoURL: '@deploymentRepoURL@'
-                deploymentRevision: '@deploymentRevision@'
-                deploymentPath: '@deploymentPath@'
+  sources:
+    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+      targetRevision: HEAD
+      path: apps/rhoai/hub
+      # The nested ApplicationSets read cluster values from the deployment
+      # repository. The root ApplicationSet fills these tokens in, and the
+      # generator's values hand them to the template as .values.*.
+      kustomize:
+        patches:
+          - target:
+              group: argoproj.io
+              kind: ApplicationSet
+              name: (rhoai|grid-provider)
+            patch: |-
+              - op: add
+                path: /spec/generators/0/matrix/generators/1/clusters/values
+                value:
+                  deploymentRepoURL: '@deploymentRepoURL@'
+                  deploymentRevision: '@deploymentRevision@'
+                  deploymentPath: '@deploymentPath@'
+    # The deployment's hub objects, such as the tenant OIDC client the tenant
+    # Policy reads.
+    - repoURL: '@deploymentRepoURL@'
+      targetRevision: '@deploymentRevision@'
+      path: '@deploymentPath@/hub'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
