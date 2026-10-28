@@ -2,7 +2,10 @@
 
 The cloud provider's admin console,
 [ai-grid-cloud/ai-grid-provider-console](https://github.com/ai-grid-cloud/ai-grid-provider-console),
-on the hub, installed from its Helm chart: one pod with kube-auth-proxy
+on the hub, installed from its Helm chart. It's optional: a deployment lists it
+in `<deployment>/apps/console.yaml` (this repository's deployment is the
+example), which names the chart commit, the images and the catalog
+repository. It's one pod with kube-auth-proxy
 (OpenShift sign-in), the console, and its backend
 ([ai-grid-cloud/ai-grid-provider-backend](https://github.com/ai-grid-cloud/ai-grid-provider-backend)).
 
@@ -21,10 +24,8 @@ on the hub, installed from its Helm chart: one pod with kube-auth-proxy
   managed cluster's indexed resources: more than the GPU nodes it asks for, so
   the backend stays behind the console's sign-in (the file says why).
 - **Models and subscriptions:** commits to the catalog repository,
-  [ai-grid-cloud/ai-grid-1-catalog](https://github.com/ai-grid-cloud/ai-grid-1-catalog),
-  which `apps/acm-models` delivers and `apps/ai-grid-policies` reports on.
-  That URL is the one value another environment changes, here
-  (`backend.git.url`) and in `apps/acm-models/hub/catalog-*`.
+  the deployment's catalog repository (`CATALOG_REPO_URL`), which
+  `<deployment>/apps/acm-models.yaml` delivers and `apps/ai-grid-policies` reports on.
 
 ## Before the first sync completes
 
