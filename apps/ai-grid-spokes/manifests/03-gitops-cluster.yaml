@@ -1,0 +1,38 @@
+# Registers every managed cluster with Argo CD, labelled or not, so the
+# ApplicationSets here have cluster Secrets to join with their Placements'
+# decisions whichever optional apps a deployment runs. Several GitOpsClusters
+# can register the same cluster (the sample models' shared acm-models
+# GitOpsCluster does too); they share one Secret per cluster. The catalog has no
+# GitOpsCluster of its own and relies on this one.
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-registered
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  name: ai-grid-spokes
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    apiVersion: cluster.open-cluster-management.io/v1beta1
+    kind: Placement
+    name: ai-grid-registered
+    namespace: openshift-gitops
