@@ -1,0 +1,73 @@
+# Node Feature Discovery and the NVIDIA GPU operator on each inference and
+# combined spoke, for models that need a GPU (the model namespace's GPU preset,
+# apps/ai-grid-models). On a spoke with no NVIDIA GPU the operator runs no
+# driver, device-plugin or DCGM pods, and NFD one worker pod per node.
+# Optional: a deployment lists it in <deployment>/apps/ai-grid-gpu.yaml.
+# Removing a spoke keeps the operators installed (preserveResourcesOnDeletion).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: ai-grid-gpu
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
+              requeueAfterSeconds: 60
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
+  template:
+    metadata:
+      name: 'gpu-{{ .name }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      sources:
+        # The same odh-gitops revision as the rhoai ApplicationSet; its own
+        # release, with only these two dependencies on.
+        - repoURL: https://github.com/pierDipi/odh-gitops.git
+          targetRevision: fix/kuadrant-auth-timeout
+          path: charts/rhai-on-openshift-chart
+          helm:
+            releaseName: rhai-gpu
+            valueFiles:
+              - $values/apps/ai-grid-gpu/values.yaml
+        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+          targetRevision: HEAD
+          ref: values
+        # The NodeFeatureDiscovery and ClusterPolicy, once their CRDs exist.
+        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+          targetRevision: HEAD
+          path: apps/ai-grid-gpu/crs
+      destination:
+        server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: -1
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+        syncOptions:
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true
