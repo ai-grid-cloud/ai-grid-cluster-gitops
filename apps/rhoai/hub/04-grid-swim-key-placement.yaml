@@ -9,9 +9,12 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Every AI Grid spoke but the hub, where grid enrollment keeps the key.
   predicates:
     - requiredClusterSelector:
         labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
           matchExpressions:
             - key: name
               operator: NotIn

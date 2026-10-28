@@ -1,0 +1,2 @@
+# The enrollment Route's host on this deployment's hub (apps/grid-enrollment).
+host: grid-enrollment.apps.ai-grid-1.qhdb.p1.openshiftapps.com

@@ -1,4 +1,0 @@
-# Values for the rhai-on-openshift release on every cluster of this deployment,
-# after apps/rhoai/values.yaml and before clusters/<name>/rhoai.yaml.
-grid-enrollment:
-  host: grid-enrollment.apps.ai-grid-1.qhdb.p1.openshiftapps.com

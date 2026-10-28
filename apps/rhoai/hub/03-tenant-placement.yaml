@@ -1,6 +1,8 @@
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
+  # The AITenant and MaaS tenant config go where MaaS runs: ingress and
+  # combined spokes (apps/ai-grid-spokes).
   name: rhoai-tenant-clusters
   namespace: redhat-ai-grid
   annotations:
@@ -8,6 +10,15 @@ metadata:
 spec:
   clusterSets:
     - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, combined]
 ---
 apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding

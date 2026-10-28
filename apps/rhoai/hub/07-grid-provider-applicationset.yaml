@@ -1,0 +1,83 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  # The grid provider gateway, which peers dial for this cluster's models: one
+  # Application per inference or combined spoke (apps/ai-grid-spokes).
+  name: grid-provider
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
+              requeueAfterSeconds: 60
+          - clusters:
+              # The role too: membership comes from the Placement, but the role
+              # is read from this Secret, which ACM labels a moment later.
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
+  template:
+    metadata:
+      name: 'grid-provider-{{ .name | trunc 34 }}-{{ sha256sum .name | trunc 8 }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      sources:
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
+        # The file is required: the chart has no enable switch.
+        - repoURL: https://github.com/opendatahub-io/odh-gitops.git
+          targetRevision: feature-ai-grid
+          path: charts/rhai-on-openshift-chart/charts/praxis-gateway
+          helm:
+            releaseName: grid-provider-gateway
+            valueFiles:
+              - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/provider-gateway.yaml
+            parameters:
+              - name: grid.siteName
+                value: '{{ .name }}'
+      # As the rhoai ApplicationSet: the hub through Argo's own destination.
+      destination:
+        server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
+        namespace: redhat-ai-grid
+      ignoreDifferences:
+        - group: ""
+          kind: Service
+          name: grid-provider-gateway
+          namespace: redhat-ai-grid
+          jsonPointers:
+            - /spec/type
+          jqPathExpressions:
+            - '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]'
+            - '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]'
+            - '.spec.ports[] | select(.name == "http") | .nodePort'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: 20
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 30m
+        syncOptions:
+          - CreateNamespace=false
+          - SkipDryRunOnMissingResource=true
+          - RespectIgnoreDifferences=true

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Which clusters are AI Grid spokes, and in which role, read from labels on
+  # their ManagedClusters. The ApplicationSets and Policies that deliver spoke
+  # work select through these Placements.
+  name: ai-grid-spokes
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: '@templateRepoURL@'
+    targetRevision: HEAD
+    path: apps/ai-grid-spokes/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      refresh: true
+      limit: 20
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 30m
+    syncOptions:
+      - CreateNamespace=false
+      - SkipDryRunOnMissingResource=true

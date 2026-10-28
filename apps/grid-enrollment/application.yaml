@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Grid enrollment and the Grid CA, on the hub only, whether or not the hub is
+  # also an AI Grid spoke (labelled ai-grid/enabled).
+  name: grid-enrollment
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  sources:
+    # The same odh-gitops revision as the rhoai ApplicationSet's
+    # rhai-on-openshift chart, which vendors this one.
+    - repoURL: https://github.com/opendatahub-io/odh-gitops.git
+      targetRevision: feature-ai-grid
+      path: charts/rhai-on-openshift-chart/charts/grid-enrollment
+      helm:
+        # The umbrella release's name, which the chart puts in every object's
+        # app.kubernetes.io/instance label. A Deployment's selector is
+        # immutable, so a hub that ran enrollment inside rhai-on-openshift keeps
+        # its objects unchanged when this app adopts them.
+        releaseName: rhai-on-openshift
+        valueFiles:
+          - $values/apps/grid-enrollment/values.yaml
+          - $deployment/@deploymentPath@/grid-enrollment.yaml
+    - repoURL: '@templateRepoURL@'
+      targetRevision: HEAD
+      ref: values
+    - repoURL: '@deploymentRepoURL@'
+      targetRevision: '@deploymentRevision@'
+      ref: deployment
+    # The clusterset export and the invites namespace.
+    - repoURL: '@templateRepoURL@'
+      targetRevision: HEAD
+      path: apps/grid-enrollment/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: redhat-ai-grid
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      refresh: true
+      limit: 20
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 30m
+    syncOptions:
+      # redhat-ai-grid is created by the rhoai-prerequisites Policy on every
+      # cluster, hub included.
+      - CreateNamespace=false
+      - SkipDryRunOnMissingResource=true

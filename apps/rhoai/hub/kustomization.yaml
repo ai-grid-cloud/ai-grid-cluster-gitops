@@ -11,3 +11,4 @@ resources:
   - 04-grid-swim-key-placement.yaml
   - 05-grid-swim-key-policy.yaml
   - 06-grid-swim-key-placement-binding.yaml
+  - 07-grid-provider-applicationset.yaml

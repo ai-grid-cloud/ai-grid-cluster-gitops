@@ -1,6 +1,7 @@
-# The provider console's catalog: the models and subscriptions it commits to
-# ai-grid-cloud/ai-grid-1-catalog, on the clusters Placement acm-models-catalog
-# selects. That repository URL is the one value a deployment changes.
+# The catalog: models and subscriptions the provider console commits to
+# ai-grid-cloud/ai-grid-1-catalog. Models go to inference and combined spokes
+# (Placement ai-grid-inference), MaaS objects to ingress and combined spokes
+# (ai-grid-ingress); both Placements are apps/ai-grid-spokes'.
 #
 # Models: catalog/clusters/<cluster>/ lists the models placed on that cluster
 # (catalog/models/<id>/deployment: the LLMInferenceService and its NetworkPolicy).
@@ -29,7 +30,7 @@ spec:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: acm-models-catalog
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-1-catalog.git
               revision: main
@@ -69,8 +70,9 @@ spec:
           # until it's fixed.
           - FailOnSharedResource=true
 ---
-# Each selected cluster registers every catalog model in MaaS:
-# catalog/ingress/ lists catalog/models/<id>/catalog (ExternalModel, MaaSModelRef).
+# Each ingress and combined spoke registers every catalog model in MaaS: catalog/ingress/ is a
+# kustomization of catalog/models/<id>/catalog (the ExternalModel and
+# MaaSModelRef), as maas-externalmodels does for the sample model.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -91,7 +93,7 @@ spec:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: acm-models-catalog
+                  cluster.open-cluster-management.io/placement: ai-grid-ingress
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-1-catalog.git
               revision: main
@@ -135,8 +137,8 @@ spec:
           # until it's fixed.
           - FailOnSharedResource=true
 ---
-# Each selected cluster gets every subscription: catalog/subscriptions/<id>.yaml,
-# a MaaSSubscription and its <id>-policy MaaSAuthPolicy.
+# Each ingress and combined spoke gets every subscription: catalog/subscriptions/<id>.yaml, a
+# MaaSSubscription and its <id>-policy MaaSAuthPolicy.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -157,7 +159,7 @@ spec:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: acm-models-catalog
+                  cluster.open-cluster-management.io/placement: ai-grid-ingress
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-1-catalog.git
               revision: main

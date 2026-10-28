@@ -1,8 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # Generates one Application for every cluster secret created by the shared
-  # GitOpsCluster integration, including local-cluster.
+  # One Application per AI Grid spoke: a cluster the ai-grid-spokes Placement
+  # selects (apps/ai-grid-spokes), the hub included only when it's labelled.
   name: rhoai
   namespace: openshift-gitops
   annotations:
@@ -11,10 +11,27 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
-    - clusters:
-        selector:
-          matchLabels:
-            apps.open-cluster-management.io/acm-cluster: "true"
+    # The Placement's decisions, read live, joined with Argo CD's cluster Secret
+    # for the server and labels (apps/ai-grid-spokes explains why both).
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-spokes
+              requeueAfterSeconds: 60
+          - clusters:
+              # The role too: membership comes from the Placement, but the role
+              # is read from this Secret, which ACM labels a moment later.
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
   template:
     metadata:
       name: 'rhoai-{{ .name | trunc 34 }}-{{ sha256sum .name | trunc 8 }}'
@@ -48,11 +65,11 @@ spec:
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
+              # The spoke's role (ai-grid/role): ingress, inference or combined.
+              - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
               - $deployment/{{ .values.deploymentPath }}/rhoai.yaml
               - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/rhoai.yaml
             parameters:
-              - name: grid-enrollment.enabled
-                value: '{{ eq .name "local-cluster" | toString }}'
               - name: praxis-gateway.grid.siteName
                 value: '{{ .name }}'
               # OSD ships these namespaces; a self-managed spoke has no creator.
@@ -65,18 +82,14 @@ spec:
               # OpenShift AI's monitoring stack and MaaS usage never come up.
               - name: dependencies.clusterObservability.enabled
                 value: '{{ if eq .name "local-cluster" }}false{{ else }}auto{{ end }}'
-        # The enrollment service runs on the hub, so a managed cluster excludes these.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
-          targetRevision: HEAD
-          path: apps/rhoai/local-cluster
-          directory:
-            exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
-        # The deployment's own hub objects, such as declared peers.
+        # The deployment's own objects for this cluster, such as declared
+        # peers: <deployment>/clusters/<cluster>/manifests/, if it has any.
         - repoURL: '{{ .values.deploymentRepoURL }}'
           targetRevision: '{{ .values.deploymentRevision }}'
-          path: '{{ .values.deploymentPath }}/hub'
+          path: '{{ .values.deploymentPath }}/clusters'
           directory:
-            exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
+            recurse: true
+            include: '{{ .name }}/manifests/*.yaml'
         # The hub collects through ai-grid-o11y; a managed cluster's collector needs its own copies.
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD
@@ -96,17 +109,8 @@ spec:
             parameters:
               - name: siteName
                 value: '{{ .name }}'
-        # The file is required: the chart has no enable switch.
-        - repoURL: https://github.com/opendatahub-io/odh-gitops.git
-          targetRevision: feature-ai-grid
-          path: charts/rhai-on-openshift-chart/charts/praxis-gateway
-          helm:
-            releaseName: grid-provider-gateway
-            valueFiles:
-              - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/provider-gateway.yaml
-            parameters:
-              - name: grid.siteName
-                value: '{{ .name }}'
+        # The grid provider gateway is its own ApplicationSet,
+        # 07-grid-provider-applicationset.yaml: inference and combined spokes.
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/catalog
@@ -138,16 +142,6 @@ spec:
           jsonPointers:
             - /data
             - /metadata/annotations
-        - group: ""
-          kind: Service
-          name: grid-provider-gateway
-          namespace: redhat-ai-grid
-          jsonPointers:
-            - /spec/type
-          jqPathExpressions:
-            - '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]'
-            - '.metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]'
-            - '.spec.ports[] | select(.name == "http") | .nodePort'
       syncPolicy:
         automated:
           prune: true

@@ -1,0 +1,54 @@
+# Values for the grid-enrollment chart (vendored in odh-gitops under
+# rhai-on-openshift-chart/charts/grid-enrollment), released on its own on the
+# hub. The hub runs enrollment; spokes must not hold the Grid CA signing key.
+# The host is this deployment's: <deployment>/grid-enrollment.yaml.
+
+# The names the umbrella chart gives these objects (grid-enrollment-*), which
+# a standalone release would otherwise prefix with the release name.
+fullnameOverride: grid-enrollment
+
+# The images from the installed bundle; the chart otherwise falls back to
+# ghcr.io/praxis-proxy. Bump with apps/rhoai/values.yaml's global.relatedImages.
+global:
+  relatedImages:
+    - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_ENROLLMENT_IMAGE
+      value: registry.redhat.io/rhoai/odh-praxis-ai-grid-enrollment-rhel9@sha256:6dcbefe9f5496b014d4d588ec2bc3e295f6fbd3e1c5f2418145672476731b905
+    # The bundle publishes this one as RELATED_IMAGE_POSTGRESQL_16_IMAGE.
+    - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_POSTGRES_IMAGE
+      value: registry.redhat.io/rhel9/postgresql-16@sha256:435ba5c1d3f686cf8a45ae525b4d169ced6b33753bcfab99a1498bd9e6e99817
+
+# A Route, not the clusterset name: ACM's Submariner addon refuses to prepare a
+# ROSA cluster ("unsupported vendor OpenShiftDedicated"), so no cross-cluster
+# tunnel forms and clusterset.local does not resolve on a spoke. Passthrough is
+# the chart default, so the site still pins the grid CA end to end. The host
+# is this deployment's: set host in <deployment>/grid-enrollment.yaml.
+route:
+  enabled: true
+serving:
+  extraDnsNames:
+    - grid-enrollment.redhat-ai-grid.svc.clusterset.local
+enrollment:
+  # Named explicitly: the chart would derive redhat-ai-grid-invites, which
+  # matches ^redhat-.* and ROSA refuses to let Argo create it. Naming it means
+  # the chart does not create it either, so it comes from manifests/.
+  inviteSecrets:
+    namespace: grid-enrollment-invites
+  authz: kube
+  service:
+    type: ClusterIP
+db:
+  type: builtin
+  builtin:
+    pvcAnnotations:
+      argocd.argoproj.io/sync-options: Prune=false,Delete=false
+# No invites: the ca-bootstrap and invite-admission templates both emit the
+# same ValidatingAdmissionPolicy once invites is set, and Argo refuses a
+# duplicated resource. A spoke has no enrollment configuration to redeem an
+# invite with anyway.
+hubSite:
+  name: local-cluster
+  namespace: redhat-ai-grid
+  identitySecretName: grid-site-identity
+  caSecretName: grid-ca
+  swimKeySecretName: grid-swim-key
+  seedSecretName: grid-reserved-seeds
