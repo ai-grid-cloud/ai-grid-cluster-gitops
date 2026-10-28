@@ -1,0 +1,73 @@
+# Limitador's Redis on each ingress and combined spoke, for that spoke's own
+# Limitador, instead of one Redis on the hub. A deployment picks this
+# placement by pointing <deployment>/apps/limitador-redis.yaml at this
+# directory (path apps/limitador-redis/ingress); the hub placement points at
+# apps/limitador-redis/manifests. Counters aren't shared across ingress
+# spokes, and rate limiting never crosses Submariner.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: limitador-redis
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-ingress
+              requeueAfterSeconds: 60
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
+  template:
+    metadata:
+      name: 'limitador-redis-{{ .name }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        targetRevision: HEAD
+        path: apps/limitador-redis/manifests
+        directory:
+          # Local to the spoke: no clusterset export.
+          exclude: 06-service-export.yaml
+      destination:
+        server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
+        namespace: limitador-redis
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: -1
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true
+      # As apps/limitador-redis's own Application: MaaS manages the limits.
+      ignoreDifferences:
+        - group: limitador.kuadrant.io
+          kind: Limitador
+          name: limitador
+          namespace: kuadrant-system
+          jsonPointers:
+            - /spec/limits
+            - /spec/metricLabelsDefault
+            - /status
