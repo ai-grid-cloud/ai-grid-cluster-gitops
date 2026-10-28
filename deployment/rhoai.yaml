@@ -1,0 +1,3 @@
+# Values for the rhai-on-openshift release on every cluster of this deployment,
+# after apps/rhoai/values.yaml and before clusters/<name>/rhoai.yaml.
+{}

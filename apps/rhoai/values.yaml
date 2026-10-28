@@ -211,7 +211,7 @@ praxis-gateway:
       # MaaS authenticates the caller.
       auth:
         mode: none
-      # backends is per cluster, in values-<cluster>.yaml: the name the serving
+      # backends is per cluster, in <deployment>/clusters/<cluster>/rhoai.yaml: the name the serving
       # config uses hashes the local source UID. A cluster with no file of its
       # own renders a gateway with no routes rather than another cluster's names.
       # Renders grid_site_route over the operator's serving data.
