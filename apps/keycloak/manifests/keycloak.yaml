@@ -36,11 +36,12 @@ spec:
                   line=${line//\$\{KEYCLOAK_PUBLIC_URL\}/$KEYCLOAK_PUBLIC_URL}
                   line=${line//\$\{KEYCLOAK_REDIRECT_URI\}/$KEYCLOAK_REDIRECT_URI}
                   line=${line//\$\{KEYCLOAK_CLIENT_SECRET\}/$KEYCLOAK_CLIENT_SECRET}
-                  line=${line//\$\{GRID_TENANT_1_BROKER_CLIENT_SECRET\}/$GRID_TENANT_1_BROKER_CLIENT_SECRET}
-                  line=${line//\$\{GRID_TENANT_2_BROKER_CLIENT_SECRET\}/$GRID_TENANT_2_BROKER_CLIENT_SECRET}
-                  line=${line//\$\{GRID_TENANT_1_TEST_USER_PASSWORD\}/$GRID_TENANT_1_TEST_USER_PASSWORD}
-                  line=${line//\$\{GRID_TENANT_2_TEST_USER_PASSWORD\}/$GRID_TENANT_2_TEST_USER_PASSWORD}
-              line=${line//\$\{KEYCLOAK_SIGNING_KEYSTORE_PASSWORD\}/$KEYCLOAK_SIGNING_KEYSTORE_PASSWORD}
+                  line=${line//\$\{KEYCLOAK_SIGNING_KEYSTORE_PASSWORD\}/$KEYCLOAK_SIGNING_KEYSTORE_PASSWORD}
+                  # The deployment's own placeholders, such as its tenant IdPs'
+                  # broker secrets: keys its overlay adds to keycloak-secrets.
+                  for name in $REALM_VARS; do
+                    line=${line//"\${$name}"/"${!name}"}
+                  done
                   printf '%s\n' "$line"
                 done
               }
@@ -55,6 +56,9 @@ spec:
             - configMapRef:
                 name: keycloak-public-url
           env:
+            # Space-separated; the deployment overlay sets it.
+            - name: REALM_VARS
+              value: ""
             - name: KEYCLOAK_SIGNING_KEYSTORE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -75,7 +79,11 @@ spec:
             - -c
           args:
             - |
-              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override true
+              # REALM_IMPORT_OVERRIDE true replaces each realm from its JSON at
+              # every start, dropping whatever was changed at runtime (users,
+              # organizations, clients); false creates only missing realms. A
+              # deployment whose console writes organizations sets false.
+              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override "$REALM_IMPORT_OVERRIDE"
               exec /opt/keycloak/bin/kc.sh start
           ports:
             - name: http
@@ -97,6 +105,8 @@ spec:
             - configMapRef:
                 name: keycloak-public-url
           env:
+            - name: REALM_IMPORT_OVERRIDE
+              value: "true"
             - name: KC_DB
               value: postgres
             - name: KC_DB_URL_HOST

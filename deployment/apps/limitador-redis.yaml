@@ -1,23 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: keycloak
+  name: limitador-redis
   namespace: openshift-gitops
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: '@templateRepoURL@'
     targetRevision: HEAD
-    path: apps/keycloak
+    path: apps/limitador-redis/manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: maas-db
+    namespace: limitador-redis
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     retry:
-      refresh: true
       limit: 20
       backoff:
         duration: 30s
@@ -25,5 +24,14 @@ spec:
         maxDuration: 30m
     syncOptions:
       - ServerSideApply=true
-      - CreateNamespace=false
+      - CreateNamespace=true
       - SkipDryRunOnMissingResource=true
+  ignoreDifferences:
+    - group: limitador.kuadrant.io
+      kind: Limitador
+      name: limitador
+      namespace: kuadrant-system
+      jsonPointers:
+        - /spec/limits
+        - /spec/metricLabelsDefault
+        - /status

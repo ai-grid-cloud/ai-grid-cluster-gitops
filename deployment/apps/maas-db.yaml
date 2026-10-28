@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: limitador-redis
+  name: maas-db
   namespace: openshift-gitops
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: '@templateRepoURL@'
     targetRevision: HEAD
-    path: apps/limitador-redis/manifests
+    path: apps/maas-db/hub
   destination:
     server: https://kubernetes.default.svc
-    namespace: limitador-redis
+    namespace: maas-db
   syncPolicy:
     automated:
       prune: true
@@ -23,15 +23,5 @@ spec:
         factor: 2
         maxDuration: 30m
     syncOptions:
-      - ServerSideApply=true
       - CreateNamespace=true
       - SkipDryRunOnMissingResource=true
-  ignoreDifferences:
-    - group: limitador.kuadrant.io
-      kind: Limitador
-      name: limitador
-      namespace: kuadrant-system
-      jsonPointers:
-        - /spec/limits
-        - /spec/metricLabelsDefault
-        - /status

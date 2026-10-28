@@ -1,0 +1,43 @@
+# Lets the rhoai tenant Policy's hub templates (apps/rhoai/hub/02-tenant-policy.yaml,
+# service account rhoai-tenant-templating) read this app's Route, so the
+# AITenant issuer follows the Route's assigned host. It lives here, not in
+# apps/rhoai, because maas-db exists only where the deployment runs Keycloak.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhoai-tenant-templating
+  namespace: maas-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+rules:
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    resourceNames:
+      - keycloak
+    verbs:
+      - get
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhoai-tenant-templating
+  namespace: maas-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+subjects:
+  - kind: ServiceAccount
+    name: rhoai-tenant-templating
+    namespace: redhat-ai-grid
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhoai-tenant-templating
