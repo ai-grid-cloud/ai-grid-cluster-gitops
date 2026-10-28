@@ -1,0 +1,10 @@
+# Copied from ai-grid-cloud/ai-grid-env-setup spokes/model-namespace/gpu-preset.yaml (Apache-2.0).
+# A preset models refer to through baseRefs when they need a GPU: GPU nodes carry the nvidia.com/gpu
+# NoSchedule taint, and the provider API's Model has no tolerations field. Harmless on a spoke without
+# GPUs (nothing schedules onto a node that isn't there).
+apiVersion: serving.kserve.io/v1alpha2
+kind: LLMInferenceServiceConfig
+metadata: { name: ai-grid-gpu, namespace: ai-grid-internal-models }
+spec:
+  template:
+    tolerations: [{ key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }]

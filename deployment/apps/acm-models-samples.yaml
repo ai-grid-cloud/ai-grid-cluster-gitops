@@ -1,16 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  # Dedicated GitOps app for the AI Grid model ApplicationSet. It is
-  # discovered automatically by the bootstrap ApplicationSet.
-  name: acm-models
+  # The sample models and their subscription, for this deployment's own
+  # organization. Another deployment leaves this out.
+  name: acm-models-samples
   namespace: openshift-gitops
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: '@templateRepoURL@'
     targetRevision: HEAD
     path: apps/acm-models/hub
+    # A plain directory without the provider console's files
+    # (<deployment>/apps/acm-models.yaml has them).
+    directory:
+      exclude: '{kustomization.yaml,catalog-*,ai-grid-ready.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops

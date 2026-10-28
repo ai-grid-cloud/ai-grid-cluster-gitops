@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The provider console's catalog from the deployment's catalog repository
+  # (bootstrap.sh CATALOG_REPO_URL, CATALOG_REVISION). List it when the
+  # deployment runs the console. Its status Policies are apps/ai-grid-policies'.
+  name: acm-models
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@templateRepoURL@'
+    targetRevision: HEAD
+    path: apps/acm-models/hub
+    kustomize:
+      # The catalog files name ai-grid-1-catalog, the reference's catalog;
+      # every deployment names its own. The tests fail the build if upstream
+      # moves those fields. An object renamed upstream matches no target and is
+      # skipped without an error, so check the rendered URLs after a rebase.
+      patches:
+        - target: { kind: AppProject, name: acm-models-catalog-(models|maas) }
+          patch: |
+            - { op: test, path: /spec/sourceRepos, value: ['https://github.com/ai-grid-cloud/ai-grid-1-catalog.git'] }
+            - { op: replace, path: /spec/sourceRepos, value: ['@catalogRepoURL@'] }
+        # Each ApplicationSet reads the catalog twice: its git generator lists
+        # the folders, and its Applications sync them.
+        - target: { kind: ApplicationSet, name: acm-models-catalog-(models|ingress|subscriptions) }
+          patch: |
+            - { op: test, path: /spec/generators/0/matrix/generators/1/git/repoURL, value: 'https://github.com/ai-grid-cloud/ai-grid-1-catalog.git' }
+            - { op: test, path: /spec/generators/0/matrix/generators/1/git/revision, value: main }
+            - { op: test, path: /spec/template/spec/source/repoURL, value: 'https://github.com/ai-grid-cloud/ai-grid-1-catalog.git' }
+            - { op: replace, path: /spec/generators/0/matrix/generators/1/git/repoURL, value: '@catalogRepoURL@' }
+            - { op: replace, path: /spec/generators/0/matrix/generators/1/git/revision, value: '@catalogRevision@' }
+            - { op: replace, path: /spec/template/spec/source/repoURL, value: '@catalogRepoURL@' }
+            - { op: replace, path: /spec/template/spec/source/targetRevision, value: '@catalogRevision@' }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

@@ -1,0 +1,9 @@
+# The provider console's part of acm-models (<deployment>/apps/acm-models.yaml):
+# the catalog. Its status Policies and ai-grid-ready are apps/ai-grid-policies'.
+# The sample models in this directory are a separate, optional app
+# (<deployment>/apps/acm-models-samples.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - catalog-03-appprojects.yaml
+  - catalog-04-applicationsets.yaml

@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  # The GPU preset in ai-grid-internal-models, on each inference and combined
+  # spoke. rhoai-prerequisites' Policy creates the namespace and its
+  # NetworkPolicies; this app's sync retries until it exists.
+  name: ai-grid-model-config
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  # A site that leaves the grid keeps its models (the catalog's models
+  # ApplicationSet preserves them), and they keep needing this preset: without
+  # this, Argo CD's resources finalizer deletes it with the Application.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
+              requeueAfterSeconds: 60
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
+  template:
+    metadata:
+      name: 'model-config-{{ .name }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        targetRevision: HEAD
+        path: apps/ai-grid-models/spoke
+      destination:
+        server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
+        namespace: ai-grid-internal-models
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: -1
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+        syncOptions:
+          # The GPU preset's kind comes with OpenShift AI.
+          - SkipDryRunOnMissingResource=true
