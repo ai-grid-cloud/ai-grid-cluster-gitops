@@ -1,0 +1,13 @@
+# A kustomization so apps/rhoai/application.yaml can hand the deployment
+# repository to the ApplicationSet with a patch.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-managed-cluster-set-binding-grid.yaml
+  - 00-tenant-templating-rbac.yaml
+  - 01-applicationset.yaml
+  - 02-tenant-policy.yaml
+  - 03-tenant-placement.yaml
+  - 04-grid-swim-key-placement.yaml
+  - 05-grid-swim-key-policy.yaml
+  - 06-grid-swim-key-placement-binding.yaml

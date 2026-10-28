@@ -23,7 +23,24 @@ wait_for_crd() {
 wait_for_crd applications.argoproj.io
 wait_for_crd applicationsets.argoproj.io
 
-oc apply -f bootstrap/applicationset.yaml
+# The deployment repository holds this deployment's cluster values, hostnames
+# and hub objects (layout: deployment/README.md). By default it's this
+# repository's own deployment/ directory.
+: "${DEPLOYMENT_REPO_URL:=https://github.com/kahowell/ai-grid-tenant.git}"
+: "${DEPLOYMENT_REVISION:=HEAD}"
+: "${DEPLOYMENT_PATH:=deployment}"
+# The values land inside a Go template string, so a quote or backslash would
+# break it.
+for v in "$DEPLOYMENT_REPO_URL" "$DEPLOYMENT_REVISION" "$DEPLOYMENT_PATH"; do
+  case $v in *'"'* | *'\'*) echo "ERROR: DEPLOYMENT_* values can't contain \" or \\: $v" >&2; exit 1 ;; esac
+done
+# Rerun this script whenever the root ApplicationSet changes: nothing else
+# applies it. Quoted replacements, so bash 5.2+ doesn't expand & in them.
+root=$(<bootstrap/applicationset.yaml)
+root=${root//'${DEPLOYMENT_REPO_URL}'/"$DEPLOYMENT_REPO_URL"}
+root=${root//'${DEPLOYMENT_REVISION}'/"$DEPLOYMENT_REVISION"}
+root=${root//'${DEPLOYMENT_PATH}'/"$DEPLOYMENT_PATH"}
+printf '%s\n' "$root" | oc apply -f -
 oc apply -f bootstrap/openshift-gitops-admin.yaml
 oc patch consoles.operator.openshift.io cluster --patch '{ "spec": { "plugins": ["gitops-plugin"] } }' --type=merge
 

@@ -6,7 +6,9 @@ This repository contains GitOps configuration for an OpenShift multi-cluster AI 
 
 - `apps/` — Argo CD Applications, ApplicationSets, and numbered component manifests.
 - `bootstrap/` — OpenShift GitOps bootstrap resources used by `bootstrap.sh`.
-- `cluster-config/` — the cluster-level Helm chart and tracked values.
+- `cluster-config/` — the cluster-level Helm chart.
+- `deployment/` — this repository's own deployment values (clusters, hub objects, optional apps);
+  `deployment/README.md` describes the layout another deployment's repository follows.
 - `docs/` — runbooks, onboarding, and smoke-test scripts.
 - `renovate.json` and `renovate-config.js` — dependency-update configuration.
 
@@ -21,8 +23,8 @@ values. Use documented, parameterized scripts for unavoidable runtime inputs.
 ## Build, Validation, and Development Commands
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml
+helm lint cluster-config/chart -f deployment/cluster-admins.yaml
+helm template cluster-config/chart -f deployment/cluster-admins.yaml
 bash -n bootstrap.sh docs/acm-cluster-onboarding/import-managed-cluster.sh
 make render   # every Application for this repository's deployment, offline; see hack/render/render.py
 ```

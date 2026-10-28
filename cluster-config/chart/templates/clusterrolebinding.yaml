@@ -1,5 +1,7 @@
-{{- if not .Values.cluster_admins }}
-{{- fail "cluster-admins: values must define a non-empty 'cluster_admins' list" }}
+{{- /* A missing list fails, so a lost values file can't revoke every admin. An explicit
+       empty list is a deployment that grants no one cluster-admin from git. */}}
+{{- if not (hasKey .Values "cluster_admins") }}
+{{- fail "cluster-admins: values must define 'cluster_admins' (an empty list grants no one)" }}
 {{- end }}
 {{- range $user := .Values.cluster_admins }}
 ---

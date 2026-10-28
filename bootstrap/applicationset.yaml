@@ -25,5 +25,8 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
+  # bootstrap.sh fills in DEPLOYMENT_REPO_URL, DEPLOYMENT_REVISION and
+  # DEPLOYMENT_PATH. Each app names them as @deploymentRepoURL@,
+  # @deploymentRevision@ and @deploymentPath@, replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson }}
+    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" "${DEPLOYMENT_REPO_URL}" | replace "@deploymentRevision@" "${DEPLOYMENT_REVISION}" | replace "@deploymentPath@" "${DEPLOYMENT_PATH}" }}

@@ -26,14 +26,15 @@ spec:
           path: cluster-config/chart
           helm:
             releaseName: cluster-admins
+            # From the deployment repository (bootstrap.sh). The file is required: see the chart's guard.
             valueFiles:
-              - $values/cluster-config/values.yaml
+              - $deployment/{{ .values.deploymentPath }}/cluster-admins.yaml
             parameters:
               - name: hubResources.enabled
                 value: '{{ eq .name "local-cluster" | toString }}'
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
-          targetRevision: HEAD
-          ref: values
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
       destination:
         server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: openshift-gitops

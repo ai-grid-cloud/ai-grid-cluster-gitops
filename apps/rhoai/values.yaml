@@ -164,8 +164,8 @@ grid-enrollment:
   # A Route, not the clusterset name: ACM's Submariner addon refuses to prepare a
   # ROSA cluster ("unsupported vendor OpenShiftDedicated"), so no cross-cluster
   # tunnel forms and clusterset.local does not resolve on a spoke. Passthrough is
-  # the chart default, so the site still pins the grid CA end to end.
-  host: grid-enrollment.apps.ai-grid-1.qhdb.p1.openshiftapps.com
+  # the chart default, so the site still pins the grid CA end to end. The host
+  # is this deployment's: set grid-enrollment.host in <deployment>/rhoai.yaml.
   route:
     enabled: true
   serving:
@@ -214,7 +214,7 @@ praxis-gateway:
       # MaaS authenticates the caller.
       auth:
         mode: none
-      # backends is per cluster, in values-<cluster>.yaml: the name the serving
+      # backends is per cluster, in <deployment>/clusters/<cluster>/rhoai.yaml: the name the serving
       # config uses hashes the local source UID. A cluster with no file of its
       # own fails the render rather than inheriting another cluster's name.
       # Renders grid_site_route over the operator's serving data.

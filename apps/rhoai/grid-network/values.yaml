@@ -6,7 +6,7 @@ siteName: ""
 namespace: redhat-ai-grid
 # -- Consumer gateway this site serves through.
 gatewayName: grid-gateway
-# -- Render the record, from grid-network-<cluster>.yaml. Off by default: the
+# -- Render the record, from <deployment>/clusters/<cluster>/grid-network.yaml. Off by default: the
 # operator self-signs a CA named grid-ca when a GridNetwork names Secrets that
 # do not exist, which forks the trust domain on a site that has yet to enrol.
 # Turn it on once the site holds grid-ca and grid-site-identity from enrolment.
