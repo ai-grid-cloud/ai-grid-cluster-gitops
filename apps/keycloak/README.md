@@ -2,7 +2,10 @@
 
 This app migrates the Keycloak component from
 `lphiri/maas-portal-integration-poc` into a dedicated Argo CD Application. The
-bootstrap ApplicationSet discovers `apps/keycloak/application.yaml` automatically.
+app is optional: it runs where the deployment lists it in `<deployment>/apps/keycloak.yaml`
+(see [`deployment/README.md`](../../deployment/README.md)). It needs the
+`maas-db` app, which creates its namespace, the CloudNativePG operator and the
+database cluster it uses.
 
 ## Topology
 
@@ -72,6 +75,9 @@ URL. Plan the corresponding Keycloak realm and client update before relying on
 the new issuer because Keycloak skips imports for realms that already exist in
 PostgreSQL.
 
+The realms are the deployment's: its overlay of this directory
+(`<deployment>/keycloak/`) adds them as the `keycloak-realm-import` ConfigMap.
+
 ## Stable Signing Keys
 
 Each realm uses a dedicated cert-manager-managed RSA signing key. cert-manager
@@ -106,3 +112,20 @@ responsibility of that shared database app.
 
 The stable realm signing keys depend on the cluster-wide cert-manager
 installation.
+
+## Realm import and runtime changes
+
+At every start Keycloak imports the realms in `keycloak-realm-import`. With
+`REALM_IMPORT_OVERRIDE` true (the default) it replaces each realm from its
+JSON, so changes made at runtime (users, organizations a console created,
+clients) are lost on restart; set false in the deployment's overlay to create
+only realms that don't exist yet, and then change existing realms through the
+admin API.
+
+## Adding a placeholder
+
+`keycloak-secrets` is generated once (`refreshPolicy: CreatedOnce`). After
+adding a generator, its `dataFrom` entry and its `REALM_VARS` name to the
+overlay, delete Secret `keycloak-secrets` so it's regenerated with the new
+key; until then the realm render step stops on the unset variable. Deleting it
+also regenerates the other generated values, such as the admin password.

@@ -17,7 +17,8 @@ export DEPLOYMENT_PATH=deployment   # default deployment
 
 `bootstrap.sh` fills these into the root ApplicationSet, which replaces the
 tokens `@deploymentRepoURL@`, `@deploymentRevision@` and `@deploymentPath@` in
-each `application.yaml`. The `rhoai` ApplicationSet receives them as cluster
+each `application.yaml`, and reads the deployment's optional apps from
+`apps/*.yaml`. The `rhoai` ApplicationSet receives them as cluster
 generator values (`apps/rhoai/application.yaml`). With none set, a deployment
 reads this directory, so this repository deploys exactly as before.
 
@@ -29,6 +30,8 @@ reads this directory, so this repository deploys exactly as before.
 | `clusters/<cluster>/rhoai.yaml` | The same release on one cluster: its consumer backends. | No |
 | `clusters/<cluster>/provider-gateway.yaml` | The cluster's grid provider gateway: Route host, model backends. Its presence installs the gateway (`apps/rhoai/hub/04-provider-gateway-applicationset.yaml`). | No |
 | `hub/` | Objects applied to the hub only, such as declared peers. The directory must exist. | Yes |
+| `apps/<name>.yaml` | One Argo CD Application per optional app the deployment runs: `keycloak`, `maas-db`, `limitador-redis`. Same format as `apps/*/application.yaml`; `@templateRepoURL@` names this repository. | No: an app not listed doesn't run |
+| `keycloak/` | A kustomize overlay of `apps/keycloak`: the realms (`keycloak-realm-import`) and the generated secrets their placeholders need. Keycloak's public URL isn't a value: it's the Route's assigned host (`apps/keycloak/README.md`). Another repository names the base remotely, `https://github.com/kahowell/ai-grid-tenant//apps/keycloak?ref=cloud-provider`. | With `apps/keycloak.yaml` |
 | `cluster-admins.yaml` | `cluster-config`: users granted `cluster-admin`. `cluster_admins: []` grants no one. | Yes |
 
 `<cluster>` is the ACM ManagedCluster name (`local-cluster` for the hub).

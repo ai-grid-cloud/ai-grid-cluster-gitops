@@ -46,6 +46,9 @@ while IFS= read -r f; do
     want && /^[[:space:]]*(targetRevision|revision):/ {sub(/(targetRevision|revision):.*/, ($0 ~ /targetRevision:/ ? "targetRevision: " : "revision: ") rev)}
     {want=0; print}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 done < <(sources)
+# The root's templatePatch fills a deployment's @templateRepoURL@ with this repository too.
+tpl='replace "@templateRepoURL@" '
+awk -v from="$tpl\"$current\"" -v to="$tpl\"$url\"" '{i = index($0, from); if (i) $0 = substr($0, 1, i - 1) to substr($0, i + length(from)); print}' "$anchor" > "$anchor.tmp" && mv "$anchor.tmp" "$anchor"
 
 current=$url
 check

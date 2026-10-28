@@ -6,14 +6,9 @@ resources:
   - manifests/signing-keys.yaml
   - manifests/database.yaml
   - manifests/public-url-policy.yaml
+  - manifests/tenant-templating-rbac.yaml
   - manifests/keycloak.yaml
   - manifests/route.yaml
-configMapGenerator:
-  - name: keycloak-realm-import
-    options:
-      annotations:
-        argocd.argoproj.io/sync-wave: "2"
-    files:
-      - manifests/realms/saas-realm.json
-      - manifests/realms/grid-tenant-1-idp-realm.json
-      - manifests/realms/grid-tenant-2-idp-realm.json
+# The realms are the deployment's: its overlay of this directory adds the
+# keycloak-realm-import ConfigMap (deployment/keycloak/ is this repository's
+# own).
