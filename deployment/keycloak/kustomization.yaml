@@ -1,0 +1,85 @@
+# This deployment's Keycloak: the template's apps/keycloak plus its realms.
+# Another deployment's repository names the template remotely, for example
+# https://github.com/kahowell/ai-grid-tenant//apps/keycloak?ref=cloud-provider.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: maas-db
+resources:
+  - ../../apps/keycloak
+  # This deployment's tenant IdPs: their broker client secrets and test users'
+  # passwords, generated in-cluster, never in git.
+  - tenant-secrets.yaml
+configMapGenerator:
+  - name: keycloak-realm-import
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"
+    files:
+      - realms/saas-realm.json
+      - realms/grid-tenant-1-idp-realm.json
+      - realms/grid-tenant-2-idp-realm.json
+patches:
+  # The generated values become keycloak-secrets keys, and the realm render
+  # step fills the realms' ${...} placeholders of those names.
+  - target:
+      kind: ExternalSecret
+      name: keycloak-secrets
+    patch: |-
+      - op: add
+        path: /spec/dataFrom/-
+        value:
+          sourceRef:
+            generatorRef:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              name: grid-tenant-1-broker-client-secret
+          rewrite:
+            - regexp:
+                source: ^password$
+                target: GRID_TENANT_1_BROKER_CLIENT_SECRET
+      - op: add
+        path: /spec/dataFrom/-
+        value:
+          sourceRef:
+            generatorRef:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              name: grid-tenant-2-broker-client-secret
+          rewrite:
+            - regexp:
+                source: ^password$
+                target: GRID_TENANT_2_BROKER_CLIENT_SECRET
+      - op: add
+        path: /spec/dataFrom/-
+        value:
+          sourceRef:
+            generatorRef:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              name: grid-tenant-1-test-user-password
+          rewrite:
+            - regexp:
+                source: ^password$
+                target: GRID_TENANT_1_TEST_USER_PASSWORD
+      - op: add
+        path: /spec/dataFrom/-
+        value:
+          sourceRef:
+            generatorRef:
+              apiVersion: generators.external-secrets.io/v1alpha1
+              kind: Password
+              name: grid-tenant-2-test-user-password
+          rewrite:
+            - regexp:
+                source: ^password$
+                target: GRID_TENANT_2_TEST_USER_PASSWORD
+  - target:
+      kind: Deployment
+      name: keycloak
+    patch: |-
+      - op: test
+        path: /spec/template/spec/initContainers/0/env/0/name
+        value: REALM_VARS
+      - op: replace
+        path: /spec/template/spec/initContainers/0/env/0/value
+        value: GRID_TENANT_1_BROKER_CLIENT_SECRET GRID_TENANT_2_BROKER_CLIENT_SECRET GRID_TENANT_1_TEST_USER_PASSWORD GRID_TENANT_2_TEST_USER_PASSWORD
