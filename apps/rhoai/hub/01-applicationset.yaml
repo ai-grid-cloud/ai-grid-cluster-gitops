@@ -10,6 +10,12 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
+  # Removing a spoke's ai-grid/enabled label (the console's Remove) or its role
+  # stops managing what this ApplicationSet delivered; it doesn't uninstall it.
+  # Without this, the controller gives each Application the resources
+  # finalizer, and deleting the Application deletes what it installed.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   generators:
     # The Placement's decisions, read live, joined with Argo CD's cluster Secret
     # for the server and labels (apps/ai-grid-spokes explains why both).

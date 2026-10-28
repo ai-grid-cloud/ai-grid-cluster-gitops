@@ -77,6 +77,7 @@ conversation with Sam Batschelet and Pierangelo Di Pilato first), **fork-only**
 | fix(keycloak): set broker claims per IdP, no pass-through | A tenant IdP can claim another organization's ID and groups | upstream candidate, after the structural commits | not yet offered | merged upstream, or ported to `apps/keycloak` |
 | feat: NFD and NVIDIA GPU operator on GPU spokes | GPU models need the operator; the reference is CPU-only | upstream candidate, after the structural commits | not yet offered | merged upstream |
 | feat(limitador-redis): a Redis on each ingress spoke, for its own Limitador | A hub without OpenShift AI has no Limitador of its own | upstream candidate, after the structural commits | not yet offered | merged upstream |
+| fix: Remove stops managing a spoke, it doesn't uninstall it | Console Remove would uninstall OpenShift AI | fork-only (upstream in kahowell #90) | not offered on its own | #90 merges |
 | chore: point Argo CD at ai-grid-cloud/ai-grid-tenant | The fork's Argo CD must read `cloud-provider` | fork-only | never offered | the template's own URL becomes a deployment value |
 | docs: describe this fork | This file | fork-only | never offered | the fork goes away |
 
