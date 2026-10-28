@@ -5,10 +5,19 @@ metadata:
   namespace: openshift-gitops
 spec:
   project: default
-  source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
-    targetRevision: HEAD
-    path: apps/acm/manifests
+  # ACM's own install (core's subscription, operator group and MultiClusterHub)
+  # and its observability are the deployment's optional apps acm-install and
+  # acm-observability: a hub can already have ACM, and its observability needs
+  # object storage. This app keeps the policy add-ons and Submariner.
+  sources:
+    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+      targetRevision: HEAD
+      path: apps/acm/manifests/core
+      directory:
+        include: policy-addons.yaml
+    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+      targetRevision: HEAD
+      path: apps/acm/manifests/submariner
   destination:
     server: https://kubernetes.default.svc
     namespace: open-cluster-management

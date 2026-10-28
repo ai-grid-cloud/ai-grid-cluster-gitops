@@ -1,17 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: odf
+  # ACM observability, storing metrics in an ODF bucket (apps/odf, <deployment>/apps/odf.yaml).
+  name: acm-observability
   namespace: openshift-gitops
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: '@templateRepoURL@'
     targetRevision: HEAD
-    path: apps/odf/manifests
+    path: apps/acm/manifests/observability
   destination:
     server: https://kubernetes.default.svc
-    namespace: openshift-storage
+    namespace: open-cluster-management
   syncPolicy:
     automated:
       prune: true
