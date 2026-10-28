@@ -1,0 +1,10 @@
+# TEMPORARY (2026-10-28 live test of opendatahub-io/odh-gitops#247): the inference role as
+# the chart's ai-grid-inference profile. apps/rhoai/values.yaml sets the dashboard and the
+# consumer gateway explicitly, and explicit values win over a profile, so both stay here.
+profile: ai-grid-inference
+components:
+  dashboard:
+    dsc:
+      managementState: Removed
+praxis-gateway:
+  enabled: false

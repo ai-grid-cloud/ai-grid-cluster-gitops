@@ -62,8 +62,10 @@ spec:
         # Pinned to a feature branch carrying operator.olm.createNamespace until
         # the change is available upstream. This lets ACM own protected
         # Namespaces while the chart still owns the OLM operator resources.
-        - repoURL: https://github.com/opendatahub-io/odh-gitops.git
-          targetRevision: feature-ai-grid
+        # TEMPORARY (2026-10-28 live test of opendatahub-io/odh-gitops#247): site-b reads
+        # the chart from #247 rebased onto feature-ai-grid, with profile ai-grid-inference.
+        - repoURL: '{{ if eq .name "site-b" }}https://github.com/cfchase/odh-gitops.git{{ else }}https://github.com/opendatahub-io/odh-gitops.git{{ end }}'
+          targetRevision: '{{ if eq .name "site-b" }}test/inference-profile-live{{ else }}feature-ai-grid{{ end }}'
           path: charts/rhai-on-openshift-chart
           helm:
             releaseName: rhai-on-openshift
@@ -72,7 +74,7 @@ spec:
             valueFiles:
               - $values/apps/rhoai/values.yaml
               # The spoke's role (ai-grid/role): ingress, inference or combined.
-              - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
+              - '$values/apps/rhoai/roles/{{ if eq .name "site-b" }}inference-profile{{ else }}{{ index .metadata.labels "ai-grid/role" }}{{ end }}.yaml'
               - $deployment/{{ .values.deploymentPath }}/rhoai.yaml
               - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/rhoai.yaml
             parameters:
