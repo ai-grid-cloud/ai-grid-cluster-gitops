@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # One provider gateway per cluster that has apps/rhoai/provider-gateway-<cluster>.yaml.
+  # One provider gateway per cluster that has <deployment>/clusters/<cluster>/provider-gateway.yaml.
   # Kept out of the rhoai Application so a new cluster installs RHOAI without that file.
   name: grid-provider-gateway
   namespace: openshift-gitops
@@ -22,11 +22,13 @@ spec:
                   apps.open-cluster-management.io/acm-cluster: "true"
                   # A cluster gets RHOAI by joining the grid.
                   ai-grid/enabled: "true"
+          # apps/rhoai/application.yaml sets this generator's repository,
+          # revision and path to the deployment repository's.
           - git:
-              repoURL: https://github.com/kahowell/ai-grid-tenant.git
+              repoURL: https://deployment.invalid/set-by-apps-rhoai-application.git
               revision: HEAD
               files:
-                - path: 'apps/rhoai/provider-gateway-{{ .name }}.yaml'
+                - path: 'deployment/clusters/{{ .name }}/provider-gateway.yaml'
   template:
     metadata:
       name: 'grid-provider-gateway-{{ .name | trunc 30 }}-{{ sha256sum .name | trunc 8 }}'
@@ -34,16 +36,16 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
-          targetRevision: HEAD
-          ref: values
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
         - repoURL: https://github.com/opendatahub-io/odh-gitops.git
           targetRevision: feature-ai-grid
           path: charts/rhai-on-openshift-chart/charts/praxis-gateway
           helm:
             releaseName: grid-provider-gateway
             valueFiles:
-              - $values/apps/rhoai/provider-gateway-{{ .name }}.yaml
+              - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/provider-gateway.yaml
             parameters:
               - name: grid.siteName
                 value: '{{ .name }}'

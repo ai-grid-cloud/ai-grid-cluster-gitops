@@ -12,6 +12,9 @@ ApplicationSet generates one automated Application for every cluster secret
 created by the shared GitOpsCluster integration, including `local-cluster`.
 The hub uses Argo CD's in-cluster destination so the controller's
 ServiceAccount, rather than the ACM addon ServiceAccount, applies its RBAC.
+The list is a deployment value: `<deployment>/cluster-admins.yaml` in the
+deployment repository (see [`deployment/README.md`](../deployment/README.md)).
+The file is required; an explicit `cluster_admins: []` grants no one.
 
 ## Submariner gateway nodes
 
@@ -31,7 +34,7 @@ instead of node ports.
 
 ### Adding or removing an admin
 
-Edit [`values.yaml`](values.yaml) and commit. Every generated Application syncs
+Edit the deployment's `cluster-admins.yaml` and commit. Every generated Application syncs
 automatically (prune and self-heal are enabled):
 
 - Adding a username to `cluster_admins` creates its `ClusterRoleBinding` on
@@ -80,9 +83,9 @@ Placement, or PlacementBinding resources.
 Local:
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml \
+helm lint cluster-config/chart -f deployment/cluster-admins.yaml
+helm template cluster-config/chart -f deployment/cluster-admins.yaml
+helm template cluster-config/chart -f deployment/cluster-admins.yaml \
   --set hubResources.enabled=true
 ```
 

@@ -36,6 +36,11 @@ spec:
         - repoURL: https://github.com/opendatahub-io/odh-gitops.git
           targetRevision: feature-ai-grid
           path: components/ai-grid-crds
+        # Cluster values, hostnames and hub objects of this deployment
+        # (bootstrap.sh DEPLOYMENT_REPO_URL, DEPLOYMENT_REVISION, DEPLOYMENT_PATH).
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
         # Pinned to a feature branch carrying operator.olm.createNamespace until
         # the change is available upstream. This lets ACM own protected
         # Namespaces while the chart still owns the OLM operator resources.
@@ -48,7 +53,8 @@ spec:
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
-              - $values/apps/rhoai/values-{{ .name }}.yaml
+              - $deployment/{{ .values.deploymentPath }}/rhoai.yaml
+              - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/rhoai.yaml
             parameters:
               - name: grid-enrollment.enabled
                 value: '{{ eq .name "local-cluster" | toString }}'
@@ -68,6 +74,12 @@ spec:
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/local-cluster
+          directory:
+            exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
+        # The deployment's own hub objects, such as declared peers.
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          path: '{{ .values.deploymentPath }}/hub'
           directory:
             exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
         # The hub collects through ai-grid-o11y; a managed cluster's collector needs its own copies.

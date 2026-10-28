@@ -9,6 +9,22 @@ spec:
     repoURL: https://github.com/kahowell/ai-grid-tenant.git
     targetRevision: HEAD
     path: cluster-config/hub
+    # The nested ApplicationSet reads the admin list from the deployment
+    # repository. The root ApplicationSet fills these tokens in, and the
+    # generator's values hand them to the template as .values.*.
+    kustomize:
+      patches:
+        - target:
+            group: argoproj.io
+            kind: ApplicationSet
+            name: cluster-config
+          patch: |-
+            - op: add
+              path: /spec/generators/0/clusters/values
+              value:
+                deploymentRepoURL: '@deploymentRepoURL@'
+                deploymentRevision: '@deploymentRevision@'
+                deploymentPath: '@deploymentPath@'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
