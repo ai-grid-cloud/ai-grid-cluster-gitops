@@ -97,12 +97,6 @@ spec:
           path: apps/rhoai/local-cluster
           directory:
             exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
-        # The deployment's own hub objects, such as declared peers.
-        - repoURL: '{{ .values.deploymentRepoURL }}'
-          targetRevision: '{{ .values.deploymentRevision }}'
-          path: '{{ .values.deploymentPath }}/hub'
-          directory:
-            exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
         # The hub collects through ai-grid-o11y; a managed cluster's collector needs its own copies.
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD

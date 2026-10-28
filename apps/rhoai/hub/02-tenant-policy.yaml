@@ -36,9 +36,11 @@ spec:
                   oidc:
                     accessTokenPurpose: access
                     accessTokenPurposeClaim: token_use
-                    clientId: tenant-demo
-                    audience: tenant-demo
-                    issuerUrl: '{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}'
+                    # The deployment's IdP: <deployment>/hub/tenant-oidc.yaml. Without
+                    # issuerUrl there, the issuer is its Keycloak's Route host.
+                    clientId: '{{hub fromConfigMap "redhat-ai-grid" "rhoai-tenant-oidc" "clientId" hub}}'
+                    audience: '{{hub fromConfigMap "redhat-ai-grid" "rhoai-tenant-oidc" "audience" hub}}'
+                    issuerUrl: '{{hub with fromConfigMap "redhat-ai-grid" "rhoai-tenant-oidc" "issuerUrl" hub}}{{hub . hub}}{{hub else hub}}{{hub printf "https://%s/realms/%s" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host (fromConfigMap "redhat-ai-grid" "rhoai-tenant-oidc" "realm") hub}}{{hub end hub}}'
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
