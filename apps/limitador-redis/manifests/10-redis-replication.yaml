@@ -9,25 +9,21 @@ spec:
   clusterSize: 3
   livenessProbe:
     exec:
+      # Authenticated: with a password set, an unauthenticated PING gets NOAUTH.
       command:
-        - redis-cli
-        - -h
-        - 127.0.0.1
-        - -p
-        - "6379"
-        - ping
+        - sh
+        - -c
+        - 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h 127.0.0.1 -p 6379 ping | grep -qx PONG'
     periodSeconds: 10
     timeoutSeconds: 3
     failureThreshold: 3
   readinessProbe:
     exec:
+      # Authenticated: with a password set, an unauthenticated PING gets NOAUTH.
       command:
-        - redis-cli
-        - -h
-        - 127.0.0.1
-        - -p
-        - "6379"
-        - ping
+        - sh
+        - -c
+        - 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h 127.0.0.1 -p 6379 ping | grep -qx PONG'
     periodSeconds: 10
     timeoutSeconds: 3
     failureThreshold: 3
@@ -38,9 +34,10 @@ spec:
   kubernetesConfig:
     image: registry.redhat.io/rhel9/redis-7@sha256:8e0c52a2f304473c1f62d1112e116e0e8d541ed9cbeea86f6ece3318146be105
     imagePullPolicy: IfNotPresent
-    # redisSecret:
-    #   name: limitador-redis-auth
-    #   key: password
+    # requirepass, from the Secret Job limitador-redis-auth fills (04-limitador-redis-auth.yaml).
+    redisSecret:
+      name: limitador-redis-auth
+      key: password
     resources:
       requests:
         cpu: "1"
@@ -60,9 +57,9 @@ spec:
     size: 3
     image: registry.redhat.io/rhel9/redis-7@sha256:8e0c52a2f304473c1f62d1112e116e0e8d541ed9cbeea86f6ece3318146be105
     imagePullPolicy: IfNotPresent
-    # redisSecret:
-    #   name: limitador-redis-sentinel-auth
-    #   key: password
+    redisSecret:
+      name: limitador-redis-auth
+      key: password
     resources:
       requests:
         cpu: 50m
