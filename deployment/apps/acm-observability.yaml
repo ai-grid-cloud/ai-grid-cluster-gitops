@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # ACM observability, storing metrics in an ODF bucket (apps/odf, <deployment>/apps/odf.yaml).
+  name: acm-observability
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@templateRepoURL@'
+    targetRevision: HEAD
+    path: apps/acm/manifests
+    directory:
+      include: '{multiclusterobservability.yaml,namespace-observability.yaml,obc.yaml,observability-bridge-*.yaml}'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

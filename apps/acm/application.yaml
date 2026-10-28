@@ -9,6 +9,12 @@ spec:
     repoURL: https://github.com/kahowell/ai-grid-tenant.git
     targetRevision: HEAD
     path: apps/acm/manifests
+    # ACM's own install (subscription, operator group, MultiClusterHub) and its
+    # observability are the deployment's optional apps acm-install and
+    # acm-observability: a hub can already have ACM, and its observability
+    # needs object storage (ODF here).
+    directory:
+      exclude: '{subscription.yaml,operator-group.yaml,multiclusterhub.yaml,multiclusterobservability.yaml,namespace-observability.yaml,obc.yaml,observability-bridge-*.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: open-cluster-management
