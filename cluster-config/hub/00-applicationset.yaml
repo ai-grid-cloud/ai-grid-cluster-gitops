@@ -21,7 +21,7 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: cluster-config/chart
           helm:

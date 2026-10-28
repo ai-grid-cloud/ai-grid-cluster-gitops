@@ -1,4 +1,4 @@
-module github.com/kahowell/ai-grid-tenant/hack/render
+module github.com/ai-grid-cloud/ai-grid-tenant/hack/render
 
 go 1.24.2
 

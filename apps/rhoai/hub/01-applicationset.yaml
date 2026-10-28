@@ -39,7 +39,7 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           ref: values
         # Temporary v0.3.0-rc.1 schemas until the RHOAI manifest bundle catches up.
@@ -91,12 +91,12 @@ spec:
             recurse: true
             include: '{{ .name }}/manifests/*.yaml'
         # The hub collects through ai-grid-o11y; a managed cluster's collector needs its own copies.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/ai-grid-o11y/spoke
           directory:
             exclude: '{{ if eq .name "local-cluster" }}*{{ end }}'
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/grid-network
           helm:
@@ -111,7 +111,7 @@ spec:
                 value: '{{ .name }}'
         # The grid provider gateway is its own ApplicationSet,
         # 07-grid-provider-applicationset.yaml: inference and combined spokes.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/catalog
           helm:

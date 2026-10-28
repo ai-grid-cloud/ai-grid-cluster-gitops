@@ -5,7 +5,7 @@ name: Render
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, cloud-provider]
 permissions:
   contents: read
 jobs:

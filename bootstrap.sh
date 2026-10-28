@@ -26,7 +26,7 @@ wait_for_crd applicationsets.argoproj.io
 # The deployment repository holds this deployment's cluster values, hostnames
 # and hub objects (layout: deployment/README.md). By default it's this
 # repository's own deployment/ directory.
-: "${DEPLOYMENT_REPO_URL:=https://github.com/kahowell/ai-grid-tenant.git}"
+: "${DEPLOYMENT_REPO_URL:=https://github.com/ai-grid-cloud/ai-grid-tenant.git}"
 : "${DEPLOYMENT_REVISION:=HEAD}"
 : "${DEPLOYMENT_PATH:=deployment}"
 # The catalog repository, where a provider console's git writer commits models
