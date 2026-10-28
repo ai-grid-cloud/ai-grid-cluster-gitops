@@ -34,8 +34,9 @@ spec:
         namespace: '{{.spec.destination.namespace}}'
   # bootstrap.sh fills in DEPLOYMENT_REPO_URL, DEPLOYMENT_REVISION and
   # DEPLOYMENT_PATH. Each app names them as @deploymentRepoURL@,
-  # @deploymentRevision@ and @deploymentPath@, and this repository as
+  # @deploymentRevision@ and @deploymentPath@, the catalog repository as
+  # @catalogRepoURL@ and @catalogRevision@, and this repository as
   # @templateRepoURL@ (so a deployment's app files don't name a fork),
   # replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson | replace "@templateRepoURL@" "https://github.com/kahowell/ai-grid-tenant.git" | replace "@deploymentRepoURL@" "${DEPLOYMENT_REPO_URL}" | replace "@deploymentRevision@" "${DEPLOYMENT_REVISION}" | replace "@deploymentPath@" "${DEPLOYMENT_PATH}" }}
+    spec: {{ .spec | toJson | replace "@templateRepoURL@" "https://github.com/kahowell/ai-grid-tenant.git" | replace "@deploymentRepoURL@" "${DEPLOYMENT_REPO_URL}" | replace "@deploymentRevision@" "${DEPLOYMENT_REVISION}" | replace "@deploymentPath@" "${DEPLOYMENT_PATH}" | replace "@catalogRepoURL@" "${CATALOG_REPO_URL}" | replace "@catalogRevision@" "${CATALOG_REVISION}" }}
