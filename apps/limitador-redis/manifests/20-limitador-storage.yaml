@@ -5,7 +5,8 @@ metadata:
   namespace: kuadrant-system
   annotations:
     argocd.argoproj.io/sync-wave: "5"
-    argocd.argoproj.io/sync-options: SkipPrune=true
+    # Kuadrant's own CR: this app only sets its storage, never deletes it.
+    argocd.argoproj.io/sync-options: SkipPrune=true,Delete=false
 spec:
   storage:
     redis:
