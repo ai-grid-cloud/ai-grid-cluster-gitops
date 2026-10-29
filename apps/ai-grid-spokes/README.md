@@ -33,8 +33,8 @@ The hub runs ACM and Argo CD. On a combined hub, the grid enrollment service run
 in the hub's own OpenShift AI release (`grid-enrollment.enabled` on
 `local-cluster`), so the hub must be a site too, normally `combined`. Don't remove a combined hub from the grid or give it another role:
 its release, enrollment included, would stop being managed. A dedicated hub
-(`BOOTSTRAP_PROFILE=dedicated-hub`) isn't labelled and runs no `rhoai`
-Application.
+(`BOOTSTRAP_PROFILE=dedicated-hub`) isn't labelled, so it generates `rhoai`
+Applications for its sites only, none for itself.
 
 The `maas-db` primary on the hub doesn't depend on the hub's labels: it's
 generated for `local-cluster` whatever they are, and every object in

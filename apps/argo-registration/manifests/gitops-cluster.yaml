@@ -1,0 +1,36 @@
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  # Creates Argo CD cluster secrets, carrying each cluster's labels, for every
+  # managed cluster. The rhoai ApplicationSets select those with ai-grid/enabled.
+  name: argo-registration
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    apiVersion: cluster.open-cluster-management.io/v1beta1
+    kind: Placement
+    name: argo-registration
+    namespace: openshift-gitops
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: argo-registration
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  clusterSets:
+    - global
+  # A cluster that briefly loses contact stays registered. Otherwise its cluster
+  # secret goes and the rhoai ApplicationSets stop managing it.
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists

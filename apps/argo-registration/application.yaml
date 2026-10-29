@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Only a dedicated hub syncs this. On a hub that is also a site, acm-models
+  # registers every cluster, so the default root ApplicationSet excludes it.
+  name: argo-registration
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    targetRevision: HEAD
+    path: apps/argo-registration/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m

@@ -17,9 +17,13 @@ spec:
         revision: HEAD
         files:
           - path: apps/acm/application.yaml
+          - path: apps/ai-grid-policies/application.yaml
+          - path: apps/ai-grid-spokes/application.yaml
           - path: apps/cert-manager/application.yaml
           - path: apps/gitops-config/application.yaml
           - path: apps/grid-bootstrap/application.yaml
+          - path: apps/argo-registration/application.yaml
+          - path: apps/rhoai/application.yaml
           - path: apps/rhoai-prerequisites/application.yaml
   template:
     metadata:
@@ -30,10 +34,20 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
-  # ACM observability needs object storage and Submariner needs a site.
+  # ACM observability needs object storage and Submariner needs a site. A new
+  # grid generates its CA, and grid-bootstrap binds global, since the rhoai app
+  # brings only its ApplicationSets: the tenant Policy needs MaaS.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "acm" }}
     {{- $_ := set $spec.source "path" "apps/acm/manifests/core" }}
+    {{- end }}
+    {{- if eq .metadata.name "grid-bootstrap" }}
+    {{- range $spec.sources }}{{ if hasKey . "helm" }}
+    {{- $_ := set .helm "parameters" (list (dict "name" "external.certManager.ca.mode" "value" "Generate") (dict "name" "managedClusters.createClusterSetBinding" "value" "true")) }}
+    {{- end }}{{ end }}
+    {{- end }}
+    {{- if eq .metadata.name "rhoai" }}
+    {{- $_ := set $spec.source "directory" (dict "include" "{01-applicationset.yaml,04-provider-gateway-applicationset.yaml}") }}
     {{- end }}
     spec: {{ $spec | toJson }}
