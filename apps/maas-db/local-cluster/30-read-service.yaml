@@ -5,6 +5,8 @@ metadata:
   namespace: maas-db
   annotations:
     argocd.argoproj.io/sync-wave: "4"
+    # Part of the primary database: deleting the Application never deletes it.
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   type: ExternalName
   externalName: maas-db-ro.maas-db.svc.cluster.local

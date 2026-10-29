@@ -5,5 +5,7 @@ metadata:
   namespace: cnpg-system
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    # Part of the primary database: deleting the Application never deletes it.
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   targetNamespaces: []

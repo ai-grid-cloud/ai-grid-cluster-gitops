@@ -47,8 +47,10 @@ label. After pushing the app, Argo CD syncs `maas-db` automatically. The
 ApplicationSet creates:
 
 - `maas-db-local-cluster` for the writable primary, on the hub whatever its
-  labels. Its CloudNativePG `Cluster` carries `argocd.argoproj.io/sync-options:
-  Delete=false`, so deleting the Application never deletes the database.
+  labels. Every object it delivers (the CloudNativePG operator's Namespace,
+  OperatorGroup and Subscription, the `Cluster`, its ServiceExport and read
+  Service) carries `argocd.argoproj.io/sync-options: Delete=false`, so deleting
+  the Application never deletes the database or its operator.
 - One `maas-db-<cluster-name>` Application for each other site that runs
   `maas-api`: role ingress or combined (`apps/ai-grid-spokes`).
 
