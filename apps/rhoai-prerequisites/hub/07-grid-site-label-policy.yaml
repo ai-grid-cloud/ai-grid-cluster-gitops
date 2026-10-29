@@ -1,0 +1,55 @@
+# Workaround for the provider console's per-model routing (apps/rhoai/grid-models):
+# the backend's InferenceProviders select a remote site's GridSite by the label
+# ai-grid/site=<cluster>. Under grid-bootstrap's Local membership the peer
+# GridSites come from the membership Policy, which merges labels but sets none
+# of ours, so this labels each peer GridSite on a site with its own name. A
+# site's own GridSite stays unlabelled: there the local provider serves.
+# Drop it with the routing workaround, when grid discovery routing lands.
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: ai-grid-site-labels
+  namespace: rhoai-prerequisites
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: ai-grid-site-labels
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates-raw: |
+            {{- range $site := (lookup "grid.praxis.fast/v1alpha1" "GridSite" "" "").items }}
+            {{- if ne $site.metadata.name "{{hub .ManagedClusterName hub}}" }}
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: grid.praxis.fast/v1alpha1
+                kind: GridSite
+                metadata:
+                  name: {{ $site.metadata.name }}
+                  labels:
+                    ai-grid/site: {{ $site.metadata.name }}
+            {{- end }}
+            {{- end }}
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: ai-grid-site-labels
+  namespace: rhoai-prerequisites
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: rhoai-prerequisites-remote-clusters
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: ai-grid-site-labels
