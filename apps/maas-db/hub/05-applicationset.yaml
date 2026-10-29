@@ -7,12 +7,17 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   goTemplate: true
+  syncPolicy:
+    # Removing the label stops managing a cluster's workloads; it does not uninstall them.
+    preserveResourcesOnDeletion: true
   goTemplateOptions: ["missingkey=error"]
   generators:
     - clusters:
         selector:
           matchLabels:
             apps.open-cluster-management.io/acm-cluster: "true"
+            # A cluster gets RHOAI by joining the grid.
+            ai-grid/enabled: "true"
   template:
     metadata:
       name: 'maas-db-{{.name}}'
