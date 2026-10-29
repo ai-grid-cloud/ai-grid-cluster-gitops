@@ -104,6 +104,12 @@ spec:
           path: '{{ .values.deploymentPath }}/hub'
           directory:
             exclude: '{{ if eq .name "local-cluster" }}{{ else }}*{{ end }}'
+        # Admission rules for the provider console's catalog routing objects
+        # (apps/rhoai/catalog-admission/policies.yaml), on every spoke the
+        # catalog reaches.
+        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+          targetRevision: HEAD
+          path: apps/rhoai/catalog-admission
         - repoURL: https://github.com/kahowell/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/catalog
