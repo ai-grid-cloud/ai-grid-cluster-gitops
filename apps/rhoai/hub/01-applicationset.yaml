@@ -115,6 +115,12 @@ spec:
             parameters:
               - name: siteName
                 value: '{{ .name }}'
+        # Admission rules for the provider console's catalog routing objects
+        # (apps/rhoai/catalog-admission/policies.yaml), on every spoke the
+        # catalog reaches.
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
+          targetRevision: HEAD
+          path: apps/rhoai/catalog-admission
         # The grid provider gateway is its own ApplicationSet,
         # 07-grid-provider-applicationset.yaml: inference and combined spokes.
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git

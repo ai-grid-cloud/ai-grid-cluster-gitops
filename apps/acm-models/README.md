@@ -62,8 +62,12 @@ that repository and only the kinds the console writes:
 - `acm-models-catalog-maas`: ExternalModel, MaaSModelRef, MaaSSubscription and MaaSAuthPolicy, and the cluster-scoped
   InferenceProviders that tell the ingress consumer which site serves each model.
 
-InferenceProvider is the one cluster-scoped kind: whoever holds the token can steer a model name to another backend
-the consumer declares, but can't add a backend.
+InferenceProvider is the one cluster-scoped kind. The models project needs it only for the combined spoke's local
+provider (`grid-<id>-local`, backend `local-models`); the MaaS project for the per-site ones (`grid-<id>-at-<cluster>`).
+ValidatingAdmissionPolicies on every spoke (`apps/rhoai/catalog-admission`) hold the catalog's HTTPRoutes and
+InferenceProviders to the shape the backend writes: a route attaches only to `ai-grid-models` and matches only its own
+model id to that model's InferencePool; a provider serves only its own model id, on `local-models` or `peer-<cluster>`,
+at the matching site, with the placeholder endpoint and no health check, auth, weights or other routing fields.
 
 A catalog file that collides with an object another Application manages, such as a sample model, stops that
 cluster's catalog sync until it's fixed (`FailOnSharedResource`).

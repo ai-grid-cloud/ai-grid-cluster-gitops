@@ -1,0 +1,150 @@
+# Admission rules for the routing objects the provider console's git writer
+# commits to the catalog repository (ai-grid-provider-backend,
+# catalog/models/<id>/{deployment,catalog}/grid.yaml). Whoever holds that
+# writer's token can push any file there, and the catalog AppProjects
+# (apps/acm-models/hub/catalog-03-appprojects.yaml) admit HTTPRoutes and the
+# cluster-scoped InferenceProvider. These policies hold those objects to the
+# exact shape the backend writes, so a pushed file can't attach a route to
+# another Gateway, claim another model's name, or point a provider at an
+# arbitrary endpoint, backend or health probe.
+#
+# Scope: objects Argo CD applies from a catalog Application. Argo CD stamps
+# every object it applies with argocd.argoproj.io/tracking-id
+# "<application>:<group>/<kind>:<namespace>/<name>", overwriting any value in
+# the file, and the catalog Applications are all named acm-models-catalog-*
+# (apps/acm-models/hub/catalog-04-applicationsets.yaml). KServe's own routes
+# and odh-model-controller's providers carry no such annotation and are left
+# alone; so are the deployment's hand-declared peers.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ai-grid-catalog-httproutes
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [gateway.networking.k8s.io]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [httproutes]
+  matchConditions:
+    - name: from-catalog
+      expression: >-
+        has(object.metadata.annotations) &&
+        'argocd.argoproj.io/tracking-id' in object.metadata.annotations &&
+        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+  variables:
+    - name: id
+      expression: "object.metadata.name.endsWith('-grid') ? object.metadata.name.substring(0, size(object.metadata.name) - 5) : ''"
+  validations:
+    - expression: "variables.id != ''"
+      message: "a catalog HTTPRoute is named <model id>-grid"
+    - expression: "!has(object.spec.hostnames) || size(object.spec.hostnames) == 0"
+      message: "a catalog HTTPRoute sets no hostnames"
+    - expression: >-
+        size(object.spec.parentRefs) == 1 &&
+        object.spec.parentRefs.all(p,
+          p.name == 'ai-grid-models' &&
+          has(p.namespace) && p.namespace == 'openshift-ingress' &&
+          (!has(p.kind) || p.kind == 'Gateway') &&
+          (!has(p.group) || p.group == 'gateway.networking.k8s.io'))
+      message: "a catalog HTTPRoute attaches only to Gateway openshift-ingress/ai-grid-models"
+    - expression: >-
+        size(object.spec.rules) == 1 &&
+        object.spec.rules.all(r,
+          !has(r.filters) &&
+          has(r.matches) && size(r.matches) == 1 &&
+          r.matches.all(m,
+            !has(m.queryParams) &&
+            has(m.headers) && size(m.headers) == 1 &&
+            m.headers.all(h,
+              h.name.lowerAscii() == 'x-gateway-model-name' &&
+              (!has(h.type) || h.type == 'Exact') &&
+              h.value == variables.id)) &&
+          has(r.backendRefs) && size(r.backendRefs) == 1 &&
+          r.backendRefs.all(b,
+            !has(b.filters) &&
+            b.kind == 'InferencePool' &&
+            b.group == 'inference.networking.k8s.io' &&
+            b.name == variables.id + '-inference-pool' &&
+            (!has(b.namespace) || b.namespace == object.metadata.namespace)))
+      message: "a catalog HTTPRoute has one rule: header X-Gateway-Model-Name equal to its model id, to that model's InferencePool <id>-inference-pool, with no filters"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ai-grid-catalog-httproutes
+spec:
+  policyName: ai-grid-catalog-httproutes
+  validationActions: [Deny]
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ai-grid-catalog-inferenceproviders
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [grid.praxis.fast]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [inferenceproviders]
+  matchConditions:
+    - name: from-catalog
+      expression: >-
+        has(object.metadata.annotations) &&
+        'argocd.argoproj.io/tracking-id' in object.metadata.annotations &&
+        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+  variables:
+    - name: id
+      expression: "has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels ? object.metadata.labels['ai-grid/model'] : ''"
+    - name: backend
+      expression: "has(object.spec.clusterName) ? object.spec.clusterName : ''"
+    - name: local
+      expression: "variables.backend == 'local-models'"
+    - name: site
+      expression: "variables.backend.startsWith('peer-') ? variables.backend.substring(5) : ''"
+  validations:
+    - expression: "variables.id != ''"
+      message: "a catalog InferenceProvider carries label ai-grid/model"
+    - expression: "variables.local || variables.site != ''"
+      message: "a catalog InferenceProvider's clusterName is local-models or peer-<cluster>"
+    - expression: >-
+        variables.local
+          ? object.metadata.name == 'grid-' + variables.id + '-local'
+          : object.metadata.name == 'grid-' + variables.id + '-at-' + variables.site
+      message: "a catalog InferenceProvider is named grid-<model id>-local or grid-<model id>-at-<cluster>"
+    - expression: "object.spec.endpoint == 'https://' + variables.backend + '.grid.internal/v1'"
+      message: "a catalog InferenceProvider's endpoint is the placeholder https://<clusterName>.grid.internal/v1"
+    - expression: >-
+        object.spec.gridNetworkRef == 'grid' &&
+        object.spec.providerKind == 'vllm' &&
+        object.spec.backendKind == 'local_model'
+      message: "a catalog InferenceProvider is a vllm local_model provider on network grid"
+    - expression: >-
+        size(object.spec.models) == 1 &&
+        object.spec.models.all(m, m.name == variables.id)
+      message: "a catalog InferenceProvider serves exactly its model id"
+    - expression: >-
+        variables.local
+          ? (!has(object.spec.siteSelector) || !has(object.spec.siteSelector.matchLabels) || size(object.spec.siteSelector.matchLabels) == 0)
+          : (has(object.spec.siteSelector) && has(object.spec.siteSelector.matchLabels) &&
+             size(object.spec.siteSelector.matchLabels) == 1 &&
+             'ai-grid/site' in object.spec.siteSelector.matchLabels &&
+             object.spec.siteSelector.matchLabels['ai-grid/site'] == variables.site)
+      message: "a catalog InferenceProvider selects only the site its backend names (ai-grid/site=<cluster>), or none for local-models"
+    - expression: >-
+        !has(object.spec.auth) && !has(object.spec.capacityWeight) && !has(object.spec.cost) &&
+        !has(object.spec.gatewayRef) && !has(object.spec.healthCheck) && !has(object.spec.metricsConfig) &&
+        !has(object.spec.modelDiscovery) && !has(object.spec.providerGateway) &&
+        !has(object.spec.routingClusterRef) && !has(object.spec.tls) && !has(object.spec.trafficPolicy)
+      message: "a catalog InferenceProvider sets no auth, weights, costs, gateway or routing refs, health checks, metrics, discovery, TLS or traffic policy"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ai-grid-catalog-inferenceproviders
+spec:
+  policyName: ai-grid-catalog-inferenceproviders
+  validationActions: [Deny]
