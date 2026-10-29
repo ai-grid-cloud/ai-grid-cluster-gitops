@@ -11,7 +11,14 @@ spec:
   params:
     match[]:
       - '{__name__=~".*"}' # PromQL matchers
-  scheme: HTTP
+  # RHOAI serves its exporters over TLS only, with an OpenShift service CA cert.
+  scheme: HTTPS
+  tlsConfig:
+    ca:
+      configMap:
+        name: openshift-service-ca.crt
+        key: service-ca.crt
+    serverName: data-science-collector-prometheus.redhat-ods-monitoring.svc
   staticConfigs:
     - targets:
         # RHOAI's own exporter for the scrape and OTLP pipelines.
