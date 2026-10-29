@@ -8,6 +8,18 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Grid spokes, plus the hub: the hub's grid enrollment pulls an unreleased
+  # registry.redhat.io/rhoai image through this Policy's mirror and pull secret.
+  # Predicates are ORed. Clusters outside the grid get nothing.
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            local-cluster: "true"
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -19,9 +31,12 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Grid spokes other than the hub; clusters outside the grid get nothing.
   predicates:
     - requiredClusterSelector:
         labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
           matchExpressions:
             - key: name
               operator: NotIn
