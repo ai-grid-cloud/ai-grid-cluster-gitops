@@ -15,6 +15,9 @@ spec:
         revision: HEAD
         files:
           - path: apps/*/application.yaml
+          # Only the dedicated-hub profile installs cert-manager itself.
+          - path: apps/cert-manager/application.yaml
+            exclude: true
           - path: cluster-config/application.yaml
   template:
     metadata:

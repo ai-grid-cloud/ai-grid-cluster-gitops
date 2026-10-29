@@ -60,7 +60,7 @@ docs/acm/cluster-onboarding/import-managed-cluster.sh --spoke-context <spoke> --
 
 The hub manages the grid: CA, grid ID, policies. It needs no Grid CRDs. Running Grid workloads on it is optional.
 
-Needs ACM as above and cert-manager. The RHOAI app installs cert-manager on the hub, so a hub that is not a site installs it separately.
+Needs ACM as above and cert-manager. On a hub that is also a site, the RHOAI app supplies four things grid-bootstrap depends on: cert-manager, the redhat-ai-grid namespace, ClusterSet global bound into that namespace, and, through rhoai-prerequisites, the quay.io/rhoai mirror and pull Secret its pre-release image needs. A hub that is not a site gets them from the [dedicated-hub profile](#dedicated-hub).
 
 Install grid-enrollment on the hub with the grid-bootstrap app. Its values, [apps/grid-bootstrap/values.yaml](../../../apps/grid-bootstrap/values.yaml):
 
@@ -101,6 +101,22 @@ Onboard a cluster by labelling its ManagedCluster. Unlabelling withdraws it but 
 The hub is a site only if labelled. Proposed: managedClusters.includeHub, default false, excludes the hub from membership whatever its labels.
 
 Verify: membership policies Compliant, each member's GridNetwork Active with the grid ID.
+
+## Dedicated hub
+
+A dedicated hub runs ACM, cert-manager and grid-enrollment, and no Grid or RHOAI workloads. Bootstrap it with the dedicated-hub profile:
+
+```bash
+BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh
+```
+
+Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, cert-manager, gitops-config, grid-bootstrap and rhoai-prerequisites. ACM gets [core](../../../apps/acm/manifests/core) only, since observability needs object storage and Submariner needs a site. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
+
+grid-bootstrap still needs ClusterSet global bound into redhat-ai-grid, which the RHOAI app does today. Until grid-bootstrap takes that binding over, set managedClusters.createClusterSetBinding to true in its values on a dedicated hub. A new grid also sets external.certManager.ca.mode to Generate.
+
+rhoai-prerequisites delivers the quay.io/rhoai mirror and pull Secret to every cluster in global, the hub included. The grid-enrollment image needs them, so set RHOAI_QUAY_PULL_SECRET before bootstrap.sh, as for any hub. Without it, grid-bootstrap's CA Job stays in ImagePullBackOff. Applying the mirror reboots each node once, so a single-node hub drops out for a few minutes. To avoid the mirror, pin the grid-enrollment image to the public ODH build in the grid-bootstrap values.
+
+Verify: the five Applications Synced and Healthy, the MultiClusterHub Running, and local-cluster joined and available. Do not label local-cluster with ai-grid/enabled; that label alone would make the hub a site.
 
 ## Grid ID
 
