@@ -121,21 +121,37 @@ spec:
                 status: { phase: Active }
             {{- end }}
 ---
+# Each Policy goes only where its kinds exist (a lookup of a missing kind
+# fails the template): models on inference and combined spokes, the MaaS kinds
+# on ingress and combined spokes. Placements from apps/ai-grid-spokes.
 apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding
 metadata:
-  name: ai-grid-catalog-status
+  name: ai-grid-models-status
   namespace: ai-grid-policies
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 placementRef:
   apiGroup: cluster.open-cluster-management.io
   kind: Placement
-  name: ai-grid-policies
+  name: ai-grid-inference
 subjects:
   - apiGroup: policy.open-cluster-management.io
     kind: Policy
     name: ai-grid-models-status
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: ai-grid-catalog-status
+  namespace: ai-grid-policies
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: ai-grid-ingress
+subjects:
   - apiGroup: policy.open-cluster-management.io
     kind: Policy
     name: ai-grid-catalog-status
