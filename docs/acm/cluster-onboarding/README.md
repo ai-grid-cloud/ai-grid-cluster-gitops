@@ -21,6 +21,14 @@ discover it dynamically:
    oc label managedcluster <name> ai-grid/enabled=true
    ```
 
+   Give it a role too: `ingress` (MaaS, no models), `inference` (models, no
+   MaaS) or `combined`. Without a role nothing is installed. See
+   `apps/ai-grid-spokes/README.md`.
+
+   ```bash
+   oc label managedcluster <name> ai-grid/role=inference
+   ```
+
    Then add AI projects and models: see [AI project onboarding](../ai-project-onboarding/README.md).
 
 No `ManagedCluster`, join token, kubeconfig, API URL, or cluster name needs to

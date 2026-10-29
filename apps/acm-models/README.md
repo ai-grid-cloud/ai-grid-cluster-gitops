@@ -38,14 +38,13 @@ saves models and subscriptions as commits to a catalog repository,
 value another environment changes: it appears in the two AppProjects and the three ApplicationSets in
 `hub/catalog-*`, and in the console's `apps/console/application.yaml`.
 
-The `catalog-*` files in `hub/` deliver it to the clusters Placement `acm-models-catalog` selects (ClusterSet
-`global`; narrow it with predicates):
+The `catalog-*` files in `hub/` deliver it to AI Grid spokes by role (Placements in `apps/ai-grid-spokes`):
 
 | Catalog path | ApplicationSet | Namespace | Clusters |
 |---|---|---|---|
-| `catalog/clusters/<cluster>/` | `acm-models-catalog-models` | `ai-grid-internal-models` | Each selected cluster that has a folder: the folder names are where models run |
-| `catalog/ingress/` | `acm-models-catalog-ingress` | `models-as-a-service` | Each selected cluster, once the folder exists |
-| `catalog/subscriptions/` | `acm-models-catalog-subscriptions` | `models-as-a-service` | Each selected cluster, once the folder exists |
+| `catalog/clusters/<cluster>/` | `acm-models-catalog-models` | `ai-grid-internal-models` | Each `inference` or `combined` spoke that has a folder: the folder names are where models run |
+| `catalog/ingress/` | `acm-models-catalog-ingress` | `models-as-a-service` | Each `ingress` or `combined` spoke, once the folder exists |
+| `catalog/subscriptions/` | `acm-models-catalog-subscriptions` | `models-as-a-service` | Each `ingress` or `combined` spoke, once the folder exists |
 
 An empty catalog repository generates no Applications, so it shows no errors before the console's first write.
 
