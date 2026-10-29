@@ -8,13 +8,15 @@ metadata:
 spec:
   clusterSets:
     - global
-  # Skip hosted control plane clusters (ROSA HCP, HyperShift). Their
-  # openshift-config/pull-secret is owned by the management cluster, which
-  # reverts every write, and their ImageDigestMirrorSets are denied by a
-  # ValidatingAdmissionPolicy, so the Policy can only loop or fail there.
+  # Grid spokes, plus the hub: the hub's grid enrollment pulls an unreleased
+  # registry.redhat.io/rhoai image through this Policy's mirror and pull secret.
+  # Predicates are ORed. Clusters outside the grid get nothing.
   predicates:
     - requiredClusterSelector:
-        claimSelector:
-          matchExpressions:
-            - key: hostedcluster.hypershift.openshift.io
-              operator: DoesNotExist
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            local-cluster: "true"
