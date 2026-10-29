@@ -29,6 +29,24 @@ spec:
   variables:
     - kind: ListVariable
       spec:
+        name: cluster_name
+        display:
+          name: "Cluster"
+        allowMultiple: true
+        allowAllValue: true
+        customAllValue: ".*"
+        defaultValue: "$__all"
+        plugin:
+          kind: LokiLabelValuesVariable
+          spec:
+            datasource:
+              kind: LokiDatasource
+              name: usage-logs-all
+            labelName: cluster_name
+            matchers:
+              - '{service_name="models-as-a-service", cluster_name!="-"}'
+    - kind: ListVariable
+      spec:
         name: user
         display:
           name: "User"
@@ -145,7 +163,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum(sum_over_time({service_name="models-as-a-service",
-                    subscription=~"$subscription", model=~"$model", response_type="hit"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", model=~"$model", response_type="hit"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -179,7 +197,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum(count_over_time({service_name="models-as-a-service",
-                    subscription=~"$subscription", subscription!="-", model=~"$model"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -212,7 +230,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum(count_over_time({service_name="models-as-a-service",
-                    subscription=~"$subscription", model=~"$model", response_type="rate_limit"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", model=~"$model", response_type="rate_limit"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -246,7 +264,7 @@ spec:
                     (
                       (
                         sum(count_over_time({service_name="models-as-a-service",
-                        subscription=~"$subscription", subscription!="-",model=~"$model", response_type="hit"}
+                        cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-",model=~"$model", response_type="hit"}
                         | user_id=~"$user"
                         | label_format api_key="{{.key_name}} ({{.user_id}})"
                         | label_format __ak_sel="${api_key:regexliteral}"
@@ -256,7 +274,7 @@ spec:
                       )
                       /
                       sum(count_over_time({service_name="models-as-a-service",
-                      subscription=~"$subscription", subscription!="-", model=~"$model"}
+                      cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                       | user_id=~"$user"
                       | label_format api_key="{{.key_name}} ({{.user_id}})"
                       | label_format __ak_sel="${api_key:regexliteral}"
@@ -289,7 +307,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     count(sum by (user_id) (count_over_time({service_name="models-as-a-service",
-                    subscription=~"$subscription", model=~"$model"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -338,7 +356,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum by (${view_by:raw}) (sum_over_time({service_name="models-as-a-service",
-                    subscription=~"$subscription", model=~"$model", response_type="hit"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", model=~"$model", response_type="hit"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -427,7 +445,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum by (user_id, model, subscription, organization_id, cost_center) (sum_over_time(
-                    {service_name="models-as-a-service", subscription=~"$subscription", subscription!="-", model=~"$model"}
+                    {service_name="models-as-a-service", cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -447,7 +465,7 @@ spec:
                   query: >-
                     sum by (user_id, model, subscription, organization_id, cost_center) (sum_over_time(
                     {service_name="models-as-a-service",
-                    subscription=~"$subscription", subscription!="-", model=~"$model"}
+                    cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -466,7 +484,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum by (user_id, model, subscription, organization_id, cost_center) (sum_over_time(
-                    {service_name="models-as-a-service", subscription=~"$subscription", subscription!="-", model=~"$model"}
+                    {service_name="models-as-a-service", cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
@@ -485,7 +503,7 @@ spec:
                     name: usage-logs-all
                   query: >-
                     sum by (user_id, model, subscription, organization_id, cost_center) (sum_over_time(
-                    {service_name="models-as-a-service", subscription=~"$subscription", subscription!="-", model=~"$model"}
+                    {service_name="models-as-a-service", cluster_name=~"$cluster_name", subscription=~"$subscription", subscription!="-", model=~"$model"}
                     | user_id=~"$user"
                     | label_format api_key="{{.key_name}} ({{.user_id}})"
                     | label_format __ak_sel="${api_key:regexliteral}"
