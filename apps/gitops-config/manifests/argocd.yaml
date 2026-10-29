@@ -107,6 +107,30 @@ spec:
           hs.message = "Waiting for DataScienceCluster status"
           return hs
         end
+        -- Interim: an AIGateway with only aiGrid (an inference-only spoke) has no
+        -- Deployments of its own and reports "0/0 deployments ready" forever
+        -- (ai-gateway-operator aigateway.go), which keeps the DSC Not Ready and
+        -- its observedGeneration behind. When that is the only failing module,
+        -- the DSC is as ready as it gets: report Healthy and say why.
+        local modules = nil
+        local aigw = nil
+        local components = nil
+        for _, condition in ipairs(obj.status.conditions) do
+          if condition.type == "ModulesReady" then modules = condition end
+          if condition.type == "AIGatewayReady" then aigw = condition end
+          if condition.type == "ComponentsReady" then components = condition end
+        end
+        if obj.status.phase == "Not Ready" and obj.status.errorMessage == nil
+          and modules ~= nil and modules.status == "False"
+          and modules.message == "Some modules are not ready: aigateway"
+          and aigw ~= nil and aigw.status == "False"
+          and aigw.reason == "DeploymentsNotReady"
+          and aigw.message == "0/0 deployments ready"
+          and (components == nil or components.status ~= "False") then
+          hs.status = "Healthy"
+          hs.message = "Ready except AIGateway 0/0 deployments ready (aiGrid only), treated as ready"
+          return hs
+        end
         if obj.metadata.generation ~= nil and obj.status.observedGeneration ~= nil and obj.status.observedGeneration < obj.metadata.generation then
           hs.status = "Progressing"
           hs.message = "Waiting for the current DataScienceCluster generation"
