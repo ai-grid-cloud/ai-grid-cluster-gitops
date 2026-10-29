@@ -61,7 +61,9 @@ metadata:
 placementRef:
   apiGroup: cluster.open-cluster-management.io
   kind: Placement
-  name: ai-grid-policies
+  # AI Grid sites only (apps/ai-grid-spokes): an unlabelled hub runs no
+  # OpenShift AI and isn't provisioned.
+  name: ai-grid-spokes
 subjects:
   - apiGroup: policy.open-cluster-management.io
     kind: Policy

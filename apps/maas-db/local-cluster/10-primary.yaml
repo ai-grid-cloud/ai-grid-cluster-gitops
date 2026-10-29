@@ -5,6 +5,9 @@ metadata:
   namespace: maas-db
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # The system of record for every tenant's API keys and subscriptions:
+    # deleting the Application, or pruning, never deletes it.
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   instances: 3
   certificates:
