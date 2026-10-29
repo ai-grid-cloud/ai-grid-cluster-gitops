@@ -16,8 +16,9 @@ echo "Waiting for OpenShift GitOps CRDs..."
 wait_for_crd() {
   local crd="$1"
   for _ in $(seq 1 120); do
-    if oc get "customresourcedefinitions.apiextensions.k8s.io/${crd}" >/dev/null 2>&1; then
-      oc wait --for=condition=Established "customresourcedefinitions.apiextensions.k8s.io/${crd}" --timeout=1m
+    # A just-created CRD has no status.conditions yet, which oc wait reports as an error.
+    if oc get "customresourcedefinitions.apiextensions.k8s.io/${crd}" >/dev/null 2>&1 &&
+      oc wait --for=condition=Established "customresourcedefinitions.apiextensions.k8s.io/${crd}" --timeout=1m 2>/dev/null; then
       return 0
     fi
     sleep 5
