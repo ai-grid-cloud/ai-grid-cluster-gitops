@@ -30,17 +30,24 @@ flowchart TD
 
 ## Installing Argo CD
 
-Argo CD runs on the hub and installs everything else from the tenant repo, ACM included. As cluster-admin on the hub:
+Argo CD runs on the hub and installs everything else from the tenant repo, ACM included. Argo syncs from git, so run it from your own fork. Point the fork's Argo sources at itself, once, and push:
+
+```bash
+git clone https://github.com/<you>/ai-grid-tenant.git
+cd ai-grid-tenant
+scripts/set-tenant-repo.sh https://github.com/<you>/ai-grid-tenant.git main
+git commit -am "Point Argo at this fork" && git push
+```
+
+Then, as cluster-admin on the hub:
 
 ```bash
 oc login --server=https://api.<hub-cluster-domain>:6443 -u <cluster-admin>
-git clone https://github.com/kahowell/ai-grid-tenant.git
-cd ai-grid-tenant
 export RHOAI_QUAY_PULL_SECRET=<base64 of user:password for quay.io/rhoai>
 ./bootstrap.sh
 ```
 
-bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from main.
+bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
 
 ## Installing ACM
 
