@@ -8,3 +8,13 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Skip hosted control plane clusters (ROSA HCP, HyperShift). Their
+  # openshift-config/pull-secret is owned by the management cluster, which
+  # reverts every write, and their ImageDigestMirrorSets are denied by a
+  # ValidatingAdmissionPolicy, so the Policy can only loop or fail there.
+  predicates:
+    - requiredClusterSelector:
+        claimSelector:
+          matchExpressions:
+            - key: hostedcluster.hypershift.openshift.io
+              operator: DoesNotExist
