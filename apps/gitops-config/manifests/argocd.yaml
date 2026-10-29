@@ -6,13 +6,15 @@ metadata:
 spec:
   # The controller now caches both the in-cluster destination and the
   # GitOpsCluster proxy destination; 4 GiB is not enough during startup and
-  # fan-out reconciliation.
+  # fan-out reconciliation. A dedicated hub with several sites and catalog
+  # Applications needs more: 8 GiB was OOMKilled on demo1 (four managed
+  # clusters, ~40 Applications) while rebuilding its cache after a restart.
   controller:
     resources:
       requests:
         memory: 2Gi
       limits:
-        memory: 8Gi
+        memory: 16Gi
   # RedisReplication is intentionally omitted because the Redis operator does
   # not currently populate a resource status for Argo to evaluate.
   resourceHealthChecks:
