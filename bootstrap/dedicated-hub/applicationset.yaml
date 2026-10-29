@@ -1,0 +1,38 @@
+# Root ApplicationSet for a hub that runs no Grid or RHOAI workloads.
+# Install it with BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    applicationsSync: sync
+    preserveResourcesOnDeletion: false
+  generators:
+    - git:
+        repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        revision: HEAD
+        files:
+          - path: apps/acm/application.yaml
+          - path: apps/cert-manager/application.yaml
+          - path: apps/gitops-config/application.yaml
+          - path: apps/grid-bootstrap/application.yaml
+  template:
+    metadata:
+      name: '{{.metadata.name}}'
+      namespace: '{{.metadata.namespace}}'
+    spec:
+      project: '{{.spec.project}}'
+      destination:
+        server: '{{.spec.destination.server}}'
+        namespace: '{{.spec.destination.namespace}}'
+  # ACM observability needs object storage and Submariner needs a site.
+  templatePatch: |
+    {{- $spec := .spec }}
+    {{- if eq .metadata.name "acm" }}
+    {{- $_ := set $spec.source "path" "apps/acm/manifests/core" }}
+    {{- end }}
+    spec: {{ $spec | toJson }}

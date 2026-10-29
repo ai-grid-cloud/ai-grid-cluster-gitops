@@ -102,6 +102,20 @@ The hub is a site only if labelled. Proposed: managedClusters.includeHub, defaul
 
 Verify: membership policies Compliant, each member's GridNetwork Active with the grid ID.
 
+## Dedicated hub
+
+A dedicated hub runs ACM, cert-manager and grid-enrollment, and no Grid or RHOAI workloads. Bootstrap it with the dedicated-hub profile:
+
+```bash
+BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh
+```
+
+Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, cert-manager, gitops-config and grid-bootstrap. ACM gets [core](../../../apps/acm/manifests/core) only, since observability needs object storage and Submariner needs a site. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
+
+grid-bootstrap still needs ClusterSet global bound into redhat-ai-grid, which the RHOAI app does today. Until grid-bootstrap takes that binding over, set managedClusters.createClusterSetBinding to true in its values on a dedicated hub. A new grid also sets external.certManager.ca.mode to Generate.
+
+The bootstrap does not seed the RHOAI Quay Secret, because a dedicated hub delivers nothing to spokes yet.
+
 ## Grid ID
 
 Source: the hub ConfigMap. Copy: each cluster's GridNetwork spec.gridId, immutable. Consumers read the local GridNetwork. Back up the ConfigMap with the CA. Under Local it only gates readiness.

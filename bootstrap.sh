@@ -2,6 +2,12 @@
 set -e
 # Bootstrap a cluster to be managed by this repo
 # Per https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.22/html/installing_gitops/installing-openshift-gitops#installing-gitops-operator-using-cli_installing-openshift-gitops
+# BOOTSTRAP_PROFILE=dedicated-hub installs a hub that runs no Grid or RHOAI workloads.
+profile="${BOOTSTRAP_PROFILE:-}"
+case "$profile" in
+  ""|dedicated-hub) ;;
+  *) echo "ERROR: unknown BOOTSTRAP_PROFILE ${profile}." >&2; exit 1 ;;
+esac
 oc apply -f bootstrap/namespace.yaml
 oc apply -f bootstrap/gitops-operator-group.yaml
 oc apply -f bootstrap/openshift-gitops-sub.yaml
@@ -23,10 +29,12 @@ wait_for_crd() {
 wait_for_crd applications.argoproj.io
 wait_for_crd applicationsets.argoproj.io
 
-oc apply -f bootstrap/applicationset.yaml
+oc apply -f "bootstrap/${profile:+${profile}/}applicationset.yaml"
 oc apply -f bootstrap/openshift-gitops-admin.yaml
 oc patch consoles.operator.openshift.io cluster --patch '{ "spec": { "plugins": ["gitops-plugin"] } }' --type=merge
 
 # Seed only the hub-side Quay credential. The rhoai-prerequisites ACM app
 # distributes the registry mirror and pull secret to every managed cluster.
-bash apps/rhoai-prerequisites/create-hub-secret.sh
+if [ -z "$profile" ]; then
+  bash apps/rhoai-prerequisites/create-hub-secret.sh
+fi
