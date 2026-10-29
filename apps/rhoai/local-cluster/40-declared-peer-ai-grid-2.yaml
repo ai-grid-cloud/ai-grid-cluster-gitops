@@ -9,17 +9,26 @@ metadata:
   name: ai-grid-2
   labels:
     grid.hexfusion.io/declared-peer: "true"
+    # The provider console's InferenceProviders for models on ai-grid-2
+    # select their site by this label (catalog/models/<id>/catalog/grid.yaml).
+    ai-grid/site: ai-grid-2
   annotations:
     argocd.argoproj.io/sync-wave: "6"
 spec:
   gridNetworkRef: grid
 ---
 # clusterName is the candidate's cluster, and matches the backend the consumer
-# gateway declares for this peer.
+# gateway declares for this peer. Named and labelled as the provider console
+# writes its per-site providers (grid-<model>-at-<cluster>, ai-grid/model,
+# the ai-grid/site selector, a placeholder endpoint: the consumer routes by
+# clusterName and nothing probes it), so the catalog admission rules
+# (apps/rhoai/catalog-admission) admit it with no exemption.
 apiVersion: grid.praxis.fast/v1alpha1
 kind: InferenceProvider
 metadata:
-  name: peer-ai-grid-2-opt-125m
+  name: grid-facebook-opt-125m-at-ai-grid-2
+  labels:
+    ai-grid/model: facebook-opt-125m
   annotations:
     argocd.argoproj.io/sync-wave: "6"
 spec:
@@ -27,10 +36,10 @@ spec:
   providerKind: vllm
   backendKind: local_model
   clusterName: peer-ai-grid-2
-  endpoint: https://ai-grid-2.apps.ai-grid-2-pool-mk8j5.aws.rh-ods.com:443/v1
+  endpoint: https://peer-ai-grid-2.grid.internal/v1
   siteSelector:
     matchLabels:
-      grid.hexfusion.io/declared-peer: "true"
+      ai-grid/site: ai-grid-2
   models:
     - name: facebook-opt-125m
       capabilities:

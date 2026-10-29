@@ -1,0 +1,60 @@
+# The models Gateway on each cluster: the one backend the grid provider
+# gateway forwards to (apps/rhoai/provider-gateway-<cluster>.yaml), and the
+# consumer's local-models backend (apps/rhoai/values-<cluster>.yaml). Each
+# model the provider console deploys adds an HTTPRoute here
+# (catalog/models/<id>/deployment/grid.yaml), and each sample model has a
+# static one (apps/acm-models/<model>/20-grid-route.yaml), matched on the
+# model name the ingress consumer puts in X-Gateway-Model-Name, to the
+# model's InferencePool, so the model's own scheduler picks the pod.
+#
+# Unlike openshift-ai-inference, it has no AuthPolicy: the provider gateway
+# can't present a Kubernetes token. So it is ClusterIP only, and the
+# NetworkPolicy below admits only the grid's gateway pods (the provider, and
+# on a combined spoke the consumer's local-models backend), on port 80. Only
+# routes in ai-grid-internal-models attach, and there the catalog admission
+# rules (apps/rhoai/catalog-admission) hold Argo CD's routes to one model
+# each; KServe's own routes attach to openshift-ai-inference, not here.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ai-grid-models
+  namespace: openshift-ingress
+  annotations:
+    networking.istio.io/service-type: ClusterIP
+spec:
+  gatewayClassName: openshift-ai-inference
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-grid-internal-models
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-grid-models-gateway
+  namespace: openshift-ingress
+spec:
+  podSelector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: ai-grid-models
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        # The grid's gateways (praxis-gateway): the provider gateway, and the
+        # consumer gateway's local-models backend on a combined spoke.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: redhat-ai-grid
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: praxis-gateway
+              app.kubernetes.io/component: gateway
+      ports:
+        - port: 80
+          protocol: TCP

@@ -23,6 +23,10 @@ spec:
         valuesObject:
           # By digest: tags can be overwritten. Console and chart are main
           # 49ba2ac, backend main 3deed95.
+          # TODO(grid routing, before merge): pin the backend to the sha-
+          # image from ai-grid-provider-backend main once PR 47 (route each
+          # model through the grid by id) merges; 3deed95 writes no routing
+          # files, so console-deployed models stay unroutable until then.
           images:
             console:
               tag: sha-49ba2ac3cad3af5ac65797840a0df5a55570bd38

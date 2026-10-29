@@ -16,17 +16,25 @@ praxisConfig:
       mode: spiffe
       spiffeIds:
         - spiffe://grid.internal/site/ai-grid-2
+    # The one backend is the models Gateway (apps/rhoai/grid-models), which
+    # routes each call by X-Gateway-Model-Name to the model's InferencePool:
+    # the sample models' static routes and the provider console's per-model
+    # routes. So every model on this cluster is served to peers, not only
+    # facebook-opt-125m.
     backends:
       - cluster: local-model
         endpoints:
-          - facebook-opt-125m-kserve-workload-svc.ai-grid-internal-models.svc.cluster.local.:8000
+          - ai-grid-models-openshift-ai-inference.openshift-ingress.svc.cluster.local.:80
         transport:
-          mode: tls
-          ca:
-            configMapName: openshift-service-ca.crt
-            key: service-ca.crt
+          mode: plaintext
         # praxis refuses a name that resolves to a private address.
         trustPrivate: true
+        # Plaintext to a cluster-local Service this deployment owns: the
+        # Gateway has no TLS listener, and the call never leaves the cluster.
+        allowPlaintextTrust: true
+        # The Gateway answers /health with 404, so probe the port.
+        healthCheck:
+          type: tcp
 gridIdentity:
   tlsSecretName: grid-site-identity
   caSecretName: grid-ca

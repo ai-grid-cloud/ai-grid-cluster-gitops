@@ -5,6 +5,18 @@ praxis-gateway:
   praxisConfig:
     render:
       backends:
+        # The provider console's models on this cluster: their InferenceProvider
+        # grid-<id>-local names this backend, and the models Gateway routes
+        # each by name (apps/rhoai/grid-models).
+        - cluster: local-models
+          endpoints:
+            - ai-grid-models-openshift-ai-inference.openshift-ingress.svc.cluster.local.:80
+          transport:
+            mode: plaintext
+          trustPrivate: true
+          allowPlaintextTrust: true
+          healthCheck:
+            type: tcp
         - cluster: grid-ai-grid-internal-models-faa71e071b1706382d340721b3ef0dccc5
           endpoints:
             - facebook-opt-125m-kserve-workload-svc.ai-grid-internal-models.svc.cluster.local.:8000
