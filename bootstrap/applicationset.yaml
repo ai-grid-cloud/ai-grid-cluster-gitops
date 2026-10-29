@@ -11,7 +11,7 @@ spec:
     preserveResourcesOnDeletion: false
   generators:
     - git:
-        repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
         revision: HEAD
         files:
           - path: apps/*/application.yaml
@@ -42,4 +42,4 @@ spec:
   # @templateRepoURL@ (so a deployment's app files don't name a fork),
   # replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson | replace "@templateRepoURL@" "https://github.com/kahowell/ai-grid-tenant.git" | replace "@deploymentRepoURL@" "${DEPLOYMENT_REPO_URL}" | replace "@deploymentRevision@" "${DEPLOYMENT_REVISION}" | replace "@deploymentPath@" "${DEPLOYMENT_PATH}" | replace "@catalogRepoURL@" "${CATALOG_REPO_URL}" | replace "@catalogRevision@" "${CATALOG_REVISION}" }}
+    spec: {{ .spec | toJson | replace "@templateRepoURL@" "https://github.com/ai-grid-cloud/ai-grid-tenant.git" | replace "@deploymentRepoURL@" "${DEPLOYMENT_REPO_URL}" | replace "@deploymentRevision@" "${DEPLOYMENT_REVISION}" | replace "@deploymentPath@" "${DEPLOYMENT_PATH}" | replace "@catalogRepoURL@" "${CATALOG_REPO_URL}" | replace "@catalogRevision@" "${CATALOG_REVISION}" }}

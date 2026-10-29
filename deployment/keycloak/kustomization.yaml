@@ -1,6 +1,6 @@
 # This deployment's Keycloak: the template's apps/keycloak plus its realms.
 # Another deployment's repository names the template remotely, for example
-# https://github.com/kahowell/ai-grid-tenant//apps/keycloak?ref=cloud-provider.
+# https://github.com/ai-grid-cloud/ai-grid-tenant//apps/keycloak?ref=cloud-provider.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: maas-db
