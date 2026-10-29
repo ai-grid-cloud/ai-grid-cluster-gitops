@@ -23,3 +23,22 @@ praxis-gateway:
             - ai-grid-2.apps.ai-grid-2-pool-mk8j5.aws.rh-ods.com:443
           transport:
             mode: mutual_tls
+# The grid scrapes this cluster's llm-d EPP metrics over plain HTTP, because the
+# EPP's metrics port has no TLS here. The credential is a short-lived TokenRequest
+# token for grid-operator-metrics-scraper, which may only get the nonResourceURL
+# /metrics (not grid-model-client's). Per cluster, not in values.yaml, so a new
+# deployment doesn't inherit it. Remove once the EPP serves metrics over TLS and
+# odh-model-controller switches to https.
+components:
+  kserve:
+    gateway:
+      annotations:
+        grid.opendatahub.io/serving: >-
+          {
+            "networkName": "grid",
+            "namespace": "redhat-ai-grid",
+            "serviceAccount": "grid-model-client",
+            "tokenSecret": "grid-model-client-token",
+            "publishMetrics": true,
+            "metricsAllowPlaintext": true
+          }
