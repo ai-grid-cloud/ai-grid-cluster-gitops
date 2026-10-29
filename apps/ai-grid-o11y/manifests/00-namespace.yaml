@@ -1,0 +1,7 @@
+# The usage-logs Perses dashboard and datasource live here; CreateNamespace covers only the destination namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-grid-o11y
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
