@@ -8,6 +8,25 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Clusters given an AI Grid role, plus the hub: the hub's grid enrollment
+  # pulls an unreleased registry.redhat.io/rhoai image through this Policy's
+  # mirror and pull secret. Predicates are ORed. Other clusters get nothing.
+  # Keyed on the role, not ai-grid/enabled: a console Remove drops only
+  # ai-grid/enabled and keeps the site's OpenShift AI (the rhoai ApplicationSet
+  # preserves it), which still needs the mirror. The mirror's ConfigurationPolicy
+  # prunes with DeleteAll, so leaving this Placement deletes the site's
+  # ImageDigestMirrorSet; the Machine Config Operator's special handling of
+  # registries.conf can drain the site's nodes when a mirror is removed.
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchExpressions:
+            - key: ai-grid/role
+              operator: Exists
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            local-cluster: "true"
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -19,10 +38,14 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Clusters given an AI Grid role, other than the hub (see the Placement
+  # above for why the role, not ai-grid/enabled); other clusters get nothing.
   predicates:
     - requiredClusterSelector:
         labelSelector:
           matchExpressions:
+            - key: ai-grid/role
+              operator: Exists
             - key: name
               operator: NotIn
               values:
