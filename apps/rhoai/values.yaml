@@ -47,12 +47,10 @@ services:
       managementState: Managed
       # Minimal dev config: metrics need storage size; traces require a
       # storage backend (pv = ephemeral-ish local dev storage, no S3 needed).
+      # ACM reads the collector's own prometheus exporter, so no extra exporter here.
       metrics:
         storage:
           size: 20Gi
-        exporters:
-          prometheus/rhacm:
-            endpoint: 0.0.0.0:8890
       traces:
         storage:
           backend: pv

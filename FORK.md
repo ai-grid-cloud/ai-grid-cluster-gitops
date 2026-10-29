@@ -5,7 +5,7 @@
 plus the commits listed here. It's rebased onto `main`, never merged, and each
 commit explains itself, so it can be offered upstream or dropped on its own.
 
-Base: `kahowell/main` `1dd85b5` (2026-10-29).
+Base: `kahowell/main` `1dd85b5` (2026-10-29), plus kahowell `d541836` (#114) picked ahead of the next rebase.
 
 Our demo hub (`demo1`) runs this branch with its cluster values and the
 provider console's catalog in

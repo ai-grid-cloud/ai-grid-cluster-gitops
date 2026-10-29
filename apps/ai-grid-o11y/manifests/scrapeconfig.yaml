@@ -14,6 +14,5 @@ spec:
   scheme: HTTP
   staticConfigs:
     - targets:
-        # The Service serving 8890 is data-science-collector-monitoring; the name
-        # with the extra -collector does not exist, so this job delivered nothing.
-        - data-science-collector-monitoring.redhat-ods-monitoring.svc:8890
+        # RHOAI's own exporter for the scrape and OTLP pipelines.
+        - data-science-collector-prometheus.redhat-ods-monitoring.svc:8889
