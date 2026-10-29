@@ -46,8 +46,9 @@ cluster Secrets with the `apps.open-cluster-management.io/acm-cluster: "true"`
 label. After pushing the app, Argo CD syncs `maas-db` automatically. The
 ApplicationSet creates:
 
-- `maas-db-local-cluster` for the writable primary, while the hub is an AI Grid
-  site (`ai-grid/enabled=true`).
+- `maas-db-local-cluster` for the writable primary, on the hub whatever its
+  labels. Its CloudNativePG `Cluster` carries `argocd.argoproj.io/sync-options:
+  Delete=false`, so deleting the Application never deletes the database.
 - One `maas-db-<cluster-name>` Application for each other site that runs
   `maas-api`: role ingress or combined (`apps/ai-grid-spokes`).
 
@@ -58,7 +59,9 @@ runs on every such site, the hub included, and creates or updates the
 
 Unlike `rhoai`, the ApplicationSet doesn't preserve resources on deletion: a
 replica is a full copy of every tenant's API keys and subscriptions, so a site
-that leaves the grid, or the ingress role, loses it with its Application.
+that leaves the grid, or the ingress role, loses it with its Application. The
+primary is the exception above: removing the hub from the grid never touches
+it.
 
 Keep the API-credential policy enabled only after the writable primary and
 local read endpoint have passed validation. If an older PostgreSQL instance is
