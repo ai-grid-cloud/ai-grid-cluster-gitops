@@ -1,0 +1,162 @@
+# AI Grid spokes are ManagedClusters labelled ai-grid/enabled=true with an
+# ai-grid/role, which picks the work:
+#   ingress    MaaS, the portal and the grid consumer gateway; no models
+#   inference  models and the grid provider gateway; no MaaS
+#   combined   both
+# A hub that isn't labelled is only the hub: ACM, Argo CD, grid enrollment and
+# the deployment's optional apps, with no OpenShift AI.
+#
+# ApplicationSets read these Placements' decisions live
+# (clusterDecisionResource), never the labels on Argo CD's cluster Secret alone:
+# ACM adds and updates those labels but never removes one, so an unlabelled
+# cluster would keep its apps. Tolerations keep a briefly unreachable spoke
+# selected, so a network blip removes nothing.
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-spokes
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, inference, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-ingress
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-inference
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [inference, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-spokes
+  namespace: ai-grid-policies
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, inference, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-ingress
+  namespace: ai-grid-policies
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: ai-grid-inference
+  namespace: ai-grid-policies
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterSets:
+    - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [inference, combined]
+  tolerations:
+    - key: cluster.open-cluster-management.io/unreachable
+      operator: Exists
+    - key: cluster.open-cluster-management.io/unavailable
+      operator: Exists

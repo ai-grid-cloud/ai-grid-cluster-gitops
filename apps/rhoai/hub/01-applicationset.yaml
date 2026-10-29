@@ -1,8 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # Generates one Application for every cluster secret created by the shared
-  # GitOpsCluster integration, including local-cluster.
+  # One Application per AI Grid site: a ManagedCluster labelled
+  # ai-grid/enabled=true with an ai-grid/role (apps/ai-grid-spokes). The role
+  # picks a values layer (apps/rhoai/roles). A hub left unlabelled runs no
+  # OpenShift AI.
   name: rhoai
   namespace: openshift-gitops
   annotations:
@@ -14,12 +16,29 @@ spec:
     preserveResourcesOnDeletion: true
   goTemplateOptions: ["missingkey=error"]
   generators:
-    - clusters:
-        selector:
-          matchLabels:
-            apps.open-cluster-management.io/acm-cluster: "true"
-            # A cluster gets RHOAI by joining the grid.
-            ai-grid/enabled: "true"
+    # The Placement's decisions, read live, joined with Argo CD's cluster Secret
+    # for the server and labels. Not the Secret's labels alone: when a cluster
+    # leaves the Placement, the GitOpsCluster neither deletes its Secret nor
+    # removes the labels, so an unlabelled cluster would keep its Application.
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-spokes
+              requeueAfterSeconds: 60
+          - clusters:
+              # The role too: membership comes from the Placement, but the role
+              # is read from this Secret, which ACM labels a moment later.
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
   template:
     metadata:
       name: 'rhoai-{{ .name | trunc 34 }}-{{ sha256sum .name | trunc 8 }}'
@@ -53,6 +72,8 @@ spec:
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
+              # The site's role (ai-grid/role): ingress, inference or combined.
+              - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
               - $deployment/{{ .values.deploymentPath }}/rhoai.yaml
               - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/rhoai.yaml
             parameters:

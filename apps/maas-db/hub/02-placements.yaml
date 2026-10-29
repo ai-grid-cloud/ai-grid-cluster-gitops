@@ -1,6 +1,7 @@
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
 metadata:
+  # The spokes that run maas-api: ingress and combined (apps/ai-grid-spokes).
   name: maas-db-clusters
   namespace: maas-db
   annotations:
@@ -8,6 +9,15 @@ metadata:
 spec:
   clusterSets:
     - global
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
+          matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, combined]
 ---
 apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: Placement
@@ -19,10 +29,16 @@ metadata:
 spec:
   clusterSets:
     - global
+  # Those of them that aren't the hub, which holds the primary.
   predicates:
     - requiredClusterSelector:
         labelSelector:
+          matchLabels:
+            ai-grid/enabled: "true"
           matchExpressions:
+            - key: ai-grid/role
+              operator: In
+              values: [ingress, combined]
             - key: name
               operator: NotIn
               values:

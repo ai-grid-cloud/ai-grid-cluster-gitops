@@ -12,12 +12,36 @@ spec:
     preserveResourcesOnDeletion: true
   goTemplateOptions: ["missingkey=error"]
   generators:
+    # The primary on the hub, whether or not the hub is an AI Grid spoke.
     - clusters:
         selector:
           matchLabels:
             apps.open-cluster-management.io/acm-cluster: "true"
-            # A cluster gets RHOAI by joining the grid.
-            ai-grid/enabled: "true"
+            name: local-cluster
+    # A read replica on every other spoke that runs MaaS: ingress and combined
+    # (apps/ai-grid-spokes).
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-ingress
+              requeueAfterSeconds: 60
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+                matchExpressions:
+                  - key: name
+                    operator: NotIn
+                    values:
+                      - local-cluster
+                  # As in the rhoai ApplicationSet: wait for the role on the Secret.
+                  - key: ai-grid/role
+                    operator: In
+                    values: [ingress, inference, combined]
   template:
     metadata:
       name: 'maas-db-{{.name}}'

@@ -137,6 +137,33 @@ spec:
                         - namespaceSelector:
                             matchLabels:
                               kubernetes.io/metadata.name: openshift-ingress
+            # The model namespace admits the three monitoring namespaces on the
+            # scheduler and engine metrics ports, and the fleet collector is not
+            # one of them. Policies are additive, so this complements the one
+            # KServe renders.
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: allow-acm-pool-metrics
+                  namespace: ai-grid-internal-models
+                  labels:
+                    app.kubernetes.io/component: user-workload-metrics-collector
+                spec:
+                  podSelector: {}
+                  policyTypes:
+                    - Ingress
+                  ingress:
+                    - from:
+                        - namespaceSelector:
+                            matchLabels:
+                              kubernetes.io/metadata.name: open-cluster-management-agent-addon
+                      ports:
+                        - port: 9090
+                          protocol: TCP
+                        - port: 8000
+                          protocol: TCP
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1

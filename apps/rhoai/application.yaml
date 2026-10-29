@@ -11,7 +11,7 @@ spec:
     repoURL: https://github.com/kahowell/ai-grid-tenant.git
     targetRevision: HEAD
     path: apps/rhoai/hub
-    # The nested ApplicationSet reads cluster values from the deployment
+    # The nested ApplicationSets read cluster values from the deployment
     # repository. The root ApplicationSet fills these tokens in, and the
     # generator's values hand them to the template as .values.*.
     kustomize:
@@ -22,7 +22,7 @@ spec:
             name: rhoai
           patch: |-
             - op: add
-              path: /spec/generators/0/clusters/values
+              path: /spec/generators/0/matrix/generators/1/clusters/values
               value:
                 deploymentRepoURL: '@deploymentRepoURL@'
                 deploymentRevision: '@deploymentRevision@'
