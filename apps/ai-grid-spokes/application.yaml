@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
     targetRevision: HEAD
     path: apps/ai-grid-spokes/manifests
   destination:

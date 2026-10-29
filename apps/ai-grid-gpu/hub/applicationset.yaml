@@ -48,11 +48,11 @@ spec:
             releaseName: rhai-gpu
             valueFiles:
               - $values/apps/ai-grid-gpu/values.yaml
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           ref: values
         # The NodeFeatureDiscovery and ClusterPolicy, once their CRDs exist.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/ai-grid-gpu/crs
       destination:

@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
       targetRevision: HEAD
       path: apps/rhoai/hub
       # The nested ApplicationSets read cluster values from the deployment

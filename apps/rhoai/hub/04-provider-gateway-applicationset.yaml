@@ -63,7 +63,7 @@ spec:
         # The models Gateway the provider gateway forwards to, which routes
         # each model by name (apps/rhoai/grid-models/gateway.yaml). Where a
         # cluster has a provider gateway, it has this Gateway too.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/grid-models
       # Same destination rule as the rhoai Applications: the hub through Argo's in-cluster server.

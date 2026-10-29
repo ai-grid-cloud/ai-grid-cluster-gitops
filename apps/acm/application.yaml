@@ -10,12 +10,12 @@ spec:
   # acm-observability: a hub can already have ACM, and its observability needs
   # object storage. This app keeps the policy add-ons and Submariner.
   sources:
-    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
       targetRevision: HEAD
       path: apps/acm/manifests/core
       directory:
         include: policy-addons.yaml
-    - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
       targetRevision: HEAD
       path: apps/acm/manifests/submariner
   destination:

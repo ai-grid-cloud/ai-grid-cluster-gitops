@@ -47,7 +47,7 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           ref: values
         # Temporary v0.3.0-rc.2 schemas until the RHOAI manifest bundle catches up.
@@ -93,7 +93,7 @@ spec:
               - name: dependencies.clusterObservability.enabled
                 value: '{{ if eq .name "local-cluster" }}false{{ else }}auto{{ end }}'
         # The enrollment service runs on the hub, so a managed cluster excludes these.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/local-cluster
           directory:
@@ -107,10 +107,10 @@ spec:
         # Admission rules for the provider console's catalog routing objects
         # (apps/rhoai/catalog-admission/policies.yaml), on every spoke the
         # catalog reaches.
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/catalog-admission
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
           targetRevision: HEAD
           path: apps/rhoai/catalog
           helm:
