@@ -49,6 +49,15 @@ export RHOAI_QUAY_PULL_SECRET=<base64 of user:password for quay.io/rhoai>
 
 bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
 
+The root ApplicationSet is the one object Argo does not sync from Git. After a change to bootstrap/applicationset.yaml, or to bootstrap/dedicated-hub/applicationset.yaml on a dedicated hub, apply it again from the revision the hub tracks:
+
+```bash
+oc apply -f bootstrap/applicationset.yaml                 # combined hub
+oc apply -f bootstrap/dedicated-hub/applicationset.yaml   # dedicated hub
+```
+
+Every Application it generates syncs from Git on its own.
+
 ## Installing ACM
 
 Delivered by the acm Argo app ([apps/acm/manifests](../../../apps/acm/manifests), ACM 2.17.3), in namespace open-cluster-management:
