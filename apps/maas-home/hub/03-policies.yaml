@@ -4,7 +4,7 @@ apiVersion: policy.open-cluster-management.io/v1
 kind: Policy
 metadata:
   name: maas-home-keycloak-public-url
-  namespace: maas-db
+  namespace: maas-home
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
@@ -37,7 +37,7 @@ apiVersion: policy.open-cluster-management.io/v1
 kind: Policy
 metadata:
   name: maas-home-api-credentials
-  namespace: maas-db
+  namespace: maas-home
   annotations:
     argocd.argoproj.io/sync-wave: "3"
     policy.open-cluster-management.io/standards: NIST-CSF

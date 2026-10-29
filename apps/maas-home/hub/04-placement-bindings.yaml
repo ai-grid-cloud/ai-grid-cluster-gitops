@@ -2,7 +2,7 @@ apiVersion: policy.open-cluster-management.io/v1
 kind: PlacementBinding
 metadata:
   name: maas-home
-  namespace: maas-db
+  namespace: maas-home
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 placementRef:

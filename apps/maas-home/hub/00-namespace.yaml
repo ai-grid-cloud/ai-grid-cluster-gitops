@@ -1,0 +1,8 @@
+# Its own namespace, so nothing here is also tracked by the maas-db app if a
+# combined hub's root ApplicationSet ever generates this app.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: maas-home
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
