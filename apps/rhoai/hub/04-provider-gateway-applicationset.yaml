@@ -10,6 +10,10 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
+  # Same as the rhoai ApplicationSet: deleting an Application stops managing
+  # the site's provider gateway; it doesn't delete it.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   generators:
     - matrix:
         generators:

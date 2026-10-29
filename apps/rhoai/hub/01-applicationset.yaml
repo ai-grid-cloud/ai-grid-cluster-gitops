@@ -10,6 +10,12 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
+  # Deleting an Application stops managing a site; it doesn't uninstall it.
+  # Without this, the controller gives each Application the resources
+  # finalizer, and deleting one deletes OpenShift AI and everything else it
+  # installed on that cluster.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   generators:
     - clusters:
         selector:
