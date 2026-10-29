@@ -16,20 +16,20 @@ spec:
       # ValidatingAdmissionPolicy that Argo CD applies with cluster-admin
       # rights, so what runs here changes only by a reviewed commit. Bump it
       # with the images.
-      targetRevision: 823e25fafc2dd5ff4856cd0655a5ebf7365e1a1c
+      targetRevision: c93b16c7fc5eb676d1b6b07be4e3bf9eafbd03d4
       path: charts/ai-grid-provider-console
       helm:
         releaseName: ai-grid-provider-console
         valuesObject:
           # By digest: tags can be overwritten. Console and chart are main
-          # 823e25f (console #86), backend main 3deed95.
+          # c93b16c (console #86, #87), backend main 1141af0 (#47).
           images:
             console:
-              tag: sha-823e25fafc2dd5ff4856cd0655a5ebf7365e1a1c
-              digest: sha256:bae3e8121e2c8c4b0a154d27d9e9dc89c9d01f06ccf91f42645ec98d24a95f51
+              tag: sha-c93b16c7fc5eb676d1b6b07be4e3bf9eafbd03d4
+              digest: sha256:c13b2c33557d544f44ea170b0b0d9d043c95eb2d4c56b7381ffcd968478a4007
             backend:
-              tag: sha-3deed95ebfd1a92b177863bfbb3659e18881e117
-              digest: sha256:9ab357ce95bbda733ae8471904e0d59b371418ee852afdc39146cea566e61106
+              tag: sha-1141af02f5e0eee062b1c18da7f3e579a82d062c
+              digest: sha256:04e53a5a5f8ae8d75e9cb7b16117227d23aa77b1814524e682fb7817c3578559
             authProxy:
               tag: ""
               digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
