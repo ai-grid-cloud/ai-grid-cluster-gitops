@@ -4,7 +4,9 @@ metadata:
   name: maas-home
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "4"
+    # Before the Policies: they read the Route and Secrets this installs, and
+    # Argo stops at a Policy that can't comply yet.
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
