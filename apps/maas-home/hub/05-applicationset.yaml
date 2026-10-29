@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: maas-home
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  # The primary holds every tenant's API keys and subscriptions, so neither a
+  # label edit nor deleting this ApplicationSet removes what it installed.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          # The cluster Secret's labels, not a Placement's live decisions: ACM
+          # never removes a label from the Secret, so the home stays selected
+          # until someone deliberately moves it.
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  ai-grid/maas-home: "true"
+          # ServiceExports need Submariner, which only replicas on other sites use.
+          - list:
+              elements:
+                - component: external-secrets
+                  path: apps/external-secrets/manifests
+                  namespace: external-secrets-operator
+                  exclude: ""
+                  prune: "true"
+                - component: maas-db
+                  path: apps/maas-db/local-cluster
+                  namespace: maas-db
+                  exclude: 20-service-export.yaml
+                  prune: "false"
+                - component: keycloak
+                  path: apps/maas-home/keycloak
+                  namespace: maas-db
+                  exclude: ""
+                  prune: "true"
+                - component: limitador-redis
+                  path: apps/limitador-redis/manifests
+                  namespace: limitador-redis
+                  exclude: 06-service-export.yaml
+                  prune: "true"
+  template:
+    metadata:
+      name: 'maas-home-{{ .component }}-{{ .name | trunc 30 }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        targetRevision: HEAD
+        path: '{{ .path }}'
+      destination:
+        server: '{{ .server }}'
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        retry:
+          refresh: true
+          limit: 20
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 30m
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true
+  templatePatch: |
+    spec:
+      {{- if .exclude }}
+      source:
+        directory:
+          exclude: {{ .exclude | quote }}
+      {{- end }}
+      syncPolicy:
+        automated:
+          prune: {{ .prune }}
+          selfHeal: true
+      {{- if eq .component "limitador-redis" }}
+      ignoreDifferences:
+        - group: limitador.kuadrant.io
+          kind: Limitador
+          name: limitador
+          namespace: kuadrant-system
+          jsonPointers:
+            - /spec/limits
+            - /spec/metricLabelsDefault
+            - /status
+      {{- end }}
