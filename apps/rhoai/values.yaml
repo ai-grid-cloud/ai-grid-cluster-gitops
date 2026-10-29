@@ -64,7 +64,8 @@ components:
             "namespace": "redhat-ai-grid",
             "serviceAccount": "grid-model-client",
             "tokenSecret": "grid-model-client-token",
-            "publishMetrics": true
+            "publishMetrics": true,
+            "metricsAllowPlaintext": true
           }
       spec:
         listeners:
