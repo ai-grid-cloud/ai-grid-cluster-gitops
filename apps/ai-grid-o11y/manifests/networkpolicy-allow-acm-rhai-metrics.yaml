@@ -4,7 +4,7 @@
 # collector's metrics port.
 #
 # The ScrapeConfig rhai-metrics (open-cluster-management-observability)
-# federates from data-science-collector-collector.redhat-ods-monitoring.svc:8890
+# federates from data-science-collector-prometheus.redhat-ods-monitoring.svc:8889
 #
 # NetworkPolicies are additive, so this complements rather than overrides
 # the operator-managed policy and will not be reconciled away.
@@ -28,5 +28,5 @@ spec:
             matchLabels:
               kubernetes.io/metadata.name: open-cluster-management-agent-addon
       ports:
-        - port: 8890
+        - port: 8889
           protocol: TCP
