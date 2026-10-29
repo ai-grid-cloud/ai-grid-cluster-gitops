@@ -35,6 +35,6 @@ Still manual per model, until the gateways generate their routing from the publi
 
 ## Verify
 
-- `oc -n <project> get networkpolicy` lists the four policies, and the `rhoai-prerequisites` policy is Compliant.
+- `oc -n <project> get networkpolicy` includes `grid-gateway-backend`, `llminference-engine-serving`, `llminference-scheduler-serving` and `rhoai-collector-metrics`, and the `rhoai-prerequisites` policy is Compliant.
 - The model's HTTPRoute reports Accepted on `openshift-ai-inference`.
 - `oc get inferenceproviders` shows the model's provider `Available`, with `MetricsAvailable=True`.
