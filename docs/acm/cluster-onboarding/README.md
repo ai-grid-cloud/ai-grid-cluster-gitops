@@ -14,7 +14,12 @@ discover it dynamically:
 2. `../../../apps/acm-models/hub/gitops-cluster.yaml`
    registers selected clusters with Argo CD.
 3. The repository's ApplicationSets generate applications for each registered
-   cluster.
+   cluster. RHOAI, the provider gateway and the MaaS database replica wait for
+   the `ai-grid/enabled=true` label:
+
+   ```bash
+   oc label managedcluster <name> ai-grid/enabled=true
+   ```
 
 No `ManagedCluster`, join token, kubeconfig, API URL, or cluster name needs to
 be committed to this repository.
