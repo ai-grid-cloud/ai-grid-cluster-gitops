@@ -56,7 +56,8 @@ reference's.
 | `catalog/subscriptions/` | Every ingress and combined spoke | `models-as-a-service` |
 
 The catalog's apps run in two AppProjects that admit only the catalog
-repository, no cluster-scoped kinds, and only the kinds the console writes. A
+repository and only the kinds the console writes; the grid's InferenceProvider
+is the one cluster-scoped kind (`apps/acm-models/README.md`). A
 catalog file that collides with an object another Application manages stops
 that cluster's catalog sync until it's fixed.
 

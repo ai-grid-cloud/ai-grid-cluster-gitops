@@ -55,10 +55,15 @@ The `catalog-*` files in `hub/` deliver it to the clusters Placement `acm-models
 An empty catalog repository generates no Applications, so it shows no errors before the console's first write.
 
 The console's token can push to the catalog, so the catalog's Applications run in two AppProjects that admit only
-that repository, no cluster-scoped kinds, and only the kinds the console writes:
+that repository and only the kinds the console writes:
 
-- `acm-models-catalog-models`: LLMInferenceService and NetworkPolicy.
-- `acm-models-catalog-maas`: ExternalModel, MaaSModelRef, MaaSSubscription and MaaSAuthPolicy.
+- `acm-models-catalog-models`: LLMInferenceService, NetworkPolicy, the model's HTTPRoute on the models Gateway
+  (`apps/rhoai/grid-models`), and the cluster-scoped InferenceProvider for a combined spoke's own consumer.
+- `acm-models-catalog-maas`: ExternalModel, MaaSModelRef, MaaSSubscription and MaaSAuthPolicy, and the cluster-scoped
+  InferenceProviders that tell the ingress consumer which site serves each model.
+
+InferenceProvider is the one cluster-scoped kind: whoever holds the token can steer a model name to another backend
+the consumer declares, but can't add a backend.
 
 A catalog file that collides with an object another Application manages, such as a sample model, stops that
 cluster's catalog sync until it's fixed (`FailOnSharedResource`).

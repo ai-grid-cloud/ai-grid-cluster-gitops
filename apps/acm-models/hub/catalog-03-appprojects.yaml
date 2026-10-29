@@ -1,8 +1,11 @@
 # The catalog repository is written by the provider console's git writer
 # (ai-grid-cloud/ai-grid-provider-backend), with a token that can push to it.
 # So its Applications may deliver nothing else: only that repository as a
-# source, no cluster-scoped kinds, and only the kinds the writer commits, each
-# in its own namespace. Argo CD checks a resource's kind and namespace against
+# source, only the kinds the writer commits, each in its own namespace, and
+# one cluster-scoped kind: the grid's InferenceProvider, which tells a grid
+# consumer which site serves a model. A token that can push here can therefore
+# add or change InferenceProviders on the spokes, steering a model name to
+# another backend the consumer declares; it can't add backends. Argo CD checks a resource's kind and namespace against
 # a project separately, so models and MaaS objects get a project each: a model
 # (whose spec is a pod template) can't land in models-as-a-service next to
 # MaaS's Secrets, and a NetworkPolicy can't open MaaS's pods.
@@ -20,10 +23,13 @@ spec:
   destinations:
     - server: "*"
       namespace: ai-grid-internal-models
-  clusterResourceWhitelist: []
+  clusterResourceWhitelist:
+    - { group: grid.praxis.fast, kind: InferenceProvider }
   namespaceResourceWhitelist:
     - { group: serving.kserve.io, kind: LLMInferenceService }
     - { group: networking.k8s.io, kind: NetworkPolicy }
+    # The model's route on the models Gateway (apps/rhoai/grid-models).
+    - { group: gateway.networking.k8s.io, kind: HTTPRoute }
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -39,7 +45,8 @@ spec:
   destinations:
     - server: "*"
       namespace: models-as-a-service
-  clusterResourceWhitelist: []
+  clusterResourceWhitelist:
+    - { group: grid.praxis.fast, kind: InferenceProvider }
   namespaceResourceWhitelist:
     - { group: maas.opendatahub.io, kind: MaaSSubscription }
     - { group: maas.opendatahub.io, kind: MaaSAuthPolicy }

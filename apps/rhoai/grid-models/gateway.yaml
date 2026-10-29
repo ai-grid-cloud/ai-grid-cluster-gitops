@@ -1,0 +1,46 @@
+# The models Gateway on each inference and combined spoke: the one backend the
+# grid provider gateway forwards to (<deployment>/clusters/<cluster>/
+# provider-gateway.yaml, and on a combined spoke the consumer's local-models
+# backend). Each model the provider console deploys adds an HTTPRoute here
+# (catalog/models/<id>/deployment/grid.yaml), matched on the model name the
+# ingress consumer puts in X-Gateway-Model-Name, to the model's InferencePool,
+# so the model's own scheduler picks the pod.
+#
+# Unlike openshift-ai-inference, it has no AuthPolicy: the provider gateway
+# can't present a Kubernetes token. So it is ClusterIP only, and the
+# NetworkPolicy below admits only the grid's namespace.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ai-grid-models
+  namespace: openshift-ingress
+  annotations:
+    networking.istio.io/service-type: ClusterIP
+spec:
+  gatewayClassName: openshift-ai-inference
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: ai-grid-internal-models
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-grid-models-gateway
+  namespace: openshift-ingress
+spec:
+  podSelector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: ai-grid-models
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: redhat-ai-grid

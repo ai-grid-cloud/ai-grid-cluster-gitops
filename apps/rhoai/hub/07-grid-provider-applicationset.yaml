@@ -57,6 +57,11 @@ spec:
             parameters:
               - name: grid.siteName
                 value: '{{ .name }}'
+        # The models Gateway the provider gateway forwards to, which routes
+        # each model by name (apps/rhoai/grid-models/gateway.yaml).
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-tenant.git
+          targetRevision: HEAD
+          path: apps/rhoai/grid-models
       # As the rhoai ApplicationSet: the hub through Argo's own destination.
       destination:
         server: '{{ if eq .name "local-cluster" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
