@@ -46,13 +46,19 @@ cluster Secrets with the `apps.open-cluster-management.io/acm-cluster: "true"`
 label. After pushing the app, Argo CD syncs `maas-db` automatically. The
 ApplicationSet creates:
 
-- `maas-db-local-cluster` for the writable primary.
-- One `maas-db-<cluster-name>` Application for each remote managed cluster.
+- `maas-db-local-cluster` for the writable primary, while the hub is an AI Grid
+  site (`ai-grid/enabled=true`).
+- One `maas-db-<cluster-name>` Application for each other site that runs
+  `maas-api`: role ingress or combined (`apps/ai-grid-spokes`).
 
-The replication-secret policy selects only remote clusters; on
-`local-cluster`, CloudNativePG owns the generated secrets directly. The
-API-credential policy runs on all clusters and creates or updates the
+The replication-secret policy selects those sites; on `local-cluster`,
+CloudNativePG owns the generated secrets directly. The API-credential policy
+runs on every such site, the hub included, and creates or updates the
 `maas-db-config` Secret expected by `maas-api`.
+
+Unlike `rhoai`, the ApplicationSet doesn't preserve resources on deletion: a
+replica is a full copy of every tenant's API keys and subscriptions, so a site
+that leaves the grid, or the ingress role, loses it with its Application.
 
 Keep the API-credential policy enabled only after the writable primary and
 local read endpoint have passed validation. If an older PostgreSQL instance is
