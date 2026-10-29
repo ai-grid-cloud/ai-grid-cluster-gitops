@@ -79,15 +79,11 @@ components:
             protocol: HTTP
             allowedRoutes:
               namespaces:
-                # The following is an example of how to restrict the namespaces to the interested ones.
+                # AI project namespaces opt in with grid.opendatahub.io/allowed=true.
                 from: Selector
                 selector:
-                  matchExpressions:
-                    - key: kubernetes.io/metadata.name
-                      operator: In
-                      values:
-                        - openshift-ingress
-                        - ai-grid-internal-models
+                  matchLabels:
+                    grid.opendatahub.io/allowed: "true"
 
           - name: https
             port: 443
@@ -95,15 +91,11 @@ components:
             protocol: HTTPS
             allowedRoutes:
               namespaces:
-                # The following is an example of how to restrict the namespaces to the interested ones.
+                # AI project namespaces opt in with grid.opendatahub.io/allowed=true.
                 from: Selector
                 selector:
-                  matchExpressions:
-                    - key: kubernetes.io/metadata.name
-                      operator: In
-                      values:
-                        - openshift-ingress
-                        - ai-grid-internal-models
+                  matchLabels:
+                    grid.opendatahub.io/allowed: "true"
   aigateway:
     dsc:
       aiGrid:

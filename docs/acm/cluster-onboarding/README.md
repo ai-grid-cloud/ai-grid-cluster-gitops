@@ -21,6 +21,8 @@ discover it dynamically:
    oc label managedcluster <name> ai-grid/enabled=true
    ```
 
+   Then add AI projects and models: see [AI project onboarding](../ai-project-onboarding/README.md).
+
 No `ManagedCluster`, join token, kubeconfig, API URL, or cluster name needs to
 be committed to this repository.
 

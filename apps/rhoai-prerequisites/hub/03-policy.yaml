@@ -49,6 +49,10 @@ spec:
         spec:
           remediationAction: enforce
           severity: high
+          # Every AI project namespace, opted in with grid.opendatahub.io/allowed=true.
+          namespaceSelector:
+            matchLabels:
+              grid.opendatahub.io/allowed: "true"
           object-templates:
             - complianceType: musthave
               objectDefinition:
@@ -58,7 +62,6 @@ spec:
                   annotations:
                     argocd.argoproj.io/sync-wave: "2"
                   name: grid-gateway-backend
-                  namespace: ai-grid-internal-models
                 spec:
                   podSelector:
                     matchLabels:
@@ -81,7 +84,6 @@ spec:
                 kind: NetworkPolicy
                 metadata:
                   name: llminference-engine-serving
-                  namespace: ai-grid-internal-models
                 spec:
                   podSelector:
                     matchLabels:
@@ -106,7 +108,6 @@ spec:
                 kind: NetworkPolicy
                 metadata:
                   name: llminference-scheduler-serving
-                  namespace: ai-grid-internal-models
                 spec:
                   podSelector:
                     matchLabels:
@@ -130,7 +131,6 @@ spec:
                 kind: NetworkPolicy
                 metadata:
                   name: rhoai-collector-metrics
-                  namespace: ai-grid-internal-models
                 spec:
                   podSelector:
                     matchLabels:
