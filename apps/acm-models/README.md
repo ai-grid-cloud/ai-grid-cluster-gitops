@@ -64,8 +64,9 @@ that repository and only the kinds the console writes:
 
 InferenceProvider is the one cluster-scoped kind. The models project needs it only for the combined spoke's local
 provider (`grid-<id>-local`, backend `local-models`); the MaaS project for the per-site ones (`grid-<id>-at-<cluster>`).
-ValidatingAdmissionPolicies on every spoke (`apps/rhoai/catalog-admission`) hold the catalog's HTTPRoutes and
-InferenceProviders to the shape the backend writes: a route attaches only to `ai-grid-models` and matches only its own
+ValidatingAdmissionPolicies on every spoke (`apps/rhoai/catalog-admission`), matched on Argo CD's own identity and
+the catalog Applications, hold the catalog's HTTPRoutes, InferenceProviders and LLMInferenceServices to the shape the
+backend writes. A model attaches only to `openshift-ai-inference` with the route KServe builds; a route attaches only to `ai-grid-models` and matches only its own
 model id to that model's InferencePool; a provider serves only its own model id, on `local-models` or `peer-<cluster>`,
 at the matching site, with the placeholder endpoint and no health check, auth, weights or other routing fields.
 

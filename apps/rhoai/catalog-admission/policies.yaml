@@ -8,13 +8,19 @@
 # another Gateway, claim another model's name, or point a provider at an
 # arbitrary endpoint, backend or health probe.
 #
-# Scope: objects Argo CD applies from a catalog Application. Argo CD stamps
-# every object it applies with argocd.argoproj.io/tracking-id
-# "<application>:<group>/<kind>:<namespace>/<name>", overwriting any value in
-# the file, and the catalog Applications are all named acm-models-catalog-*
-# (apps/acm-models/hub/catalog-04-applicationsets.yaml). KServe's own routes
-# and odh-model-controller's providers carry no such annotation and are left
-# alone; so are the deployment's hand-declared peers.
+# Scope, in two parts:
+#   - Who: only writes by Argo CD's identities: the ACM application-manager
+#     ServiceAccount it applies through on a managed spoke, and its own
+#     application controller on the hub (local-cluster). KServe's controller,
+#     odh-model-controller and istiod (route status) write as themselves and
+#     are never matched.
+#   - Which Argo CD Application: Argo CD stamps every object it applies with
+#     argocd.argoproj.io/tracking-id "<application>:<group>/<kind>:<ns>/<name>",
+#     setting it from the Application, not from the file, and the catalog
+#     Applications are all named acm-models-catalog-*. The other apps Argo CD
+#     runs (the platform, declared peers, sample models) carry their own names
+#     and are left alone. An object Argo CD writes with no tracking-id at all
+#     is treated as a catalog object: the scope fails closed.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -28,10 +34,15 @@ spec:
         operations: [CREATE, UPDATE]
         resources: [httproutes]
   matchConditions:
+    - name: by-argo-cd
+      expression: >-
+        request.userInfo.username in [
+          'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
+          'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
     - name: from-catalog
       expression: >-
-        has(object.metadata.annotations) &&
-        'argocd.argoproj.io/tracking-id' in object.metadata.annotations &&
+        !has(object.metadata.annotations) ||
+        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
         object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
   variables:
     - name: id
@@ -91,10 +102,15 @@ spec:
         operations: [CREATE, UPDATE]
         resources: [inferenceproviders]
   matchConditions:
+    - name: by-argo-cd
+      expression: >-
+        request.userInfo.username in [
+          'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
+          'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
     - name: from-catalog
       expression: >-
-        has(object.metadata.annotations) &&
-        'argocd.argoproj.io/tracking-id' in object.metadata.annotations &&
+        !has(object.metadata.annotations) ||
+        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
         object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
   variables:
     - name: id
@@ -147,4 +163,53 @@ metadata:
   name: ai-grid-catalog-inferenceproviders
 spec:
   policyName: ai-grid-catalog-inferenceproviders
+  validationActions: [Deny]
+---
+# A catalog LLMInferenceService could make routes of its own: KServe creates
+# an HTTPRoute from spec.router.route and attaches it to the Gateways in
+# spec.router.gateway.refs. The backend writes route: {} and the
+# openshift-ai-inference Gateway only, as the reference's sample models do.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ai-grid-catalog-llminferenceservices
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [serving.kserve.io]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE]
+        resources: [llminferenceservices]
+  matchConditions:
+    - name: by-argo-cd
+      expression: >-
+        request.userInfo.username in [
+          'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
+          'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
+    - name: from-catalog
+      expression: >-
+        !has(object.metadata.annotations) ||
+        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
+        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+  validations:
+    - expression: >-
+        has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels &&
+        object.metadata.labels['ai-grid/model'] == object.metadata.name
+      message: "a catalog LLMInferenceService carries label ai-grid/model equal to its name"
+    - expression: >-
+        !has(object.spec.router) || !has(object.spec.router.route) ||
+        (!has(object.spec.router.route.http) && !has(object.spec.router.route.grpc))
+      message: "a catalog LLMInferenceService lets KServe build its route (spec.router.route: {})"
+    - expression: >-
+        !has(object.spec.router) || !has(object.spec.router.gateway) || !has(object.spec.router.gateway.refs) ||
+        object.spec.router.gateway.refs.all(g, g.name == 'openshift-ai-inference' && has(g.namespace) && g.namespace == 'openshift-ingress')
+      message: "a catalog LLMInferenceService attaches only to Gateway openshift-ingress/openshift-ai-inference"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ai-grid-catalog-llminferenceservices
+spec:
+  policyName: ai-grid-catalog-llminferenceservices
   validationActions: [Deny]
