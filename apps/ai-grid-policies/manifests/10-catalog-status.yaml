@@ -146,7 +146,9 @@ metadata:
   name: ai-grid-catalog-status
   namespace: ai-grid-policies
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    # The Policy's wave: Argo waits for a Policy to report status before the
+    # next wave, and a Policy reports none until it is bound.
+    argocd.argoproj.io/sync-wave: "2"
 placementRef:
   apiGroup: cluster.open-cluster-management.io
   kind: Placement
