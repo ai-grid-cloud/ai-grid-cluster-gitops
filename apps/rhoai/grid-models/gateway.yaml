@@ -8,7 +8,11 @@
 #
 # Unlike openshift-ai-inference, it has no AuthPolicy: the provider gateway
 # can't present a Kubernetes token. So it is ClusterIP only, and the
-# NetworkPolicy below admits only the grid's namespace.
+# NetworkPolicy below admits only the grid's gateway pods (the provider, and
+# on a combined spoke the consumer's local-models backend), on port 80. Only
+# routes in ai-grid-internal-models attach, and there the catalog admission
+# rules (apps/rhoai/catalog-admission) hold Argo CD's routes to one model
+# each; KServe's own routes attach to openshift-ai-inference, not here.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -41,6 +45,15 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
+        # The grid's gateways (praxis-gateway): the provider gateway, and the
+        # consumer gateway's local-models backend on a combined spoke.
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: redhat-ai-grid
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: praxis-gateway
+              app.kubernetes.io/component: gateway
+      ports:
+        - port: 80
+          protocol: TCP

@@ -8,19 +8,17 @@
 # another Gateway, claim another model's name, or point a provider at an
 # arbitrary endpoint, backend or health probe.
 #
-# Scope, in two parts:
-#   - Who: only writes by Argo CD's identities: the ACM application-manager
-#     ServiceAccount it applies through on a managed spoke, and its own
-#     application controller on the hub (local-cluster). KServe's controller,
-#     odh-model-controller and istiod (route status) write as themselves and
-#     are never matched.
-#   - Which Argo CD Application: Argo CD stamps every object it applies with
-#     argocd.argoproj.io/tracking-id "<application>:<group>/<kind>:<ns>/<name>",
-#     setting it from the Application, not from the file, and the catalog
-#     Applications are all named acm-models-catalog-*. The other apps Argo CD
-#     runs (the platform, declared peers, sample models) carry their own names
-#     and are left alone. An object Argo CD writes with no tracking-id at all
-#     is treated as a catalog object: the scope fails closed.
+# Scope: writes by Argo CD's identities only, never by a value in the
+# object: the ACM application-manager ServiceAccount Argo CD applies through
+# on a managed spoke, and its application controller on the hub
+# (local-cluster). KServe's controller, odh-model-controller and istiod
+# (route status) write as themselves and are never matched. HTTPRoutes and
+# LLMInferenceServices are checked in ai-grid-internal-models, where the
+# catalog delivers them; InferenceProviders are cluster-scoped and all
+# checked. Argo CD's other objects of these kinds must conform too, except
+# these, by exact name: the sample models' LLMInferenceServices (they carry
+# no ai-grid/model label) and the reference deployment's hand-declared peer
+# provider peer-ai-grid-2-opt-125m.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -33,17 +31,16 @@ spec:
         apiVersions: ["*"]
         operations: [CREATE, UPDATE]
         resources: [httproutes]
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ai-grid-internal-models
   matchConditions:
     - name: by-argo-cd
       expression: >-
         request.userInfo.username in [
           'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
           'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
-    - name: from-catalog
-      expression: >-
-        !has(object.metadata.annotations) ||
-        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
-        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+
   variables:
     - name: id
       expression: "object.metadata.name.endsWith('-grid') ? object.metadata.name.substring(0, size(object.metadata.name) - 5) : ''"
@@ -107,11 +104,8 @@ spec:
         request.userInfo.username in [
           'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
           'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
-    - name: from-catalog
-      expression: >-
-        !has(object.metadata.annotations) ||
-        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
-        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+    - name: not-exempt
+      expression: "!(object.metadata.name in ['peer-ai-grid-2-opt-125m'])"
   variables:
     - name: id
       expression: "has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels ? object.metadata.labels['ai-grid/model'] : ''"
@@ -181,17 +175,17 @@ spec:
         apiVersions: ["*"]
         operations: [CREATE, UPDATE]
         resources: [llminferenceservices]
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ai-grid-internal-models
   matchConditions:
     - name: by-argo-cd
       expression: >-
         request.userInfo.username in [
           'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
           'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
-    - name: from-catalog
-      expression: >-
-        !has(object.metadata.annotations) ||
-        !('argocd.argoproj.io/tracking-id' in object.metadata.annotations) ||
-        object.metadata.annotations['argocd.argoproj.io/tracking-id'].startsWith('acm-models-catalog-')
+    - name: not-exempt
+      expression: "!(object.metadata.name in ['facebook-opt-125m', 'smollm2-135m-instruct'])"
   validations:
     - expression: >-
         has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels &&
