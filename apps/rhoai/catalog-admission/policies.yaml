@@ -15,10 +15,10 @@
 # (route status) write as themselves and are never matched. HTTPRoutes and
 # LLMInferenceServices are checked in ai-grid-internal-models, where the
 # catalog delivers them; InferenceProviders are cluster-scoped and all
-# checked. Argo CD's other objects of these kinds must conform too, except
-# these, by exact name: the sample models' LLMInferenceServices (they carry
-# no ai-grid/model label) and the reference deployment's hand-declared peer
-# provider peer-ai-grid-2-opt-125m.
+# checked. There is no exemption: every object Argo CD writes there must
+# have the backend's shape, so the sample models and declared peers are
+# written that way too (ai-grid/model label, <id>-grid route,
+# grid-<id>-at-<cluster> provider).
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -104,8 +104,6 @@ spec:
         request.userInfo.username in [
           'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
           'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
-    - name: not-exempt
-      expression: "!(object.metadata.name in ['peer-ai-grid-2-opt-125m'])"
   variables:
     - name: id
       expression: "has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels ? object.metadata.labels['ai-grid/model'] : ''"
@@ -184,8 +182,6 @@ spec:
         request.userInfo.username in [
           'system:serviceaccount:open-cluster-management-agent-addon:application-manager',
           'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller']
-    - name: not-exempt
-      expression: "!(object.metadata.name in ['facebook-opt-125m', 'smollm2-135m-instruct'])"
   validations:
     - expression: >-
         has(object.metadata.labels) && 'ai-grid/model' in object.metadata.labels &&
