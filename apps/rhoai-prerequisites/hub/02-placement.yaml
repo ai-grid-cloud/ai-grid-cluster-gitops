@@ -27,3 +27,8 @@ spec:
               operator: NotIn
               values:
                 - local-cluster
+            # The MaaS home runs Redis itself (apps/maas-home).
+            - key: ai-grid/maas-home
+              operator: NotIn
+              values:
+                - "true"

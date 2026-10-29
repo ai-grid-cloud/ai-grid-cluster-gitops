@@ -22,6 +22,7 @@ spec:
           - path: apps/cert-manager/application.yaml
           - path: apps/gitops-config/application.yaml
           - path: apps/grid-bootstrap/application.yaml
+          - path: apps/maas-home/application.yaml
           - path: apps/argo-registration/application.yaml
           - path: apps/rhoai/application.yaml
           - path: apps/rhoai-prerequisites/application.yaml
@@ -35,8 +36,8 @@ spec:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
   # ACM observability needs object storage and Submariner needs a site. A new
-  # grid generates its CA, and grid-bootstrap binds global, since the rhoai app
-  # brings only its ApplicationSets: the tenant Policy needs MaaS.
+  # grid generates its CA, and grid-bootstrap binds global in place of the rhoai
+  # app's binding.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "acm" }}
@@ -48,6 +49,6 @@ spec:
     {{- end }}{{ end }}
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
-    {{- $_ := set $spec.source "directory" (dict "include" "{01-applicationset.yaml,04-provider-gateway-applicationset.yaml}") }}
+    {{- $_ := set $spec.source "directory" (dict "exclude" "00-managed-cluster-set-binding-grid.yaml") }}
     {{- end }}
     spec: {{ $spec | toJson }}
