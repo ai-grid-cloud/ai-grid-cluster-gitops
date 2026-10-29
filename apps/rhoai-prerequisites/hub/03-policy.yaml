@@ -123,6 +123,34 @@ spec:
                         - namespaceSelector:
                             matchLabels:
                               kubernetes.io/metadata.name: openshift-ingress
+            # RHOAI's collector scrapes the engine and scheduler monitors KServe labels for it.
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: rhoai-collector-metrics
+                  namespace: ai-grid-internal-models
+                spec:
+                  podSelector:
+                    matchLabels:
+                      app.kubernetes.io/part-of: llminferenceservice
+                  policyTypes:
+                    - Ingress
+                  ingress:
+                    - ports:
+                        - port: 8000
+                          protocol: TCP
+                        - port: 9090
+                          protocol: TCP
+                      from:
+                        - namespaceSelector:
+                            matchLabels:
+                              kubernetes.io/metadata.name: redhat-ods-monitoring
+                          podSelector:
+                            matchLabels:
+                              app.kubernetes.io/component: opentelemetry-collector
+                              app.kubernetes.io/instance: redhat-ods-monitoring.data-science-collector
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
