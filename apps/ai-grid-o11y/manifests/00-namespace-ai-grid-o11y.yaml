@@ -1,0 +1,9 @@
+# The usage-logs datasource and dashboard live here. Nothing else creates the
+# namespace, and the app's CreateNamespace=true creates only its destination
+# (open-cluster-management-observability), so their sync fails without it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-grid-o11y
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
