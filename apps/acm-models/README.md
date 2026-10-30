@@ -4,6 +4,11 @@ This app owns the internal `LLMInferenceService` deployment and its
 model-facing MaaS resources. Supporting namespaces, NetworkPolicies, and the
 Grid `ExternalProvider` are owned by the RHOAI apps.
 
+The sample model goes to AI Grid sites where models run (Placement
+`ai-grid-inference`), and its MaaS objects to sites that run MaaS
+(`ai-grid-ingress`); both Placements are `apps/ai-grid-spokes`'. An unlabelled
+hub gets neither.
+
 ## Scheduler metrics
 
 The Gateway's serving configuration enables `publishMetrics: true`, so the

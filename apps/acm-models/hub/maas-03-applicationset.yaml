@@ -9,11 +9,12 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
+    # Sites that run MaaS: role ingress or combined (apps/ai-grid-spokes).
     - clusterDecisionResource:
         configMapRef: acm-placement
         labelSelector:
           matchLabels:
-            cluster.open-cluster-management.io/placement: acm-models-maas
+            cluster.open-cluster-management.io/placement: ai-grid-ingress
   syncPolicy:
     applicationsSync: sync
     preserveResourcesOnDeletion: false

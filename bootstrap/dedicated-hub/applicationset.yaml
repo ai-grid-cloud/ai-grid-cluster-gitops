@@ -17,6 +17,7 @@ spec:
         revision: HEAD
         files:
           - path: apps/acm/application.yaml
+          - path: apps/acm-models/application.yaml
           - path: apps/ai-grid-policies/application.yaml
           - path: apps/ai-grid-spokes/application.yaml
           - path: apps/cert-manager/application.yaml
@@ -37,7 +38,8 @@ spec:
         namespace: '{{.spec.destination.namespace}}'
   # ACM observability needs object storage and Submariner needs a site. A new
   # grid generates its CA, and grid-bootstrap binds global in place of the rhoai
-  # app's binding.
+  # app's binding. acm-models brings only the sample model: argo-registration
+  # registers clusters here, and the console catalog is the combined hub's.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "acm" }}
@@ -47,6 +49,9 @@ spec:
     {{- range $spec.sources }}{{ if hasKey . "helm" }}
     {{- $_ := set .helm "parameters" (list (dict "name" "external.certManager.ca.mode" "value" "Generate") (dict "name" "managedClusters.createClusterSetBinding" "value" "true")) }}
     {{- end }}{{ end }}
+    {{- end }}
+    {{- if eq .metadata.name "acm-models" }}
+    {{- $_ := set $spec.source "directory" (dict "include" "{facebook-opt-125m-03-applicationset.yaml,maas-03-applicationset.yaml}") }}
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source "directory" (dict "exclude" "00-managed-cluster-set-binding-grid.yaml") }}

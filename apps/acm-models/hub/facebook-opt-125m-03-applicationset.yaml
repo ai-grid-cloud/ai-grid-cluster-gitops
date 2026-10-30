@@ -1,8 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # Generates one Application for every cluster selected by the
-  # acm-models-facebook-opt-125m Placement.
+  # Generates one Application for every AI Grid site where models run.
   name: acm-models-facebook-opt-125m
   namespace: openshift-gitops
   annotations:
@@ -11,11 +10,12 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
+    # Sites where models run: role inference or combined (apps/ai-grid-spokes).
     - clusterDecisionResource:
         configMapRef: acm-placement
         labelSelector:
           matchLabels:
-            cluster.open-cluster-management.io/placement: acm-models-facebook-opt-125m
+            cluster.open-cluster-management.io/placement: ai-grid-inference
   syncPolicy:
     applicationsSync: sync
     preserveResourcesOnDeletion: false
