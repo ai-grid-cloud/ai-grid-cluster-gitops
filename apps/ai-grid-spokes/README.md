@@ -44,15 +44,12 @@ tenants' keys or subscriptions.
 
 ## What a new site still needs
 
-A label alone doesn't make a working site yet. Each site also needs, in
-`apps/rhoai/`:
-
-- role `inference` or `combined`: `provider-gateway-<cluster>.yaml`.
-  Without it the site gets OpenShift AI but no provider gateway, so the grid
-  can't reach its models.
-- role `ingress` or `combined`: `values-<cluster>.yaml` with the
-  consumer gateway's backends. Without it the consumer gateway runs with no
-  routes.
+The labels are enough for the site itself. The grid operator derives the
+gateways' routing from the models the site publishes, so no file per site. Two
+things stay on the hub: a declared peer file for the site, until members report
+their gateway address, and the provider gateway NetworkPolicy CIDR for a site
+outside the lab VPC. See
+[cluster onboarding](../../docs/acm/cluster-onboarding/README.md).
 
 ## What a Remove does
 
@@ -77,8 +74,9 @@ What goes and what stays:
   (`maas-db-config`, `maas-db-app`, `maas-db-replication`) and the tenant
   objects. Copies may exist, so rotate the shared credentials after removing a
   site.
-- Other sites still list it as a peer in their `values-<cluster>.yaml` and
-  `provider-gateway-<cluster>.yaml` until those files change.
+- The hub still declares it as a peer in
+  `apps/rhoai/local-cluster/40-declared-peer-<cluster>.yaml` until that file
+  goes.
 
 A role change reaches the Placements at once, and the `rhoai` template a few
 seconds later (through Argo CD's cluster Secret), so the Application can render

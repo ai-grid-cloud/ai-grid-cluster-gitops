@@ -28,13 +28,14 @@ A model definition needs:
 - its router attached to the `openshift-ai-inference` Gateway in `openshift-ingress`;
 - the scheduler's metrics TLS argument, `--metrics-cert-dir=/var/run/kserve/tls`, until the platform's scheduler preset provides it.
 
-Still manual per model, until the gateways generate their routing from the published providers:
+Nothing else per model. The grid operator derives the gateway's dial from the published InferenceProvider. The dial goes to the serving gateway at the model's publisher path, as the grid model client, so the inference scheduler picks the pod. The serving gateway authorizes that path with a review for post on the model. The rhoai-prerequisites policy grants that verb to the grid model client in every labelled namespace, since the model controller's own Role covers another path (odh-model-controller#996).
 
-- a backend entry in `apps/rhoai/values-<cluster>.yaml` for the consumer gateway;
-- a backend entry in `apps/rhoai/provider-gateway-<cluster>.yaml` for the provider gateway.
+Other sites reach the model through the hub's declared peer file for this cluster, until members report their gateway address.
 
 ## Verify
 
 - `oc -n <project> get networkpolicy` includes `grid-gateway-backend`, `llminference-engine-serving`, `llminference-scheduler-serving` and `rhoai-collector-metrics`, and the `rhoai-prerequisites` policy is Compliant.
 - The model's HTTPRoute reports Accepted on `openshift-ai-inference`.
 - `oc get inferenceproviders` shows the model's provider `Available`, with `MetricsAvailable=True`.
+- The dial file in the grid-serving-grid-grid-gateway ConfigMap lists the model's provider with the serving gateway address, a base path and a credential.
+- A completion through the grid gateway returns 200, with the x-grid-backend header set to that provider.

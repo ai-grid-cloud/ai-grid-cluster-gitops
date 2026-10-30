@@ -9,11 +9,9 @@ Use a one-time, parameterized `clusteradm` import for the initial cluster
 registration. After ACM accepts the cluster, the existing GitOps resources
 discover it dynamically:
 
-1. `../../../apps/acm-models/hub/facebook-opt-125m-01-placement.yaml`
-   selects clusters in the reserved `global` cluster set.
-2. `../../../apps/acm-models/hub/gitops-cluster.yaml`
-   registers selected clusters with Argo CD.
-3. The repository's ApplicationSets generate applications for each registered
+1. `../../../apps/acm-models/hub/gitops-cluster.yaml` selects every cluster in
+   the reserved `global` cluster set and registers it with Argo CD.
+2. The repository's ApplicationSets generate applications for each registered
    cluster. RHOAI, the provider gateway and the MaaS database replica wait for
    the `ai-grid/enabled=true` label:
 
@@ -32,7 +30,32 @@ discover it dynamically:
    Then add AI projects and models: see [AI project onboarding](../ai-project-onboarding/README.md).
 
 No `ManagedCluster`, join token, kubeconfig, API URL, or cluster name needs to
-be committed to this repository.
+be committed to this repository. No values file per site either. The grid
+operator derives the gateways' routing from the models each site publishes, so
+one values file serves every site. A file named values-<cluster>.yaml is read
+as an override when present.
+
+## What the site must provide
+
+- A default StorageClass. RHOAI monitoring claims 20Gi for metrics and 10Gi for
+  traces on every site. An ingress or combined site claims 20Gi for its MaaS
+  database replica. The sample models pull weights at start and claim nothing.
+- Submariner gateway nodes. Every managed cluster gets the add-on with two
+  gateways and Globalnet. Over it the site reaches the hub's enrollment service
+  and the MaaS database primary.
+- A default router the other sites can reach. Peers dial the provider gateway
+  through it on 443 with TLS passthrough.
+- Capacity for the sample models: three replicas of 1 CPU and 10Gi memory. A
+  GPU model needs GPU nodes and the NVIDIA operator, which this repository does
+  not install.
+- No registry setup. Policies deliver the pull Secrets and the image mirror.
+
+Still per site, on the hub:
+
+- A declared peer file, apps/rhoai/local-cluster/40-declared-peer-<cluster>.yaml,
+  so other sites can route to this site's models. Members do not report their
+  gateway address yet.
+- The provider gateway NetworkPolicy CIDR, for a site outside the lab VPC.
 
 ## Prerequisites
 
@@ -103,11 +126,20 @@ kubectl --context "$HUB_CONTEXT" -n openshift-gitops get placementdecisions
 kubectl --context "$HUB_CONTEXT" -n openshift-gitops get applications
 ```
 
-The new cluster should appear in the shared `acm-models-gitops-cluster`
-placement decision used for Argo CD registration. Model-specific placements then
-select the clusters that receive generated applications such as
-`acm-models-facebook-opt-125m-<cluster-name>`, `rhoai-<cluster-name>`, and
-`maas-db-<cluster-name>`.
+The new cluster appears in the acm-models-gitops-cluster placement decision.
+The role placements then generate its applications: rhoai for every role,
+grid-provider-gateway and the sample model for inference and combined, maas-db
+for ingress and combined. Application names carry the cluster name.
+
+On the site, once the applications are Synced and Healthy:
+
+```sh
+oc get inferenceproviders
+oc -n redhat-ai-grid get configmap grid-serving-grid-grid-gateway -o jsonpath='{.data.dial\.json}'
+```
+
+Each model's InferenceProvider is Available. The dial file lists each local
+model with the serving gateway address on 443, a base path and a credential.
 
 ## Security and repeatability
 
