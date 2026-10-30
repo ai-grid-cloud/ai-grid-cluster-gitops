@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: provision-loki-s3-secret-
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+        - name: create-secret
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              O11Y_NS=ai-grid-o11y
+              BUCKET=$(oc get cm ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.BUCKET_NAME}')
+              AK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
+              SK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
+              [ -n "$BUCKET" ] && [ -n "$AK" ] && [ -n "$SK" ] || { echo "OBC bound but credentials empty" >&2; exit 1; }
+
+              oc create secret generic ${LOKI_NAME}-object-storage -n "$O11Y_NS" \
+                --from-literal=bucketnames="$BUCKET" \
+                --from-literal=endpoint="https://s3.openshift-storage.svc:443" \
+                --from-literal=access_key_id="$AK" \
+                --from-literal=access_key_secret="$SK" \
+                --dry-run=client -o yaml | oc apply -f -
+      restartPolicy: Never
+  backoffLimit: 2

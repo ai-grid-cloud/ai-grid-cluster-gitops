@@ -1,0 +1,35 @@
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: usage-logs
+  namespace: ai-grid-o11y
+spec:
+  size: 1x.demo
+  limits:
+    global:
+      otlp:
+        streamLabels:
+          resourceAttributes:
+          - name: service.name
+          - name: subscription
+          - name: model
+          - name: response_type
+          - name: kubernetes_namespace_name
+          - name: cluster_name
+          - name: cluster_id
+      retention:
+        days: 30
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: "2026-10-01"
+    secret:
+      name: usage-logs-object-storage
+      type: s3
+    tls:
+      caName: openshift-service-ca-bundle
+      caKey: service-ca.crt
+  storageClassName: gp3-csi
+  tenants:
+    mode: openshift-logging
+  managementState: Managed
