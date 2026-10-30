@@ -151,6 +151,49 @@ spec:
                             matchLabels:
                               app.kubernetes.io/component: opentelemetry-collector
                               app.kubernetes.io/instance: redhat-ods-monitoring.data-science-collector
+    # The grid gateway dials each local model on the serving gateway's publisher path
+    # as grid-model-client. The serving gateway's AuthPolicy authorizes that path with a
+    # SubjectAccessReview for post on serving.kserve.io models, which the per-model Role
+    # the model controller writes (get on the LLMInferenceService) does not grant.
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: grid-model-client-models
+        spec:
+          remediationAction: enforce
+          severity: high
+          namespaceSelector:
+            matchLabels:
+              grid.opendatahub.io/allowed: "true"
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: Role
+                metadata:
+                  name: grid-model-client-models
+                rules:
+                  - apiGroups:
+                      - serving.kserve.io
+                    resources:
+                      - models
+                    verbs:
+                      - post
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: RoleBinding
+                metadata:
+                  name: grid-model-client-models
+                roleRef:
+                  apiGroup: rbac.authorization.k8s.io
+                  kind: Role
+                  name: grid-model-client-models
+                subjects:
+                  - kind: ServiceAccount
+                    name: grid-model-client
+                    namespace: redhat-ai-grid
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
