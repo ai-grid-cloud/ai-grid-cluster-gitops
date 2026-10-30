@@ -15,6 +15,7 @@ spec:
           args:
             - |
               O11Y_NS=ai-grid-o11y
+              LOKI_NAME=usage-logs
               BUCKET=$(oc get cm ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.BUCKET_NAME}')
               AK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
               SK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
