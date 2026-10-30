@@ -37,7 +37,7 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           ref: values
         - repoURL: https://github.com/opendatahub-io/odh-gitops.git

@@ -21,7 +21,7 @@ spec:
     spec:
       project: default
       sources:
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           path: cluster-config/chart
           helm:
@@ -31,7 +31,7 @@ spec:
             parameters:
               - name: hubResources.enabled
                 value: '{{ eq .name "local-cluster" | toString }}'
-        - repoURL: https://github.com/kahowell/ai-grid-tenant.git
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           ref: values
       destination:

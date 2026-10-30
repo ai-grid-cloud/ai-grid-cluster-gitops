@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/kahowell/ai-grid-tenant.git
+    repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
     targetRevision: HEAD
     path: apps/cert-manager/manifests
   destination:
