@@ -1,19 +1,23 @@
 # TEMPORARY smoke test: site-e runs the grid operator and gateway from praxis-proxy/grid#497
-# (7e95d305) before it merges. Lists replace, so all entries are repeated. Delete with the release.
+# (d50f4932) before it merges. Lists replace, so all entries are repeated. Delete with the release.
 operator:
   rhoai:
     olm:
       config:
         env:
           - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_OPERATOR_IMAGE
-            value: quay.io/sbatsche/grid-operator@sha256:7746241fd82ec9356a6e6e959cd102b2cd16b4e3fd1bd16882ac7e24c2de23a3
+            value: quay.io/sbatsche/grid-operator@sha256:1d301dba04500b8d3c86063de7c50e015a30b23545373f50f161bab898333c8a
           - name: RELATED_IMAGE_ODH_KSERVE_LLMISVC_CONTROLLER_IMAGE
             value: quay.io/opendatahub/odh-kserve-llmisvc-controller@sha256:69d54ad4c94726d5a0eca8202ba5820b70ea0bfa55f7998b440966dbd566f0a6
 global:
   relatedImages:
     - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_GATEWAY_IMAGE
-      value: quay.io/sbatsche/grid-gateway@sha256:11c90d05c0a873c3b2a0f07ae83c295eb81ddc67b5806cc6f6f1204717c84b4a
+      value: quay.io/sbatsche/grid-gateway@sha256:4f04b65ae3b7fbe4ed54c904e9e4d7d09bf6ce4eba8b3e2c950dbc6d83cd97d2
     - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_ENROLLMENT_IMAGE
       value: quay.io/sbatsche/grid-enrollment@sha256:c1d5d292b681fb3879d0bb3eb155f66f96fb999801d1341d4150ee2c9fba9b12
     - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_POSTGRES_IMAGE
       value: registry.redhat.io/rhel9/postgresql-16@sha256:435ba5c1d3f686cf8a45ae525b4d169ced6b33753bcfab99a1498bd9e6e99817
+praxis-gateway:
+  # Mounts the model client token the operator's local dial sends.
+  providerCredentials:
+    - secretName: grid-model-client-token
