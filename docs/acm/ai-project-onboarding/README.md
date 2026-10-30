@@ -23,18 +23,50 @@ The label is the only switch. On every cluster in the grid it gives the namespac
 
 Use the provider console, which writes the model to the catalog repository, or commit an `LLMInferenceService` to a labelled namespace. See [apps/acm-models](../../../apps/acm-models/README.md) for the catalog, its AppProjects and the sample models.
 
-A model definition needs:
+A minimal model, as the lab runs it:
 
-- its router attached to the `openshift-ai-inference` Gateway in `openshift-ingress`;
-- the scheduler's metrics TLS argument, `--metrics-cert-dir=/var/run/kserve/tls`, until the platform's scheduler preset provides it.
+```yaml
+apiVersion: serving.kserve.io/v1alpha2
+kind: LLMInferenceService
+metadata:
+  name: facebook-opt-125m
+  namespace: <project>
+spec:
+  baseRefs:
+    - name: v3-6-0-kserve-config-llm-template-cpu
+  model:
+    uri: hf://facebook/opt-125m
+    name: facebook-opt-125m
+  replicas: 1
+  router:
+    scheduler:
+      template:
+        containers:
+          - name: main
+            args:
+              - --metrics-cert-dir=/var/run/kserve/tls
+    route: {}
+    gateway:
+      refs:
+        - name: openshift-ai-inference
+          namespace: openshift-ingress
+```
 
-Still manual per model, until the gateways generate their routing from the published providers:
+- baseRefs picks a platform preset. Use v3-6-0-kserve-config-llm-template for GPU nodes.
+- model.name is the name clients send, and the name MaaS publishes.
+- router.gateway attaches the model to the inference gateway, which the grid dials.
+- The scheduler argument serves its metrics over TLS, until the platform preset does.
 
-- a backend entry in `apps/rhoai/values-<cluster>.yaml` for the consumer gateway;
-- a backend entry in `apps/rhoai/provider-gateway-<cluster>.yaml` for the provider gateway.
+The working sample is [apps/acm-models/facebook-opt-125m](../../../apps/acm-models/facebook-opt-125m/10-facebook-opt-125m-cpu.yaml).
+
+Nothing else per model. The grid operator derives the gateway's dial from the published InferenceProvider. The dial goes to the serving gateway at the model's publisher path, as the grid model client, so the inference scheduler picks the pod. The serving gateway authorizes that path with a review for post on the model. The rhoai-prerequisites policy grants that verb to the grid model client in every labelled namespace, since the model controller's own Role covers another path (odh-model-controller#996).
+
+Other sites reach the model through the hub's declared peer file for this cluster, until members report their gateway address.
 
 ## Verify
 
 - `oc -n <project> get networkpolicy` includes `grid-gateway-backend`, `llminference-engine-serving`, `llminference-scheduler-serving` and `rhoai-collector-metrics`, and the `rhoai-prerequisites` policy is Compliant.
 - The model's HTTPRoute reports Accepted on `openshift-ai-inference`.
 - `oc get inferenceproviders` shows the model's provider `Available`, with `MetricsAvailable=True`.
+- The dial file in the grid-serving-grid-grid-gateway ConfigMap lists the model's provider with the serving gateway address, a base path and a credential.
+- A completion through the grid gateway returns 200, with the x-grid-backend header set to that provider.

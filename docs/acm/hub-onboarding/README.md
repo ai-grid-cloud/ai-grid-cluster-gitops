@@ -1,6 +1,6 @@
 # Grid ACM hub install
 
-How a cluster becomes a Grid site on v0.3.0-rc.2, under Local membership with ACM delivery. One site per cluster.
+How a cluster becomes a Grid site on v0.3.0-rc.3, under Local membership with ACM delivery. One site per cluster.
 
 ## Flow
 
