@@ -12,7 +12,7 @@ operator:
       createNamespace: false
       config:
         env:
-          # Grid v0.3.0-rc.2 operator from the RHDS build at bca253e.
+          # Grid v0.3.0-rc.3 operator from the release on ghcr, until RHDS ships rc.3.
           - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_OPERATOR_IMAGE
             value: ghcr.io/praxis-proxy/grid-operator@sha256:ac54189051b1e5dd992664dd5bcf5b4dd0ccdab90f80f70b6a7719c5981c2937
           # ODH KServe build of opendatahub-io/kserve#2128 (EPP metrics over TLS) at
@@ -149,7 +149,7 @@ components:
                           - models-as-a-service
                           - redhat-ai-gateway-infra
 
-# Grid v0.3.0-rc.2 runtimes from the RHDS build at bca253e.
+# Grid v0.3.0-rc.3 runtimes from the release on ghcr, until RHDS ships rc.3.
 # The subcharts otherwise fall back to ghcr.io/praxis-proxy. Keep these pins
 # aligned with the Grid operator payload when updating the catalog:
 #   oc -n redhat-ods-operator get deploy rhods-operator -o json | jq -r '
