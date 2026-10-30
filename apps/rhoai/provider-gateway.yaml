@@ -7,7 +7,7 @@ fullnameOverride: grid-provider-gateway
 image:
   flavor: grid-gateway
   repository: ghcr.io/praxis-proxy/grid-gateway
-  digest: sha256:9aacd7035018b15dacb902846a859858127a274980ffcf69e6874b75f1f16453
+  digest: sha256:0010bc2167b5b0e13c533d6c789092566dd5f764661626b0e4dd05d37b94849b
 grid:
   networkName: grid
   # siteName comes from the ApplicationSet, one per cluster.
