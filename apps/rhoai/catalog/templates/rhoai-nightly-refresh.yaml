@@ -160,9 +160,14 @@ spec:
                 echo "Installed operator image already matches the catalog; no OLM refresh required"
                 olm_refreshed=true
               else
-                echo "Refreshing ${subscription_namespace}/${subscription_name} by recreating the Subscription"
-                oc delete subscription.operators.coreos.com "${subscription_name}" -n "${subscription_namespace}"
-                oc delete csv "${desired_csv}" -n "${subscription_namespace}" --ignore-not-found=true
+                # On a fresh install nothing would recreate a deleted Subscription until this sync ends.
+                if [[ -n "${installed_image}" ]]; then
+                  echo "Refreshing ${subscription_namespace}/${subscription_name} by recreating the Subscription"
+                  oc delete subscription.operators.coreos.com "${subscription_name}" -n "${subscription_namespace}"
+                  oc delete csv "${desired_csv}" -n "${subscription_namespace}" --ignore-not-found=true
+                else
+                  echo "No ${desired_csv} installed; waiting for OLM to install it"
+                fi
 
                 deadline=$((SECONDS + wait_timeout))
                 last_log=0
