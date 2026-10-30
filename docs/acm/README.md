@@ -4,17 +4,26 @@ An AI Grid on ACM takes three steps: a hub, then clusters, then models.
 
 ## Dependencies
 
-| Dependency | Where | Who provides it |
-|---|---|---|
-| OpenShift cluster with ACM and cert-manager | hub | you |
-| Fork of this repository, readable by the hub's Argo CD | hub | you |
-| Pull credentials for quay.io/rhoai, and registry.stage.redhat.io for pre-release model images | hub, once | you, as environment variables to the bootstrap script |
-| Catalog pull Secret, global pull Secret entries, image mirror | every cluster | policy, from the hub |
-| Default StorageClass: 20Gi metrics and 10Gi traces for RHOAI monitoring, 20Gi for a MaaS database replica on an ingress or combined site | every site | you |
-| Submariner gateway nodes, two per cluster, and its cloud prerequisites | every site | you, the add-on comes from the hub |
-| A default router the other sites can reach, for the provider gateway on 443 | every site | you |
-| Capacity for the models: the samples run three replicas of 1 CPU and 10Gi each, a GPU model needs GPU nodes and the NVIDIA operator | every site | you |
-| Grid CA, grid ID, site identities, grid CRDs and operator, RHOAI | every site | the hub, through policies and Argo |
+What you bring:
+
+- Hub: an OpenShift cluster with ACM, OpenShift GitOps (Argo CD) and cert-manager.
+- A fork of this repository the hub's Argo CD can read.
+- Pull credentials for quay.io/rhoai, and registry.stage.redhat.io for pre-release
+  model images, given once to the bootstrap script as environment variables.
+- Each site: a default StorageClass. RHOAI monitoring claims 20Gi and 10Gi. A MaaS
+  database replica claims 20Gi on an ingress or combined site.
+- Each site: two nodes Submariner can use as gateways, and its cloud prerequisites.
+- Each site: a default router the other sites can reach, on 443.
+- Each site: capacity for its models. The samples run on CPU, 10Gi each. A GPU
+  model needs GPU nodes and the NVIDIA operator, which this repository does not
+  install.
+
+What the hub delivers to every site, by policy and Argo CD:
+
+- Pull Secrets and the image mirror.
+- The grid CA, the site's identity certificate, and its rotation.
+- Grid CRDs, the grid operator and gateways, and RHOAI in the site's role.
+- Submariner, and the MaaS database credentials.
 
 ## 1. Hub
 
