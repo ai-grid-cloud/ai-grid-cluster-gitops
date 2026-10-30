@@ -153,8 +153,8 @@ spec:
                               app.kubernetes.io/instance: redhat-ods-monitoring.data-science-collector
     # The grid gateway dials each local model on the serving gateway's publisher path
     # as grid-model-client. The serving gateway's AuthPolicy authorizes that path with a
-    # SubjectAccessReview for post on serving.kserve.io models, which the per-model Role
-    # the model controller writes (get on the LLMInferenceService) does not grant.
+    # SubjectAccessReview for post on serving.opendatahub.io models, which the per-model
+    # Role the model controller writes (get on the LLMInferenceService) does not grant.
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
         kind: ConfigurationPolicy
@@ -175,7 +175,7 @@ spec:
                   name: grid-model-client-models
                 rules:
                   - apiGroups:
-                      - serving.kserve.io
+                      - serving.opendatahub.io
                     resources:
                       - models
                     verbs:
