@@ -19,6 +19,11 @@ operator:
           # 27a1755, until the RHOAI 3.6 payload carries it.
           - name: RELATED_IMAGE_ODH_KSERVE_LLMISVC_CONTROLLER_IMAGE
             value: quay.io/opendatahub/odh-kserve-llmisvc-controller@sha256:69d54ad4c94726d5a0eca8202ba5820b70ea0bfa55f7998b440966dbd566f0a6
+          # ODH model controller at ee3dcb8 (odh-model-controller#999: the Role grants the
+          # publisher path it dials), to prove the grid-model-client-models binding in
+          # rhoai-prerequisites can go; until the RHOAI 3.6 payload carries it.
+          - name: RELATED_IMAGE_ODH_MODEL_CONTROLLER_IMAGE
+            value: quay.io/opendatahub/odh-model-controller@sha256:4fefe21382dbe0e0d55f735078b6ef751c06204463b974783f2d14d2636c753a
 # Workaround for https://redhat.atlassian.net/browse/RHOAIENG-99507:
 # RHACM's multicluster-observability-addon also installs COO with its own
 # OperatorGroup (named after the namespace), which conflicts with the chart's
