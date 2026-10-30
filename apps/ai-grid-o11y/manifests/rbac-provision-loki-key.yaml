@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: provision-loki-key
+  namespace: ai-grid-o11y
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: provision-loki-key
+  namespace: ai-grid-o11y
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["usage-logs-bucket"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["usage-logs-bucket"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["usage-logs-object-storage"]
+    verbs: ["create", "update", "patch", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: provision-loki-key
+  namespace: ai-grid-o11y
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: provision-loki-key
+subjects:
+  - kind: ServiceAccount
+    name: provision-loki-key
+    namespace: ai-grid-o11y

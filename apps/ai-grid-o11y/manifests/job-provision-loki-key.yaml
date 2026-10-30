@@ -2,12 +2,14 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   generateName: provision-loki-s3-secret-
+  namespace: ai-grid-o11y
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
     spec:
+      serviceAccountName: provision-loki-key
       containers:
         - name: create-secret
           image: registry.redhat.io/openshift4/ose-cli:latest
