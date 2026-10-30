@@ -246,3 +246,27 @@ spec:
                 data:
                   .dockerconfigjson: '{{ $mergedConfig | toJson | base64enc }}'
             {{- end -}}
+    # The service CA as a Secret: the grid gateway's upstreamCA and the operator's
+    # deriveTopology.transport.caSecretRef take a Secret, and the platform injects the
+    # CA only as a ConfigMap. Lets the gateway verify the RHOAI serving gateway's cert.
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: rhoai-serving-gateway-ca
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates-raw: |
+            {{- if lookup "v1" "ConfigMap" "redhat-ai-grid" "openshift-service-ca.crt" -}}
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: openshift-service-ca
+                  namespace: redhat-ai-grid
+                type: Opaque
+                data:
+                  ca.crt: '{{ fromConfigMap "redhat-ai-grid" "openshift-service-ca.crt" "service-ca.crt" | base64enc }}'
+            {{- end -}}
