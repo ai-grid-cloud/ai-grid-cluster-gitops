@@ -31,6 +31,5 @@ spec:
     tls:
       enable: true
       caCert:
-        type: configmap
-        name: usage-logs-gateway-ca-bundle
-        certPath: service-ca.crt
+        type: file
+        certPath: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
