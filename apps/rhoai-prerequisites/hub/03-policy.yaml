@@ -228,7 +228,12 @@ spec:
             {{- if not $sourceAuth -}}
             {{- $sourceAuth = index $sourceAuths "quay.io" -}}
             {{- end -}}
-            {{- $mergedAuths := mustMerge (index $globalConfig "auths") (dict "quay.io/rhoai" $sourceAuth) -}}
+            {{- /* Every registry the hub Secret holds, e.g. registry.stage.redhat.io for the rhaii mirrors. A bare quay.io entry is scoped to quay.io/rhoai so the cluster's own quay.io login stays. */ -}}
+            {{- $preRelease := omit $sourceAuths "quay.io" -}}
+            {{- if $sourceAuth -}}
+            {{- $_ := set $preRelease "quay.io/rhoai" $sourceAuth -}}
+            {{- end -}}
+            {{- $mergedAuths := mustMerge (index $globalConfig "auths") $preRelease -}}
             {{- $mergedConfig := mustMerge $globalConfig (dict "auths" $mergedAuths) -}}
             - complianceType: musthave
               objectDefinition:

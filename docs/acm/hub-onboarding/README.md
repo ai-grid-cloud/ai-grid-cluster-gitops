@@ -44,6 +44,7 @@ Then, as cluster-admin on the hub:
 ```bash
 oc login --server=https://api.<hub-cluster-domain>:6443 -u <cluster-admin>
 export RHOAI_QUAY_PULL_SECRET=<base64 of user:password for quay.io/rhoai>
+export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redhat.io>   # needed for model images pulled through the rhaii mirrors
 ./bootstrap.sh
 ```
 

@@ -7,8 +7,10 @@ in the reserved `global` ACM cluster set:
 - the same `ImageDigestMirrorSet` used by the hub;
 - the `openshift-marketplace/rhoai-catalog-pull-secret` required to pull the
   RHOAI catalog image;
-- a merged `openshift-config/pull-secret` entry for `quay.io/rhoai`, required
-  for mirrored operator-bundle pulls.
+- merged `openshift-config/pull-secret` entries for `quay.io/rhoai`, required
+  for mirrored operator-bundle pulls, and for every other registry the hub
+  Secret holds, such as `registry.stage.redhat.io` for the
+  `registry.redhat.io/rhaii*` mirrors that model images pull through.
 - the remote-only Limitador Redis configuration that shares MaaS rate-limit
   counters through the Submariner service import.
 - the catalog ServiceAccount's `imagePullSecrets` wiring is managed by
@@ -32,8 +34,10 @@ managed cluster joins.
 
 The global pull-secret policy is idempotent. It reads the current
 `openshift-config/pull-secret`, preserves every existing credential, and
-converges only the repository-scoped `quay.io/rhoai` entry to the hub-side
-RHOAI credential. Updating that Secret triggers the normal Machine Config
+adds the hub-side entries it lacks: `quay.io/rhoai` from the Quay credential,
+and any other registry the hub Secret holds. A bare `quay.io` entry in the hub
+Secret is applied only as `quay.io/rhoai`, so the cluster's own `quay.io` login
+stays. Updating that Secret triggers the normal Machine Config
 Operator rollout to each node.
 
 ## Shared Limitador Redis
