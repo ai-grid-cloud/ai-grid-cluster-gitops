@@ -1,0 +1,6 @@
+# Identity the {{ .Values.name }} collector writes with (bound to {{ .Values.name }}-infrastructure-writer).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.name }}-writer
+  namespace: {{ .Values.namespace }}

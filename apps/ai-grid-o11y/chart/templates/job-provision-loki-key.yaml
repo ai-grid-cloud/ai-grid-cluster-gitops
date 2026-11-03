@@ -1,3 +1,4 @@
+{{- if eq .Values.objectStorage.mode "obc" }}
 # Turns the bucket claim's generated credentials into the LokiStack's object-storage Secret.
 # Sync hook in wave 1: it runs after the wave-0 objects (bucket claim, RBAC, CA bundle) are applied and
 # before the LokiStack (wave 2), and it waits for the claim to be Bound instead of failing on an empty read.
@@ -5,7 +6,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   generateName: provision-loki-s3-secret-
-  namespace: redhat-ods-monitoring
+  namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/sync-wave: "1"
@@ -17,15 +18,27 @@ spec:
     spec:
       serviceAccountName: provision-loki-key
       restartPolicy: Never
+      {{- if and (eq .Values.objectStorage.obc.scheme "https") .Values.objectStorage.obc.caName }}
+      volumes:
+        - name: bucket-ca
+          configMap:
+            name: {{ .Values.objectStorage.obc.caName }}
+      {{- end }}
       containers:
         - name: create-secret
-          image: registry.redhat.io/openshift4/ose-cli:latest
+          image: {{ .Values.job.image }}
+          {{- if and (eq .Values.objectStorage.obc.scheme "https") .Values.objectStorage.obc.caName }}
+          volumeMounts:
+            - name: bucket-ca
+              mountPath: /etc/bucket-ca
+              readOnly: true
+          {{- end }}
           command: ["/bin/bash", "-c"]
           args:
             - |
               set -euo pipefail
-              O11Y_NS=redhat-ods-monitoring
-              LOKI_NAME=usage-logs
+              O11Y_NS={{ .Values.namespace }}
+              LOKI_NAME={{ .Values.name }}
               oc() { command oc --request-timeout=15s "$@"; }
               phase=""
               for i in $(seq 1 80); do
@@ -35,14 +48,25 @@ spec:
               done
               [ "$phase" = Bound ] || { echo "bucket claim not Bound" >&2; exit 1; }
               BUCKET=$(oc get cm ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.BUCKET_NAME}')
+              HOST=$(oc get cm ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.BUCKET_HOST}')
+              PORT=$(oc get cm ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.BUCKET_PORT}')
+              [ -n "$HOST" ] && [ -n "$PORT" ] || { echo "bucket claim Bound but endpoint empty" >&2; exit 1; }
+              ENDPOINT="{{ .Values.objectStorage.obc.scheme }}://${HOST}:${PORT}"
+              {{- if and (eq .Values.objectStorage.obc.scheme "https") .Values.objectStorage.obc.caName }}
+              # The endpoint must answer TLS with a certificate the selected bundle trusts (any HTTP status).
+              curl -sS --max-time 15 --cacert /etc/bucket-ca/{{ .Values.objectStorage.obc.caKey }} -o /dev/null "$ENDPOINT/" || { echo "endpoint $ENDPOINT failed TLS verification against {{ .Values.objectStorage.obc.caName }}" >&2; exit 1; }
+              {{- else }}
+              curl -sS --max-time 15 -o /dev/null "$ENDPOINT/" || { echo "endpoint $ENDPOINT not reachable" >&2; exit 1; }
+              {{- end }}
               AK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
               SK=$(oc get secret ${LOKI_NAME}-bucket -n "$O11Y_NS" -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
               [ -n "$BUCKET" ] && [ -n "$AK" ] && [ -n "$SK" ] || { echo "bucket claim Bound but credentials empty" >&2; exit 1; }
               oc create secret generic ${LOKI_NAME}-object-storage -n "$O11Y_NS" \
                 --from-literal=bucketnames="$BUCKET" \
-                --from-literal=endpoint="https://s3.openshift-storage.svc:443" \
+                --from-literal=endpoint="$ENDPOINT" \
                 --from-literal=access_key_id="$AK" \
                 --from-literal=access_key_secret="$SK" \
                 --dry-run=client -o yaml | oc apply -f -
               oc get secret ${LOKI_NAME}-object-storage -n "$O11Y_NS" -o jsonpath='{.data.bucketnames}' | grep -q . || { echo "object-storage Secret not written" >&2; exit 1; }
               echo "object-storage Secret for bucket ${BUCKET} ready"
+{{- end }}

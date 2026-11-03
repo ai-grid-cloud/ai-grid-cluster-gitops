@@ -1,6 +1,0 @@
-# Identity the usage-logs collector writes with (bound to usage-logs-infrastructure-writer).
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: usage-logs-writer
-  namespace: redhat-ods-monitoring

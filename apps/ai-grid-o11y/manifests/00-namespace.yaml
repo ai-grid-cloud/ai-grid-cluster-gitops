@@ -1,9 +1,0 @@
-# The usage-logs Perses dashboard and datasource live here; CreateNamespace covers only the destination namespace.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: redhat-ods-monitoring
-  annotations:
-    # Shared with RHOAI monitoring; never prune or delete this namespace.
-    argocd.argoproj.io/sync-options: Prune=false,Delete=false
-    argocd.argoproj.io/sync-wave: "-1"

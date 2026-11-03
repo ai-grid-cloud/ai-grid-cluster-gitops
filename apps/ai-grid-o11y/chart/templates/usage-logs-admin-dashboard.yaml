@@ -1,0 +1,2 @@
+{{- /* Raw file: the dashboard JSON carries brace sequences Helm must not parse. */ -}}
+{{ .Files.Get "files/usage-logs-admin-dashboard.yaml" | replace "redhat-ods-monitoring" .Values.namespace | replace "usage-logs" .Values.name }}

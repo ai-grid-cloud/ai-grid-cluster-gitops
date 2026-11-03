@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: usage-logs-infrastructure-writer
+  name: {{ .Values.name }}-infrastructure-writer
 rules:
   - apiGroups: ["loki.grafana.com"]
     resources: ["infrastructure"]

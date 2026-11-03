@@ -1,26 +1,27 @@
+{{- if eq .Values.objectStorage.mode "obc" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: provision-loki-key
-  namespace: redhat-ods-monitoring
+  namespace: {{ .Values.namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: provision-loki-key
-  namespace: redhat-ods-monitoring
+  namespace: {{ .Values.namespace }}
 rules:
   - apiGroups: ["objectbucket.io"]
     resources: ["objectbucketclaims"]
-    resourceNames: ["usage-logs-bucket"]
+    resourceNames: ["{{ .Values.name }}-bucket"]
     verbs: ["get"]
   - apiGroups: [""]
     resources: ["configmaps"]
-    resourceNames: ["usage-logs-bucket"]
+    resourceNames: ["{{ .Values.name }}-bucket"]
     verbs: ["get"]
   - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["usage-logs-bucket"]
+    resourceNames: ["{{ .Values.name }}-bucket"]
     verbs: ["get"]
   # resourceNames cannot restrict `create` (the name is in the request body),
   # so creation is scoped to this namespace only.
@@ -32,7 +33,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: provision-loki-key
-  namespace: redhat-ods-monitoring
+  namespace: {{ .Values.namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -40,4 +41,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: provision-loki-key
-    namespace: redhat-ods-monitoring
+    namespace: {{ .Values.namespace }}
+{{- end }}

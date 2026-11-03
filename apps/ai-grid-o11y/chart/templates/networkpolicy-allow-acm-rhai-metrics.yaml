@@ -4,7 +4,7 @@
 # collector's metrics port.
 #
 # The ScrapeConfig rhai-metrics (open-cluster-management-observability)
-# federates from data-science-collector-prometheus.redhat-ods-monitoring.svc:8889
+# federates from data-science-collector-prometheus.{{ .Values.rhoai.monitoringNamespace }}.svc:8889
 #
 # NetworkPolicies are additive, so this complements rather than overrides
 # the operator-managed policy and will not be reconciled away.
@@ -12,13 +12,13 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-acm-rhai-metrics
-  namespace: redhat-ods-monitoring
+  namespace: {{ .Values.rhoai.monitoringNamespace }}
   labels:
     app.kubernetes.io/component: user-workload-metrics-collector
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/instance: redhat-ods-monitoring.data-science-collector
+      app.kubernetes.io/instance: {{ .Values.rhoai.monitoringNamespace }}.data-science-collector
       app.kubernetes.io/component: opentelemetry-collector
   policyTypes:
     - Ingress

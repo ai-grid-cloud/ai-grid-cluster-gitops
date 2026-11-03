@@ -1,0 +1,32 @@
+# -- Namespace of the LokiStack and its objects.
+namespace: redhat-ods-monitoring
+name: usage-logs
+rhoai:
+  # -- RHOAI's monitoring namespace, where its collector runs (not an input to move).
+  monitoringNamespace: redhat-ods-monitoring
+lokistack:
+  size: 1x.demo
+  retentionDays: 30
+  # -- Required: the block storage class for the LokiStack's volumes. No default fits every platform.
+  storageClassName: ""
+  schemaEffectiveDate: "2026-10-01"
+objectStorage:
+  # -- obc: a bucket claim on the class below, turned into the object-storage Secret by a sync hook that
+  # reads the claim's endpoint and credentials. existingSecret: a Secret the deployment provides with the
+  # keys bucketnames, endpoint, access_key_id, access_key_secret (Loki's s3 secret format).
+  mode: obc
+  obc:
+    storageClassName: openshift-storage.noobaa.io
+    # -- Scheme of the bucket endpoint the claim reports; https is verified against the CA below before the Secret is written.
+    scheme: https
+    # -- CA that signs the bucket endpoint's certificate (ConfigMap in the namespace); the service CA bundle
+    # covers an in-cluster NooBaa endpoint. Set empty for a publicly trusted endpoint.
+    caName: openshift-service-ca-bundle
+    caKey: service-ca.crt
+  existingSecret:
+    name: ""
+    caName: ""
+    caKey: service-ca.crt
+job:
+  # -- Image with oc for the provisioning hook; pin it on a production deployment.
+  image: registry.redhat.io/openshift4/ose-cli:latest

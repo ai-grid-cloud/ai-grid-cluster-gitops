@@ -1,15 +1,15 @@
-# Read identity for the usage-logs tenant: the rollout's synthetic write/read check and any dashboard proxy
+# Read identity for the {{ .Values.name }} tenant: the rollout's synthetic write/read check and any dashboard proxy
 # that queries the gateway with a service-account token.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: usage-logs-reader
-  namespace: redhat-ods-monitoring
+  name: {{ .Values.name }}-reader
+  namespace: {{ .Values.namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: usage-logs-infrastructure-reader
+  name: {{ .Values.name }}-infrastructure-reader
 rules:
   - apiGroups: ["loki.grafana.com"]
     resources: ["infrastructure"]
@@ -19,12 +19,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: usage-logs-infrastructure-reader
+  name: {{ .Values.name }}-infrastructure-reader
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: usage-logs-infrastructure-reader
+  name: {{ .Values.name }}-infrastructure-reader
 subjects:
   - kind: ServiceAccount
-    name: usage-logs-reader
-    namespace: redhat-ods-monitoring
+    name: {{ .Values.name }}-reader
+    namespace: {{ .Values.namespace }}

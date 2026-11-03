@@ -1,13 +1,14 @@
+{{- include "o11y.validate" . }}
 apiVersion: loki.grafana.com/v1
 kind: LokiStack
 metadata:
-  name: usage-logs
-  namespace: redhat-ods-monitoring
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
   annotations:
     # After the wave-1 hook has written the object-storage Secret.
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  size: 1x.demo
+  size: {{ .Values.lokistack.size }}
   limits:
     global:
       otlp:
@@ -21,18 +22,20 @@ spec:
           - name: cluster_name
           - name: cluster_id
       retention:
-        days: 30
+        days: {{ .Values.lokistack.retentionDays }}
   storage:
     schemas:
       - version: v13
-        effectiveDate: "2026-10-01"
+        effectiveDate: {{ .Values.lokistack.schemaEffectiveDate | quote }}
     secret:
-      name: usage-logs-object-storage
+      name: {{ include "o11y.secretName" . }}
       type: s3
+{{- if include "o11y.caName" . }}
     tls:
-      caName: openshift-service-ca-bundle
-      caKey: service-ca.crt
-  storageClassName: gp3-csi
+      caName: {{ include "o11y.caName" . }}
+      caKey: {{ include "o11y.caKey" . }}
+{{- end }}
+  storageClassName: {{ .Values.lokistack.storageClassName }}
   tenants:
     mode: openshift-logging
   managementState: Managed
