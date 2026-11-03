@@ -25,7 +25,9 @@ oc label managedcluster site-a ai-grid/enabled-                            # Rem
 The provider console's **Add to AI Grid** sets both labels, and **Remove**
 drops `ai-grid/enabled`. A role can be changed at any time. Removing the role
 stops managing the site's platform as a Remove does, but the cluster stays a grid
-member until `ai-grid/enabled` goes too.
+member until `ai-grid/enabled` goes too. Removing the role also takes the cluster
+out of `rhoai-prerequisites`, which deletes its image mirror (its nodes roll), so
+remove the role only when uninstalling.
 
 ## The hub
 
@@ -93,8 +95,8 @@ Policies in other apps select the same sites: the tenant Policy
 config and the grid `ExternalProvider`) and `maas-db`'s credentials go to
 sites with role ingress or combined.
 `rhoai-prerequisites` (with the model namespace and its NetworkPolicies, the
-image mirror and the pull secret, and its `rhoai-limitador-redis` Policy on
-every cluster but the hub), Submariner, the sample models and Argo CD's cluster
+image mirror and the pull secret) goes to the hub and to every cluster with an
+`ai-grid/role` label. Submariner, the sample models and Argo CD's cluster
 registration still go to every managed cluster, site or not.
 
 ## Changing a site to ingress or combined

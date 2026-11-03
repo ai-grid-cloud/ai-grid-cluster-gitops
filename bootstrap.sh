@@ -57,5 +57,5 @@ oc apply -f bootstrap/openshift-gitops-admin.yaml
 oc patch consoles.operator.openshift.io cluster --patch '{ "spec": { "plugins": ["gitops-plugin"] } }' --type=merge
 
 # Seed only the hub-side Quay credential. The rhoai-prerequisites ACM app
-# distributes the registry mirror and pull secret to every managed cluster.
+# distributes the registry mirror and pull secret to the hub and AI Grid sites.
 bash apps/rhoai-prerequisites/create-hub-secret.sh
