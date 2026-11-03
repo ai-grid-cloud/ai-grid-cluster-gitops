@@ -15,7 +15,7 @@ esac
 # each line of the file marked "# DEPLOYMENT_<NAME>". Unset, the file's own values
 # stay: this repository at HEAD and a path it doesn't have, so nothing is read.
 root_applicationset() {
-  local file=$1 line name value out="" re='^(.*: )([^ ]+)( # (DEPLOYMENT_[A-Z_]+))$'
+  local file=$1 line name value head old tail out="" re='^(.*: )([^ ]+)( # (DEPLOYMENT_[A-Z_]+))$'
   local DEPLOYMENT_PATH=${DEPLOYMENT_PATH:-}
   DEPLOYMENT_PATH=${DEPLOYMENT_PATH#/}; DEPLOYMENT_PATH=${DEPLOYMENT_PATH%/}
   for name in DEPLOYMENT_REPO_URL DEPLOYMENT_REVISION DEPLOYMENT_PATH; do
@@ -28,9 +28,11 @@ root_applicationset() {
   done
   while IFS= read -r line || [ -n "$line" ]; do
     if [[ $line =~ $re ]]; then
-      name=${BASH_REMATCH[4]}
+      name=${BASH_REMATCH[4]} head=${BASH_REMATCH[1]} old=${BASH_REMATCH[2]} tail=${BASH_REMATCH[3]}
       value=${!name:-}
-      [ -n "$value" ] && line=${BASH_REMATCH[1]}${value}${BASH_REMATCH[3]}
+      # The deployment apps generator's path keeps its /apps/*.yaml.
+      [[ -n $value && $name == DEPLOYMENT_PATH && $old == */apps/\*.yaml ]] && value+=/apps/*.yaml
+      [ -n "$value" ] && line=$head$value$tail
     fi
     out+=$line$'\n'
   done < "$file"
