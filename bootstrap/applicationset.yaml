@@ -23,6 +23,14 @@ spec:
           - path: apps/external-services/application.yaml
             exclude: true
           - path: cluster-config/application.yaml
+        # The deployment repository: per-cluster values another deployment keeps
+        # outside this repository (docs/acm/hub-onboarding). bootstrap.sh replaces
+        # each value marked # DEPLOYMENT_* from its environment; the defaults name
+        # this repository and a path it doesn't have, so nothing is read.
+        values:
+          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: HEAD # DEPLOYMENT_REVISION
+          deploymentPath: deployment # DEPLOYMENT_PATH
   template:
     metadata:
       name: '{{.metadata.name}}'
@@ -32,5 +40,7 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
+  # An app names the deployment repository as @deploymentRepoURL@,
+  # @deploymentRevision@ and @deploymentPath@, replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson }}
+    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath }}

@@ -40,6 +40,14 @@ spec:
                 - path: apps/rhoai/application.yaml
                 - path: apps/rhoai-prerequisites/application.yaml
                 - path: bootstrap/dedicated-hub/application.yaml
+              # The deployment repository: per-cluster values another deployment keeps
+              # outside this repository (docs/acm/hub-onboarding). bootstrap.sh replaces
+              # each value marked # DEPLOYMENT_* from its environment; the defaults name
+              # this repository and a path it doesn't have, so nothing is read.
+              values:
+                deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+                deploymentRevision: HEAD # DEPLOYMENT_REVISION
+                deploymentPath: deployment # DEPLOYMENT_PATH
           - clusters:
               selector:
                 matchLabels:
@@ -61,6 +69,9 @@ spec:
   # here.
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
+  # rhoai's source is a kustomization (apps/rhoai/application.yaml), so a patch
+  # deletes the binding. Apps name the deployment repository as
+  # @deploymentRepoURL@, @deploymentRevision@ and @deploymentPath@, replaced here.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "grid-bootstrap" }}
@@ -78,6 +89,6 @@ spec:
     {{- $_ := set $spec.source "directory" (dict "exclude" "{04-limitador-redis-secret.yaml,20-limitador-storage.yaml}") }}
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
-    {{- $_ := set $spec.source "directory" (dict "exclude" "00-managed-cluster-set-binding-grid.yaml") }}
+    {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    spec: {{ $spec | toJson }}
+    spec: {{ $spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath }}
