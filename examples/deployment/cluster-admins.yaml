@@ -1,0 +1,9 @@
+# Users granted cluster-admin on every managed cluster by the cluster-config
+# ApplicationSet. This list replaces cluster-config/values.yaml in the template.
+# An empty list (cluster_admins: []) grants no one; a missing key fails the sync.
+# Entries are Kubernetes usernames that are also valid in a resource name.
+#
+# The default profile runs cluster-config. The dedicated-hub profile doesn't:
+# list apps/cluster-config.yaml to run it there.
+cluster_admins:
+  - example-admin

@@ -1,0 +1,71 @@
+# Node Feature Discovery and the NVIDIA GPU operator on each inference and
+# combined spoke (Placement ai-grid-inference, from the template's
+# apps/ai-grid-spokes). On a spoke with no NVIDIA GPU the operator runs no
+# driver, device-plugin or DCGM pods, and NFD runs one worker pod per node.
+# Removing a spoke keeps the operators installed (preserveResourcesOnDeletion).
+# apps/gpu.yaml fills in the clusters generator's values (the deployment
+# repository), which the template reads as .values.*.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gpu
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          - clusterDecisionResource:
+              configMapRef: acm-placement
+              labelSelector:
+                matchLabels:
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
+              requeueAfterSeconds: 60
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/acm-cluster: "true"
+                  name: '{{ .clusterName }}'
+  template:
+    metadata:
+      name: 'gpu-{{ .name | trunc 37 }}-{{ sha256sum .name | trunc 8 }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      sources:
+        # The same odh-gitops chart and revision as the template's rhoai
+        # ApplicationSet, as its own release with only these two dependencies on.
+        - repoURL: https://github.com/opendatahub-io/odh-gitops.git
+          targetRevision: feature-ai-grid
+          path: charts/rhai-on-openshift-chart
+          helm:
+            releaseName: rhai-gpu
+            valueFiles:
+              - $deployment/{{ .values.deploymentPath }}/gpu/values.yaml
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
+        # The NodeFeatureDiscovery and ClusterPolicy, once their CRDs exist.
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          path: '{{ .values.deploymentPath }}/gpu/crs'
+      # The hub through Argo CD's in-cluster server, as in the template's rhoai Applications.
+      destination:
+        server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: -1
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+        syncOptions:
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true
