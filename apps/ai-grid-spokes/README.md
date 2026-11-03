@@ -103,7 +103,7 @@ The MaaS it gains validates users against the external-services cluster's Keyclo
 Route. If that Route's certificate is not publicly trusted, the site's cluster
 trust must carry the external-services cluster's ingress CA before the role is set; the procedure
 is in `docs/acm/cluster-onboarding/README.md` ("Trusting the external-services cluster's
-ingress CA"). `apps/rhoai/maas-sites` then mounts the cluster trust bundle and
-the service CA into the site's Authorino; a site that already mounts volumes
-into Authorino lists them in `apps/rhoai/maas-sites/values-<cluster>.yaml`
-under `authorino.extraVolumeItems`.
+ingress CA"). The RHOAI AI Grid profiles then mount the cluster trust bundle and
+the service CA into the site's Authorino; a site that needs more CA ConfigMaps
+lists the complete set in `apps/rhoai/values-<cluster>.yaml` under
+`dependencies.rhcl.config.authorinoTrustedCA.configMaps`.
