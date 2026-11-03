@@ -39,6 +39,7 @@ spec:
           deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
           deploymentRevision: HEAD # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
+          catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
           templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           templateRevision: HEAD
     # The deployment's own apps: one Application per <path>/apps/*.yaml in the
@@ -53,6 +54,7 @@ spec:
           deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
           deploymentRevision: HEAD # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
+          catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
           templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           templateRevision: HEAD
   template:
@@ -68,4 +70,4 @@ spec:
   # @deploymentRevision@ and @deploymentPath@, and this repository as
   # @templateRepoURL@ and @templateRevision@, replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision }}
+    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision | replace "@catalogRepoURL@" .values.catalogRepoURL }}
