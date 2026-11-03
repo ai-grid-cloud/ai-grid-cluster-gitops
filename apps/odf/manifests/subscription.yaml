@@ -9,5 +9,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
   name: odf-operator
-  channel: stable-4.22
+  # No channel: OLM takes the package's default channel in this cluster's
+  # catalog (stable-4.21 in OpenShift 4.21's). A pinned stable-4.22 has no
+  # operators in a 4.21 catalog, so the Subscription stays ResolutionFailed.
   installPlanApproval: Automatic
