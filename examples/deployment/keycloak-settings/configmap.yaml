@@ -1,0 +1,9 @@
+# Keycloak imports its realms without replacing existing ones, so
+# organizations the provider console creates survive a restart
+# (apps/keycloak/README.md in the template).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-import-settings
+data:
+  REALM_IMPORT_OVERRIDE: "false"

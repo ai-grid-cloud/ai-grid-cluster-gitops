@@ -73,9 +73,12 @@ spec:
           command:
             - /bin/bash
             - -c
+          # REALM_IMPORT_OVERRIDE (optional ConfigMap keycloak-realm-import-settings,
+          # default true): true replaces each realm from its file at every start;
+          # false creates only realms that don't exist yet (README.md).
           args:
             - |
-              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override true
+              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override "${REALM_IMPORT_OVERRIDE:-true}"
               exec /opt/keycloak/bin/kc.sh start
           ports:
             - name: http
@@ -96,6 +99,9 @@ spec:
                 name: keycloak-secrets
             - configMapRef:
                 name: keycloak-public-url
+            - configMapRef:
+                name: keycloak-realm-import-settings
+                optional: true
           env:
             - name: KC_DB
               value: postgres

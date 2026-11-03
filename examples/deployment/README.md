@@ -31,7 +31,7 @@ name (`local-cluster` for the hub).
 | `clusters/<cluster>/maas-sites.yaml` | The `rhoai` ApplicationSet | Helm values for that cluster's `maas-sites` release, after the template's `apps/rhoai/maas-sites/values-<cluster>.yaml`. |
 | `cluster-admins.yaml` | The `cluster-config` ApplicationSet | `cluster_admins` replaces the template's list in `cluster-config/values.yaml`. `cluster_admins: []` grants no one. |
 | `apps/<name>.yaml` | The root ApplicationSet | One Argo CD Application each (format below). |
-| Anything else | Your apps | Manifests your apps name, such as `catalog/` and `gpu/` here. Keep them outside `apps/`: the root ApplicationSet's glob can match files in subdirectories of `apps/`. |
+| Anything else | Your apps | Manifests your apps name, such as `catalog/`, `gpu/` and `keycloak-settings/` here. Keep them outside `apps/`: the root ApplicationSet's glob can match files in subdirectories of `apps/`. |
 
 ## Apps
 
@@ -64,6 +64,7 @@ The example apps:
 | `catalog.yaml` | The provider console's catalog ApplicationSets and AppProjects (`catalog/kustomization.yaml`), pointed at your catalog repository. | Replace `example-org/example-catalog` with your catalog repository, and pin the template URLs' `main` to the commit the hub runs. Use it only with the dedicated-hub profile; the default profile's `acm-models` app already delivers these objects. |
 | `console.yaml` | The provider console, from its Helm chart, with OpenShift sign-in, Perses project `redhat-ods-monitoring` and models in `ai-grid-internal-models`. | Set `backend.git.url` to your catalog repository, then run the template's `apps/console/create-secrets.sh` ([apps/console](../../apps/console/README.md)). Dedicated-hub profile only; the default profile runs its own console app. |
 | `gpu.yaml` | Node Feature Discovery and the NVIDIA GPU operator on each inference and combined spoke (`gpu/`). | Nothing; on a spoke without an NVIDIA GPU the operator runs no driver pods. |
+| `keycloak-settings.yaml` | ConfigMap `keycloak-realm-import-settings` (`keycloak-settings/`) in Keycloak's namespace on the hub: Keycloak imports only missing realms, so organizations the console creates survive a restart. | Nothing for the dedicated-hub profile's hub Keycloak. |
 | `cluster-config.yaml` | The template's `cluster-config` on a dedicated hub: `cluster-admins.yaml`'s users, and the Submariner gateway-node Policy. | Edit `cluster-admins.yaml`. Dedicated-hub profile only. |
 
 ## Keep the catalog in another repository
