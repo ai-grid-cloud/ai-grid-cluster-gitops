@@ -8,6 +8,36 @@ case "$profile" in
   ""|dedicated-hub) ;;
   *) echo "ERROR: unknown BOOTSTRAP_PROFILE ${profile}." >&2; exit 1 ;;
 esac
+
+# The root ApplicationSet with the deployment repository filled in. A deployment
+# keeps its per-cluster values in a repository of its own (docs/acm/hub-onboarding):
+# DEPLOYMENT_REPO_URL, DEPLOYMENT_REVISION and DEPLOYMENT_PATH replace the value on
+# each line of the file marked "# DEPLOYMENT_<NAME>". Unset, the file's own values
+# stay: this repository at HEAD and a path it doesn't have, so nothing is read.
+root_applicationset() {
+  local file=$1 line name value out="" re='^(.*: )([^ ]+)( # (DEPLOYMENT_[A-Z_]+))$'
+  local DEPLOYMENT_PATH=${DEPLOYMENT_PATH:-}
+  DEPLOYMENT_PATH=${DEPLOYMENT_PATH#/}; DEPLOYMENT_PATH=${DEPLOYMENT_PATH%/}
+  for name in DEPLOYMENT_REPO_URL DEPLOYMENT_REVISION DEPLOYMENT_PATH; do
+    case ${!name:-} in
+      *[[:space:]\"\\#]*) echo "ERROR: ${name} can't contain whitespace, \", \\ or #." >&2; return 1 ;;
+    esac
+    if [ -n "${!name:-}" ] && ! grep -q " # ${name}\$" "$file"; then
+      echo "ERROR: ${name} is set, but ${file} has no line marked # ${name}." >&2; return 1
+    fi
+  done
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [[ $line =~ $re ]]; then
+      name=${BASH_REMATCH[4]}
+      value=${!name:-}
+      [ -n "$value" ] && line=${BASH_REMATCH[1]}${value}${BASH_REMATCH[3]}
+    fi
+    out+=$line$'\n'
+  done < "$file"
+  printf '%s' "$out"
+}
+root=$(root_applicationset "bootstrap/${profile:+${profile}/}applicationset.yaml")
+
 oc apply -f bootstrap/namespace.yaml
 oc apply -f bootstrap/gitops-operator-group.yaml
 oc apply -f bootstrap/openshift-gitops-sub.yaml
@@ -52,7 +82,7 @@ wait_for_argocd() {
 }
 wait_for_argocd
 
-oc apply -f "bootstrap/${profile:+${profile}/}applicationset.yaml"
+printf '%s' "$root" | oc apply -f -
 oc apply -f bootstrap/openshift-gitops-admin.yaml
 oc patch consoles.operator.openshift.io cluster --patch '{ "spec": { "plugins": ["gitops-plugin"] } }' --type=merge
 
