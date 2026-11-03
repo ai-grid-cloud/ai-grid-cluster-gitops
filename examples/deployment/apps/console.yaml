@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The cloud provider's admin console on a dedicated hub, from its own Helm
+  # chart: one pod with kube-auth-proxy (OpenShift sign-in), the console and
+  # its backend. It saves models and subscriptions as commits to the catalog
+  # repository that apps/catalog.yaml delivers. Before the first sync
+  # completes, run the template's apps/console/create-secrets.sh
+  # (apps/console/README.md). The default profile runs its own console app,
+  # so list this one only on a dedicated hub.
+  name: console
+  namespace: openshift-gitops
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/ai-grid-cloud/ai-grid-provider-console.git
+      # A commit, not a branch: the chart holds ClusterRoleBindings and a
+      # ValidatingAdmissionPolicy that Argo CD applies with cluster-admin
+      # rights, so what runs here changes only by a reviewed commit. Bump it
+      # with the images.
+      targetRevision: c93b16c7fc5eb676d1b6b07be4e3bf9eafbd03d4
+      path: charts/ai-grid-provider-console
+      helm:
+        releaseName: ai-grid-provider-console
+        valuesObject:
+          # By digest: tags can be overwritten. Console and chart are main
+          # c93b16c (console #86, #87), backend main 1141af0 (#47).
+          images:
+            console:
+              tag: sha-c93b16c7fc5eb676d1b6b07be4e3bf9eafbd03d4
+              digest: sha256:c13b2c33557d544f44ea170b0b0d9d043c95eb2d4c56b7381ffcd968478a4007
+            backend:
+              tag: sha-1141af02f5e0eee062b1c18da7f3e579a82d062c
+              digest: sha256:04e53a5a5f8ae8d75e9cb7b16117227d23aa77b1814524e682fb7817c3578559
+            authProxy:
+              tag: ""
+              digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
+          console:
+            # The Monitoring page: its tabs are the dashboard-* PersesDashboards in
+            # one project, here OpenShift AI's, served by the Cluster Observability
+            # Operator's Perses on the hub.
+            perses:
+              url: https://perses.openshift-cluster-observability-operator.svc:8080
+              project: redhat-ods-monitoring
+          backend:
+            # Add to AI Grid and Remove patch ManagedCluster labels. The chart's
+            # ValidatingAdmissionPolicy limits the backend to the ai-grid/* and
+            # location labels and the ai-grid/* annotations.
+            clusterWrites: true
+            # The catalog repository. The token that pushes to it is Secret
+            # ai-grid-backend-git, never in git; keep it scoped to this
+            # repository alone.
+            git:
+              url: https://github.com/example-org/example-catalog.git
+              branch: main
+              # Where the backend writes models. The catalog's delivery, its
+              # AppProject and its status Policy all assume this namespace,
+              # which rhoai-prerequisites' Policy creates.
+              modelsNamespace: ai-grid-internal-models
+    # What the chart doesn't hold: ACM Search access for the backend.
+    - repoURL: '@templateRepoURL@'
+      targetRevision: '@templateRevision@'
+      path: apps/console/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ai-grid-provider-console
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      refresh: true
+      limit: 20
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 30m
+    syncOptions:
+      - CreateNamespace=true

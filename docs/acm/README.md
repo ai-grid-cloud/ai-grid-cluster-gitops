@@ -7,7 +7,8 @@ An AI Grid on ACM takes three steps: a hub, then clusters, then models.
 What you bring:
 
 - Hub: an OpenShift cluster with ACM, OpenShift GitOps (Argo CD) and cert-manager.
-- A fork of this repository the hub's Argo CD can read.
+- Optionally, a deployment repository the hub's Argo CD can read, for your
+  clusters' values and your own apps. The hub reads this repository unchanged.
 - Pull credentials for quay.io/rhoai, and registry.stage.redhat.io for pre-release
   model images, given once to the bootstrap script as environment variables.
 - Each site: a default StorageClass. RHOAI monitoring claims 20Gi and 10Gi. A MaaS
@@ -56,7 +57,8 @@ lists what the site brings and declares.
 
 ## 1. Hub
 
-Install Argo CD and ACM, point the fork at itself, run the bootstrap script.
+Install Argo CD and ACM: run the bootstrap script from this repository, naming
+your deployment repository if you have one.
 Argo installs everything under apps, including the grid bootstrap that mints
 the grid ID and delivers each member's identity.
 
