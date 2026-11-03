@@ -22,16 +22,16 @@ spec:
         releaseName: ai-grid-provider-console
         valuesObject:
           # By digest: tags can be overwritten. Console and chart are main
-          # c17e98e (console #117). The backend is the build the console is
-          # generated from (its .backend-api-version, 1141af0, #47), as the
-          # chart's README says: a newer backend can refuse what it sends.
+          # c17e98e (console #117), backend main e2570b4 (#59). The console's
+          # .backend-api-version is older (1141af0); this pair runs together on
+          # the demo hub.
           images:
             console:
               tag: sha-c17e98e411102e2c73543913a3f4e55589cd2275
               digest: sha256:2d0c33834a6151a353a734e1ea6527a8ca458ffdb5d1487e393052b0873f3650
             backend:
-              tag: sha-1141af02f5e0eee062b1c18da7f3e579a82d062c
-              digest: sha256:04e53a5a5f8ae8d75e9cb7b16117227d23aa77b1814524e682fb7817c3578559
+              tag: sha-e2570b4740e3c1d528b56d9eb2ddcd54b8a4f3fb
+              digest: sha256:51e35c7446bb7183a6781c77000de7daf8aaa7eb40eea1ff2431e7fc4fb215b2
             authProxy:
               tag: ""
               digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
