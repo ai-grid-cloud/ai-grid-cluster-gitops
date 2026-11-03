@@ -48,6 +48,7 @@ spec:
                 deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
                 deploymentRevision: HEAD # DEPLOYMENT_REVISION
                 deploymentPath: deployment # DEPLOYMENT_PATH
+                catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
                 templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
                 templateRevision: HEAD
           - clusters:
@@ -68,6 +69,7 @@ spec:
                 deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
                 deploymentRevision: HEAD # DEPLOYMENT_REVISION
                 deploymentPath: deployment # DEPLOYMENT_PATH
+                catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
                 templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
                 templateRevision: HEAD
           - clusters:
@@ -96,6 +98,9 @@ spec:
   # @deploymentRepoURL@, @deploymentRevision@ and @deploymentPath@, and this
   # repository as @templateRepoURL@ and @templateRevision@, replaced here.
   # A deployment's app must not take one of the names above.
+  # catalogRepoURL is the provider console's catalog. With another catalog,
+  # acm-models leaves out the catalog files here, and the deployment delivers
+  # them itself, pointed at its catalog (examples/deployment).
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "grid-bootstrap" }}
@@ -107,7 +112,11 @@ spec:
     {{- $_ := set $spec.source.helm "parameters" (list (dict "name" "openshift.version" "value" (index .metadata.labels "openshiftVersion-major-minor"))) }}
     {{- end }}
     {{- if eq .metadata.name "acm-models" }}
+    {{- if eq .values.catalogRepoURL "https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git" }}
     {{- $_ := set $spec.source "directory" (dict "include" "{facebook-opt-125m-03-applicationset.yaml,maas-03-applicationset.yaml,catalog-03-appprojects.yaml,catalog-04-applicationsets.yaml}") }}
+    {{- else }}
+    {{- $_ := set $spec.source "directory" (dict "include" "{facebook-opt-125m-03-applicationset.yaml,maas-03-applicationset.yaml}") }}
+    {{- end }}
     {{- end }}
     {{- if eq .metadata.name "limitador-redis" }}
     {{- $_ := set $spec.source "directory" (dict "exclude" "{04-limitador-redis-secret.yaml,20-limitador-storage.yaml}") }}
@@ -115,4 +124,4 @@ spec:
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    spec: {{ $spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision }}
+    spec: {{ $spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision | replace "@catalogRepoURL@" .values.catalogRepoURL }}
