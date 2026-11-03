@@ -28,9 +28,6 @@ spec:
           parameters:
             - name: clusterName
               value: '{{ .name }}'
-            # A cluster with no load-balancer provider opts out with ai-grid/submariner-load-balancer=false.
-            - name: loadBalancerEnable
-              value: '{{ if eq (index .metadata.labels "ai-grid/submariner-load-balancer") "false" }}false{{ else }}true{{ end }}'
       destination:
         server: https://kubernetes.default.svc
         namespace: open-cluster-management
