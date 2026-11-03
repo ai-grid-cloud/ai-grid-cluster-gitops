@@ -18,7 +18,7 @@ root_applicationset() {
   local file=$1 line name value head old tail out="" re='^(.*: )([^ ]+)( # (DEPLOYMENT_[A-Z_]+))$'
   local DEPLOYMENT_PATH=${DEPLOYMENT_PATH:-}
   DEPLOYMENT_PATH=${DEPLOYMENT_PATH#/}; DEPLOYMENT_PATH=${DEPLOYMENT_PATH%/}
-  for name in DEPLOYMENT_REPO_URL DEPLOYMENT_REVISION DEPLOYMENT_PATH; do
+  for name in DEPLOYMENT_REPO_URL DEPLOYMENT_REVISION DEPLOYMENT_PATH DEPLOYMENT_CATALOG_REPO_URL; do
     case ${!name:-} in
       *[[:space:]\"\\#]*) echo "ERROR: ${name} can't contain whitespace, \", \\ or #." >&2; return 1 ;;
     esac
