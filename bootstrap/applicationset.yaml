@@ -31,6 +31,22 @@ spec:
           deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
           deploymentRevision: HEAD # DEPLOYMENT_REVISION
           deploymentPath: deployment # DEPLOYMENT_PATH
+          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          templateRevision: HEAD
+    # The deployment's own apps: one Application per <path>/apps/*.yaml in the
+    # deployment repository, in the format of apps/*/application.yaml. With the
+    # default path nothing matches.
+    - git:
+        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+        revision: HEAD # DEPLOYMENT_REVISION
+        files:
+          - path: deployment/apps/*.yaml # DEPLOYMENT_PATH
+        values:
+          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: HEAD # DEPLOYMENT_REVISION
+          deploymentPath: deployment # DEPLOYMENT_PATH
+          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          templateRevision: HEAD
   template:
     metadata:
       name: '{{.metadata.name}}'
@@ -41,6 +57,7 @@ spec:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
   # An app names the deployment repository as @deploymentRepoURL@,
-  # @deploymentRevision@ and @deploymentPath@, replaced here.
+  # @deploymentRevision@ and @deploymentPath@, and this repository as
+  # @templateRepoURL@ and @templateRevision@, replaced here.
   templatePatch: |
-    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath }}
+    spec: {{ .spec | toJson | replace "@deploymentRepoURL@" .values.deploymentRepoURL | replace "@deploymentRevision@" .values.deploymentRevision | replace "@deploymentPath@" .values.deploymentPath | replace "@templateRepoURL@" .values.templateRepoURL | replace "@templateRevision@" .values.templateRevision }}
