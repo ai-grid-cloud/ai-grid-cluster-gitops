@@ -50,19 +50,26 @@ spec:
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           ref: values
+        # The deployment repository (bootstrap.sh DEPLOYMENT_REPO_URL,
+        # DEPLOYMENT_REVISION, DEPLOYMENT_PATH), for per-cluster values.
+        - repoURL: '{{ .values.deploymentRepoURL }}'
+          targetRevision: '{{ .values.deploymentRevision }}'
+          ref: deployment
         # Immutable OCI snapshot from the 3.6.0 dev channel.
         - repoURL: oci://ghcr.io/opendatahub-io/odh-gitops/rhai-on-openshift-chart
           targetRevision: 3.6.0-dev.13.1
           path: .
           helm:
             releaseName: rhai-on-openshift
-            # A per-cluster file is optional, for a temporary override such as an image pin.
+            # A per-cluster file is optional, for a temporary override such as an image pin:
+            # this repository's, then the deployment's.
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
               # The site's role (ai-grid/role): ingress, inference or combined.
               - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
               - $values/apps/rhoai/values-{{ .name }}.yaml
+              - $deployment/{{ .values.deploymentPath }}/clusters/{{ .name }}/rhoai.yaml
             parameters:
               - name: praxis-gateway.grid.siteName
                 value: '{{ .name }}'
