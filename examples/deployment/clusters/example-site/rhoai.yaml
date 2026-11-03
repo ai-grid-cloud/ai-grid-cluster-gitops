@@ -1,0 +1,15 @@
+# Values for the rhai-on-openshift release on one cluster, read after the
+# template's apps/rhoai/values.yaml, roles/<role>.yaml and
+# apps/rhoai/values-<cluster>.yaml. Name the directory after the ACM
+# ManagedCluster. Everything here is optional; a missing file is ignored.
+#
+# Example: pin an operator image on this cluster only.
+#
+# operator:
+#   rhoai:
+#     olm:
+#       config:
+#         env:
+#           - name: RELATED_IMAGE_ODH_MODEL_CONTROLLER_IMAGE
+#             value: quay.io/opendatahub/odh-model-controller@sha256:<digest>
+{}
