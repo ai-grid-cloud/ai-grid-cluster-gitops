@@ -13,10 +13,10 @@ fill() { # profile-file [ENV=VAL ...]: prints the filled root, or fails
 }
 for f in bootstrap/applicationset.yaml bootstrap/dedicated-hub/applicationset.yaml; do
   if fill "$f" > "$T/out" && diff -q "$T/out" "$ROOT/$f" >/dev/null; then ok "$f: nothing set leaves the file unchanged"; else bad "$f: nothing set changed the file"; fi
-  fill "$f" DEPLOYMENT_REPO_URL=https://example.com/d.git DEPLOYMENT_REVISION=main DEPLOYMENT_PATH=/clusters/demo/ > "$T/out"
+  fill "$f" DEPLOYMENT_REPO_URL=https://example.com/d.git DEPLOYMENT_REVISION=main DEPLOYMENT_PATH=/clusters/demo/ DEPLOYMENT_CATALOG_REPO_URL=https://example.com/c.git > "$T/out"
   marked=$(grep -c ' # DEPLOYMENT_[A-Z_]*$' "$T/out")
   # Every marked line carries the new value; nothing else changes.
-  if [ "$(grep -cE ': (https://example.com/d.git|main|clusters/demo)(/apps/\*\.yaml)? # DEPLOYMENT_' "$T/out")" -eq "$marked" ] && [ "$marked" -gt 0 ]; then
+  if [ "$(grep -cE ': (https://example.com/[dc].git|main|clusters/demo)(/apps/\*\.yaml)? # DEPLOYMENT_' "$T/out")" -eq "$marked" ] && [ "$marked" -gt 0 ]; then
     ok "$f: all $marked marked lines filled"
   else bad "$f: marked lines not all filled"; fi
   if [ "$(diff "$T/out" "$ROOT/$f" | grep -c '^<')" -eq "$marked" ]; then ok "$f: only the marked lines change"; else bad "$f: unmarked lines changed"; fi
