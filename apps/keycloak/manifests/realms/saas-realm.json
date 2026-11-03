@@ -40,7 +40,8 @@
             "multivalued": "true",
             "id.token.claim": "true",
             "userinfo.token.claim": "true",
-            "access.token.claim": "true"
+            "access.token.claim": "true",
+            "aggregate.attrs": "true"
           }
         },
         {
@@ -133,42 +134,55 @@
   ],
   "identityProviderMappers": [
     {
-      "name": "Grid Tenant 1 groups",
+      "name": "Grid Tenant 1 organization",
       "identityProviderAlias": "grid-tenant-1",
-      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "identityProviderMapper": "hardcoded-attribute-idp-mapper",
       "config": {
-        "claim": "groups",
-        "user.attribute": "maas_groups",
+        "attribute": "maas_orgs_json",
+        "attribute.value": "[{\"organization_id\":\"42c3e46f-2477-44d7-a85b-d3b43f6b31fa\",\"roles\":[\"users\"]}]",
         "syncMode": "FORCE"
       }
     },
     {
-      "name": "Grid Tenant 1 organizations transport",
+      "name": "Grid Tenant 1 ai-grid-admins",
       "identityProviderAlias": "grid-tenant-1",
-      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "identityProviderMapper": "oidc-advanced-group-idp-mapper",
       "config": {
-        "claim": "https://redhat\\.com/maas/orgs",
-        "user.attribute": "maas_orgs_json",
+        "claims": "[{\"key\":\"groups\",\"value\":\"42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-admins\"}]",
+        "are.claim.values.regex": "false",
+        "group": "/42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-admins",
         "syncMode": "FORCE"
       }
     },
     {
-      "name": "Grid Tenant 2 groups",
-      "identityProviderAlias": "grid-tenant-2",
-      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "name": "Grid Tenant 1 ai-grid-users",
+      "identityProviderAlias": "grid-tenant-1",
+      "identityProviderMapper": "oidc-advanced-group-idp-mapper",
       "config": {
-        "claim": "groups",
-        "user.attribute": "maas_groups",
+        "claims": "[{\"key\":\"groups\",\"value\":\"42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-users\"}]",
+        "are.claim.values.regex": "false",
+        "group": "/42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-users",
         "syncMode": "FORCE"
       }
     },
     {
-      "name": "Grid Tenant 2 organizations transport",
+      "name": "Grid Tenant 2 organization",
       "identityProviderAlias": "grid-tenant-2",
-      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "identityProviderMapper": "hardcoded-attribute-idp-mapper",
       "config": {
-        "claim": "https://redhat\\.com/maas/orgs",
-        "user.attribute": "maas_orgs_json",
+        "attribute": "maas_orgs_json",
+        "attribute.value": "[{\"organization_id\":\"53d4f57e-3588-55e8-b96c-4ec54a7c42fa\",\"roles\":[\"users\"]}]",
+        "syncMode": "FORCE"
+      }
+    },
+    {
+      "name": "Grid Tenant 2 ai-grid-users",
+      "identityProviderAlias": "grid-tenant-2",
+      "identityProviderMapper": "oidc-advanced-group-idp-mapper",
+      "config": {
+        "claims": "[{\"key\":\"groups\",\"value\":\"53d4f57e-3588-55e8-b96c-4ec54a7c42fa/ai-grid-users\"}]",
+        "are.claim.values.regex": "false",
+        "group": "/53d4f57e-3588-55e8-b96c-4ec54a7c42fa/ai-grid-users",
         "syncMode": "FORCE"
       }
     }
@@ -254,6 +268,21 @@
             }
           ]
         }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "42c3e46f-2477-44d7-a85b-d3b43f6b31fa",
+      "subGroups": [
+        { "name": "ai-grid-admins", "attributes": { "maas_groups": ["42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-admins"] } },
+        { "name": "ai-grid-users", "attributes": { "maas_groups": ["42c3e46f-2477-44d7-a85b-d3b43f6b31fa/ai-grid-users"] } }
+      ]
+    },
+    {
+      "name": "53d4f57e-3588-55e8-b96c-4ec54a7c42fa",
+      "subGroups": [
+        { "name": "ai-grid-users", "attributes": { "maas_groups": ["53d4f57e-3588-55e8-b96c-4ec54a7c42fa/ai-grid-users"] } }
       ]
     }
   ]
