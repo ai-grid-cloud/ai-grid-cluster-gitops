@@ -39,7 +39,7 @@ as an override when present.
 
 - For an ingress or combined site whose external-services cluster serves Keycloak behind a
   privately signed ingress certificate: the cluster trust must include the
-  home's ingress CA before the role is set ("Trusting the external-services cluster's ingress
+  external-services cluster's ingress CA before the role is set ("Trusting the external-services cluster's ingress
   CA" below). With a publicly trusted certificate nothing is needed.
 
 - A default StorageClass. RHOAI monitoring claims 20Gi for metrics and 10Gi for
