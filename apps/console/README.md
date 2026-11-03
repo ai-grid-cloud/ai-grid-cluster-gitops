@@ -11,8 +11,13 @@ on the hub, installed from its Helm chart: one pod with kube-auth-proxy
   `manifests/ai-grid-ready-reader.yaml` lets the backend read. Add to AI Grid
   and Remove set the `ai-grid/*` and `location` labels; the chart's
   ValidatingAdmissionPolicy stops the backend from changing anything else on a
-  ManagedCluster. In this repository nothing reads those labels yet, so Add and
-  Remove install and uninstall nothing.
+  ManagedCluster. `apps/ai-grid-spokes` selects sites by `ai-grid/enabled` and
+  `ai-grid/role`, so Add with a role installs OpenShift AI in that role (MaaS
+  on ingress and combined sites, models and the provider gateway on inference
+  and combined sites) and joins the grid. Remove takes the cluster out of
+  those Placements: its workloads stay installed, but the catalog's MaaS
+  objects and subscriptions on it are deleted, because they grant tenants
+  access.
 - **Organizations:** Keycloak Organizations in realm `saas`, through a
   Keycloak user of its own with only the realm-management roles that needs
   (`view-users`, `query-users`, `view-realm`, `manage-realm`).

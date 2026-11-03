@@ -115,7 +115,7 @@ rhoai-prerequisites delivers the quay.io/rhoai mirror and pull Secret to every c
 
 A hub with no load balancer labels local-cluster ai-grid/metallb-pool=<first>-<last> with a free range, so its Submariner gateways get an address.
 
-Verify: the nineteen Applications Synced and Healthy (console only after [its Secrets](#provider-console) exist), the MultiClusterHub Running, and local-cluster joined and available. Do not label local-cluster with ai-grid/enabled; that label alone would make the hub a site.
+Verify: an Application for each app in that list, plus dedicated-hub-root and the ones acm-models and the site ApplicationSets generate, Synced and Healthy (console only after [its Secrets](#provider-console) exist), the MultiClusterHub Running, and local-cluster joined and available. Do not label local-cluster with ai-grid/enabled; that label alone would make the hub a site.
 
 ## Provider console
 
@@ -137,12 +137,14 @@ The console app installs the cloud provider's admin console on the hub, on both 
 
    If the hub's ingress certificate isn't signed by a public CA, also set `CURL_CA_BUNDLE` to a file holding the ingress CA, and `KEYCLOAK_BACKEND_URL=http://keycloak.maas-db.svc:8080` so the backend reaches Keycloak inside the cluster ([apps/console/README.md](../../../apps/console/README.md#before-the-first-sync-completes) says why). `HUB_CONTEXT` picks a kubeconfig context other than the current one. The script is safe to rerun and prints no secret value.
 
+   The script reads Keycloak's Route and `maas-db/keycloak-secrets` through the same context as the console, so it expects Keycloak on the hub. With a site labelled `ai-grid/external-services=true`, Keycloak runs on that site, and the script doesn't support that layout yet.
+
    It creates the OAuthClient `ai-grid-provider-console` and its proxy Secret, the backend's Keycloak user in realm `saas` with Secret `ai-grid-backend-keycloak`, and `ai-grid-backend-git` from the token file. Then it restarts the console.
 5. Open the Route's URL and sign in with an OpenShift login. Add to AI Grid and Remove need a login that may patch ManagedClusters.
 
 Verify: the console pod is Ready (`oc -n ai-grid-provider-console get pods`), the Clusters page lists the ManagedClusters, and the Organizations page lists realm `saas`'s organizations.
 
-Keycloak rebuilds realm `saas` on every start, which removes the backend's user: rerun create-secrets.sh after a Keycloak restart.
+Keycloak rebuilds realm `saas` from its import file on every start (`--override true`), which deletes the backend's user and every organization made in the console. Rerunning create-secrets.sh after a Keycloak restart recreates the backend's user only; organizations made in the console have to be made again.
 
 ## Grid ID
 
