@@ -1,0 +1,39 @@
+# Node Feature Discovery and the NVIDIA GPU operator on inference and combined
+# spokes, for models that need a GPU. The ApplicationSet and its manifests are
+# in this repository (gpu/), outside apps/ so the root ApplicationSet doesn't
+# read them as apps.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gpu
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@deploymentRepoURL@'
+    targetRevision: '@deploymentRevision@'
+    path: '@deploymentPath@/gpu/hub'
+    # The root ApplicationSet fills in these tokens; the patch hands them to
+    # the nested ApplicationSet as its clusters generator's values.
+    kustomize:
+      patches:
+        - target:
+            group: argoproj.io
+            kind: ApplicationSet
+            name: gpu
+          patch: |-
+            - op: add
+              path: /spec/generators/0/matrix/generators/1/clusters/values
+              value:
+                deploymentRepoURL: '@deploymentRepoURL@'
+                deploymentRevision: '@deploymentRevision@'
+                deploymentPath: '@deploymentPath@'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
