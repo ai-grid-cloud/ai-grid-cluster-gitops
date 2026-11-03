@@ -55,9 +55,9 @@ spec:
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           path: apps/rhoai/grid-model-client
-        # Immutable OCI snapshot from feature-ai-grid commit 3078b11. Renovate
-        # updates this only for stable SemVer releases; SHA-suffixed snapshot
-        # tags have no chronological SemVer ordering.
+        # Immutable OCI snapshot. Renovate advances it to the dev channel once
+        # CI publishes 3.6.0-dev.<run>.<attempt>; the short-SHA and branch
+        # aliases stay for traceability.
         - repoURL: oci://ghcr.io/opendatahub-io/odh-gitops/rhai-on-openshift-chart
           targetRevision: 3.6.0-3078b11
           path: .
