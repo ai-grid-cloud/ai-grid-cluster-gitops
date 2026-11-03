@@ -1,7 +1,7 @@
 # MaaS home
 
-A dedicated hub runs no MaaS state. One site holds it instead: the cluster
-labelled `ai-grid/external-services=true`. These services are demo stand-ins for
+A dedicated hub runs MaaS state itself. This app is the alternative, where one
+site holds it instead: the cluster labelled `ai-grid/external-services=true`. These services are demo stand-ins for
 ones the user owns in production. See
 [external services](../../docs/maas-home/external-services/README.md).
 
