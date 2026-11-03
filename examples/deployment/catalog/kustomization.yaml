@@ -1,0 +1,29 @@
+# The template's catalog files, with the catalog repository replaced. Kustomize
+# patches need a kustomization, and the template has none in
+# apps/acm-models/hub, so this one names the two files by URL. Pin <ref> to the
+# template commit the hub runs, and bump it with the template.
+#
+# The op: test lines fail the sync if the template moves those fields; an
+# object renamed in the template matches no target and is skipped without an
+# error, so check the rendered URLs after a bump.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://raw.githubusercontent.com/ai-grid-cloud/ai-grid-cluster-gitops/main/apps/acm-models/hub/catalog-03-appprojects.yaml
+  - https://raw.githubusercontent.com/ai-grid-cloud/ai-grid-cluster-gitops/main/apps/acm-models/hub/catalog-04-applicationsets.yaml
+patches:
+  - target: { kind: AppProject, name: acm-models-catalog-(models|maas) }
+    patch: |
+      - { op: test, path: /spec/sourceRepos, value: ['https://github.com/ai-grid-cloud/ai-grid-1-catalog.git'] }
+      - { op: replace, path: /spec/sourceRepos, value: ['https://github.com/example-org/example-catalog.git'] }
+  # Each ApplicationSet reads the catalog twice: its git generator lists the
+  # folders, and its Applications sync them.
+  - target: { kind: ApplicationSet, name: acm-models-catalog-(models|ingress|subscriptions) }
+    patch: |
+      - { op: test, path: /spec/generators/0/matrix/generators/1/git/repoURL, value: 'https://github.com/ai-grid-cloud/ai-grid-1-catalog.git' }
+      - { op: test, path: /spec/generators/0/matrix/generators/1/git/revision, value: main }
+      - { op: test, path: /spec/template/spec/source/repoURL, value: 'https://github.com/ai-grid-cloud/ai-grid-1-catalog.git' }
+      - { op: replace, path: /spec/generators/0/matrix/generators/1/git/repoURL, value: 'https://github.com/example-org/example-catalog.git' }
+      - { op: replace, path: /spec/generators/0/matrix/generators/1/git/revision, value: main }
+      - { op: replace, path: /spec/template/spec/source/repoURL, value: 'https://github.com/example-org/example-catalog.git' }
+      - { op: replace, path: /spec/template/spec/source/targetRevision, value: main }

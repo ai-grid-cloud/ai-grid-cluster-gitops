@@ -8,6 +8,7 @@ This repository contains GitOps configuration for an OpenShift multi-cluster AI 
 - `bootstrap/` — OpenShift GitOps bootstrap resources used by `bootstrap.sh`.
 - `cluster-config/` — the cluster-level Helm chart and tracked values.
 - `docs/` — runbooks, onboarding, and smoke-test scripts.
+- `examples/deployment/` — an example deployment repository: per-cluster values, admins and apps one deployment adds.
 - `renovate.json` and `renovate-config.js` — dependency-update configuration.
 
 ## GitOps Principles
@@ -25,6 +26,7 @@ helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/c
 helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
 bash -n bootstrap.sh docs/acm/cluster-onboarding/import-managed-cluster.sh scripts/set-tenant-repo.sh
 scripts/set-tenant-repo.sh --check
+tests/bootstrap-deployment-test.sh
 ```
 
 Use `helm template` to inspect rendered resources. These checks do not touch a cluster. Do not run `./bootstrap.sh`,

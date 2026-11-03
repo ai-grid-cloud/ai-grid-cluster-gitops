@@ -4,36 +4,66 @@ How a cluster becomes a Grid site on v0.3.0-rc.3, under Local membership with AC
 
 ## Installing Argo CD
 
-Argo CD runs on the hub and installs everything else from the tenant repo, ACM included. Argo syncs from git, so run it from your own fork. Point the fork's Argo sources at itself, once, and push:
+Argo CD runs on the hub and installs everything else from this repository, ACM included. A hub reads the template unchanged: run bootstrap.sh from a clone of it, and keep your deployment's own values in a [deployment repository](#using-a-deployment-repository). You need a fork only to change the template itself.
+
+As cluster-admin on the hub:
 
 ```bash
-git clone https://github.com/<you>/ai-grid-tenant.git
-cd ai-grid-tenant
-scripts/set-tenant-repo.sh https://github.com/<you>/ai-grid-tenant.git main
-git commit -am "Point Argo at this fork" && git push
-```
-
-Then, as cluster-admin on the hub:
-
-```bash
+git clone https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+cd ai-grid-cluster-gitops
 oc login --server=https://api.<hub-cluster-domain>:6443 -u <cluster-admin>
 export RHOAI_QUAY_PULL_SECRET=<base64 of user:password for quay.io/rhoai>
 export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redhat.io>   # needed for model images pulled through the rhaii mirrors
+export BOOTSTRAP_PROFILE=dedicated-hub                                    # omit for a combined hub
+export DEPLOYMENT_REPO_URL=https://github.com/<org>/<deployment>.git      # omit for none
+export DEPLOYMENT_REVISION=main
+export DEPLOYMENT_PATH=deployment
 ./bootstrap.sh
 ```
 
-bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
+bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies the profile's root ApplicationSet over apps/*/application.yaml, with the `DEPLOYMENT_*` values filled in. Argo then syncs every app from Git.
 
-The root ApplicationSet is the one object Argo does not sync from Git. After a change to bootstrap/applicationset.yaml, or to bootstrap/dedicated-hub/applicationset.yaml on a dedicated hub, apply it again from the revision the hub tracks:
+### Using a deployment repository
+
+A deployment repository holds what belongs to one deployment: per-cluster Helm values, the cluster admins, and apps only it runs, such as the provider console. [examples/deployment](../../../examples/deployment/README.md) is an example of one and lists the paths and tokens it can use.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DEPLOYMENT_REPO_URL` | This repository | The deployment repository. Argo CD must be able to read it. |
+| `DEPLOYMENT_REVISION` | `HEAD` | The branch, tag or commit Argo CD follows. |
+| `DEPLOYMENT_PATH` | `deployment` | The directory in that repository that holds the deployment's files. |
+
+With none set, the defaults name a path this repository doesn't have, so the hub deploys only the template. The values can't contain whitespace, `"`, `\` or `#`.
+
+Anyone who can push to the deployment repository's branch is cluster-admin on every cluster, as with the template. Protect it the same way.
+
+### Changing the root ApplicationSet
+
+The root ApplicationSet is the one object Argo does not sync from Git. After a change to bootstrap/applicationset.yaml, or to bootstrap/dedicated-hub/applicationset.yaml on a dedicated hub, apply it again from the revision the hub tracks.
+
+With no deployment repository, apply the file:
 
 ```bash
 oc apply -f bootstrap/applicationset.yaml                 # combined hub
 oc apply -f bootstrap/dedicated-hub/applicationset.yaml   # dedicated hub
 ```
 
+With a deployment repository, rerun `./bootstrap.sh` with the same `BOOTSTRAP_PROFILE` and `DEPLOYMENT_*` values. Applying the file by hand resets the deployment repository to the default, and Argo CD then deletes the deployment's apps.
+
 Every Application it generates syncs from Git on its own.
 
 Both roots set `preserveResourcesOnDeletion: true`: deleting a root, or removing an app from its generator, removes the Application but leaves its deployed resources running, so clean those up separately. An explicit cascading delete from the Argo UI or API can still delete an Application's unprotected resources.
+
+### Changing the template
+
+To change the template itself, fork this repository, point the fork's Argo sources at itself once, push, and bootstrap from the fork:
+
+```bash
+scripts/set-tenant-repo.sh https://github.com/<you>/ai-grid-cluster-gitops.git main
+git commit -am "Point Argo at this fork" && git push
+```
+
+The script also points `@templateRepoURL@`, and the default deployment repository, at the fork.
 
 ## Installing ACM
 
