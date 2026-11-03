@@ -48,7 +48,7 @@ spec:
       project: default
       sources:
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           ref: values
         # The deployment repository (bootstrap.sh DEPLOYMENT_REPO_URL,
         # DEPLOYMENT_REVISION, DEPLOYMENT_PATH), for per-cluster values.
@@ -91,7 +91,7 @@ spec:
         # MaaS sites (role ingress or combined, the hub included) get the Authorino
         # trust patch; an inference site runs no MaaS and renders nothing.
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           path: apps/rhoai/maas-sites
           helm:
             releaseName: maas-sites
@@ -106,7 +106,7 @@ spec:
               - name: enabled
                 value: '{{ if eq (index .metadata.labels "ai-grid/role") "inference" }}false{{ else }}true{{ end }}'
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           path: apps/rhoai/catalog
           helm:
             releaseName: rhoai-nightly-catalog

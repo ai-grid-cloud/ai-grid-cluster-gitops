@@ -28,7 +28,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-        targetRevision: HEAD
+        targetRevision: cloud-provider
         path: apps/acm-models/smollm2-135m-instruct
       destination:
         server: '{{.server}}'

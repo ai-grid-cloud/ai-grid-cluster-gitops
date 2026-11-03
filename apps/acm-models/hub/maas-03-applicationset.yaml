@@ -27,7 +27,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-        targetRevision: HEAD
+        targetRevision: cloud-provider
         path: apps/acm-models/maas
         directory:
           recurse: true

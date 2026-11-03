@@ -18,7 +18,7 @@ spec:
         generators:
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-              revision: HEAD
+              revision: cloud-provider
               files:
                 - path: apps/acm/application.yaml
                 - path: apps/acm-models/application.yaml
@@ -39,18 +39,20 @@ spec:
                 - path: apps/odf/application.yaml
                 - path: apps/rhoai/application.yaml
                 - path: apps/rhoai-prerequisites/application.yaml
-                - path: bootstrap/dedicated-hub/application.yaml
+                # Fork-only: no dedicated-hub-root here. It would sync this file
+                # as committed, without bootstrap.sh's DEPLOYMENT_* values, and
+                # drop the deployment's apps. Reapply the root with bootstrap.sh.
               # The deployment repository: per-cluster values another deployment keeps
               # outside this repository (docs/acm/hub-onboarding). bootstrap.sh replaces
               # each value marked # DEPLOYMENT_* from its environment; the defaults name
               # this repository and a path it doesn't have, so nothing is read.
               values:
                 deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-                deploymentRevision: HEAD # DEPLOYMENT_REVISION
+                deploymentRevision: cloud-provider # DEPLOYMENT_REVISION
                 deploymentPath: deployment # DEPLOYMENT_PATH
                 catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
                 templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-                templateRevision: HEAD
+                templateRevision: cloud-provider
           - clusters:
               selector:
                 matchLabels:
@@ -62,16 +64,16 @@ spec:
         generators:
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-              revision: HEAD # DEPLOYMENT_REVISION
+              revision: cloud-provider # DEPLOYMENT_REVISION
               files:
                 - path: deployment/apps/*.yaml # DEPLOYMENT_PATH
               values:
                 deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
-                deploymentRevision: HEAD # DEPLOYMENT_REVISION
+                deploymentRevision: cloud-provider # DEPLOYMENT_REVISION
                 deploymentPath: deployment # DEPLOYMENT_PATH
                 catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
                 templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-                templateRevision: HEAD
+                templateRevision: cloud-provider
           - clusters:
               selector:
                 matchLabels:

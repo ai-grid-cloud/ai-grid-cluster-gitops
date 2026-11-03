@@ -28,7 +28,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-        targetRevision: HEAD
+        targetRevision: cloud-provider
         path: apps/acm-models/facebook-opt-125m
       destination:
         server: '{{.server}}'
