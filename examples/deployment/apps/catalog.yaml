@@ -1,0 +1,33 @@
+# The provider console's catalog on a dedicated hub: the template's catalog
+# AppProjects and ApplicationSets (apps/acm-models/hub/catalog-*), pointed at
+# this deployment's catalog repository by catalog/kustomization.yaml.
+# The dedicated-hub profile's own acm-models app delivers only the sample
+# model, so the two own different objects. Don't list this app on the default
+# profile: there acm-models already delivers the catalog files.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: catalog
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@deploymentRepoURL@'
+    targetRevision: '@deploymentRevision@'
+    path: '@deploymentPath@/catalog'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

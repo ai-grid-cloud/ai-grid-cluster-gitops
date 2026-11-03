@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The template's cluster-config on a dedicated hub, which doesn't run it:
+  # cluster-admins.yaml's users get cluster-admin on every managed cluster, and
+  # its Policy labels Submariner gateway nodes (cluster-config/README.md). The
+  # default profile runs cluster-config already; don't list this there.
+  name: cluster-config
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@templateRepoURL@'
+    targetRevision: '@templateRevision@'
+    path: cluster-config/hub
+    # The cluster-config ApplicationSet reads the admin list from the
+    # deployment repository when it has one. The root ApplicationSet fills in
+    # these tokens, and the generator's values hand them to the template.
+    kustomize:
+      patches:
+        - target:
+            group: argoproj.io
+            kind: ApplicationSet
+            name: cluster-config
+          patch: |-
+            - op: add
+              path: /spec/generators/0/clusters/values
+              value:
+                deploymentRepoURL: '@deploymentRepoURL@'
+                deploymentRevision: '@deploymentRevision@'
+                deploymentPath: '@deploymentPath@'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
