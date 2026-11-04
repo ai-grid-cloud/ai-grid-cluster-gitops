@@ -9,3 +9,19 @@ openshift:
 # openshift-storage already has one, for example from an LVMS install.
 operatorGroup:
   create: true
+
+# Optional SSA partial for the operator-created default NooBaa pv-pool.
+# Set enabled only for an existing store and size these values for the workload.
+backingStoreCapacity:
+  enabled: false
+  # Grow-only: set at least the existing count. Volume size and class remain operator-owned.
+  numVolumes: 4
+  # These quantities restored compaction after agent OOMs on one ODF 4.22 deployment.
+  # Changing them replaces all agents and can interrupt every bucket using the pool.
+  agentResources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
