@@ -64,7 +64,7 @@ spec:
                 name: cluster-prometheus-datasource
               labelName: namespace
               matchers:
-                - {__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running"}
+                - '{__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running"}'
       - kind: ListVariable
         spec:
           name: model_name
@@ -83,7 +83,7 @@ spec:
                 name: cluster-prometheus-datasource
               labelName: model_name
               matchers:
-                - {__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running", namespace=~"$namespace"}
+                - '{__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running", namespace=~"$namespace"}'
     panels:
       # Model Deployments Table
       modelDeploymentsTable:
