@@ -82,13 +82,18 @@ spec:
         kind: Panel
         spec:
           display:
-            name: System health
+            name: Nodes
+            description: >-
+              Node count from kube_node_status_allocatable. Ready-condition
+              health is not shown: kube_node_status_condition does not reach
+              the hub's Thanos today.
           plugin:
             kind: StatChart
             spec:
-              calculation: mean
+              calculation: last-number
               format:
-                unit: percent-decimal
+                unit: decimal
+                decimalPlaces: 0
           queries:
             - kind: TimeSeriesQuery
               spec:
@@ -98,14 +103,18 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    # ACM allowlist omits kube_node_status_condition; use allocatable CPU series as node inventory.
-                    query: count(count by (node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"})) / count(count by (node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"}))
-                    seriesNameFormat: System health
+                    # Hub Thanos has allocatable but not Ready condition; show
+                    # node inventory instead of a fake always-100% health ratio.
+                    query: count(count by (cluster, node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"}))
+                    seriesNameFormat: Nodes
       deployedModels:
         kind: Panel
         spec:
           display:
             name: Deployed models
+            description: >-
+              Local UWM vLLM metrics have no cluster label, so this panel
+              ignores the Cluster dropdown and counts models across every site.
           plugin:
             kind: StatChart
             spec:
@@ -130,6 +139,9 @@ spec:
         spec:
           display:
             name: GPU utilization
+            description: >-
+              Local UWM GPU metrics have no cluster label, so this panel
+              ignores the Cluster dropdown and averages GPUs across every site.
           plugin:
             kind: StatChart
             spec:
@@ -152,6 +164,9 @@ spec:
         spec:
           display:
             name: Request success rate
+            description: >-
+              Local UWM vLLM metrics have no cluster label, so this panel
+              ignores the Cluster dropdown and covers every site.
           plugin:
             kind: StatChart
             spec:
@@ -177,6 +192,9 @@ spec:
         spec:
           display:
             name: GPU utilization
+            description: >-
+              Local UWM GPU metrics have no cluster label, so this panel
+              ignores the Cluster dropdown and averages GPUs across every site.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -290,6 +308,9 @@ spec:
         spec:
           display:
             name: GPU utilization
+            description: >-
+              Local UWM GPU metrics have no cluster label, so this panel
+              ignores the Cluster dropdown and shows GPUs across every site.
           plugin:
             kind: TimeSeriesChart
             spec:
