@@ -34,13 +34,14 @@ spec:
               repository: image-registry.openshift-image-registry.svc:5000/ai-grid-provider-console/ai-grid-provider-console-acm
               tag: pr128-4d53d17
               digest: sha256:c99f6c258c77e7ac90b9851d63d0cb17139c8482fd2fadaa855e43ab83f24f12
-            # SSO group test (ai-grid-research, 11-03): backend #64 (tenant IdP)
-            # rebased onto 064ebd3, built in the hub's registry. Revert to
-            # sha-064ebd3 @6cd3b20e after the test.
+            # SSO (P1, ai-grid-research, 11-04): ai-grid-dev2's backend
+            # fix/64-broker-mappers 81ef34e on RJ's #64 head 8814877 (the four
+            # broker mappers, org_name refresh, email auto-redirect), built in the
+            # hub's registry. Back to main's sha-<commit> once #64 merges.
             backend:
               repository: image-registry.openshift-image-registry.svc:5000/ai-grid-provider-console/ai-grid-provider-backend-sso
-              tag: pr64-rebased-34e9446
-              digest: sha256:5d1b24622ee7eb9ee2f4180c463faa3dd5214f1b26b698e9bf6071f5bb239ba1
+              tag: fix64-mappers-81ef34e
+              digest: sha256:0ff42b9ab0de3e5be0dc464d45c2398b18ca5325b293d08875c67da6cca69e31
             authProxy:
               tag: ""
               digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
