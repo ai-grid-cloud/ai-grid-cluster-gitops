@@ -39,8 +39,8 @@ spec:
             # sha-064ebd3 @6cd3b20e after the test.
             backend:
               repository: image-registry.openshift-image-registry.svc:5000/ai-grid-provider-console/ai-grid-provider-backend-sso
-              tag: pr64-rebased-f29e81a
-              digest: sha256:84c06477bd9f4db441697d3d68a94b5808d0e8b6c0e5b0fa1eba9499e527ccf3
+              tag: pr64-rebased-34e9446
+              digest: sha256:5d1b24622ee7eb9ee2f4180c463faa3dd5214f1b26b698e9bf6071f5bb239ba1
             authProxy:
               tag: ""
               digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
