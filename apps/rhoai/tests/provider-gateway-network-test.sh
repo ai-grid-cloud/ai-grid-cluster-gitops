@@ -60,6 +60,29 @@ else
   ok "provider-gateway.yaml is absent"
 fi
 
+if python3 - "$HERE/../values.yaml" <<'PY'
+import sys
+import yaml
+
+values = yaml.safe_load(open(sys.argv[1]))
+related_images = {item["name"]: item["value"]
+                  for item in values["global"]["relatedImages"]}
+expected = {
+    "RELATED_IMAGE_ODH_PRAXIS_AI_GRID_GATEWAY_IMAGE":
+        "registry.redhat.io/rhoai/odh-praxis-ai-grid-gateway-rhel9@sha256:e2ae6ac64b675ec29a4d9a3728f9c9b19063ef21b59dce26542283034592c150",
+    "RELATED_IMAGE_ODH_PRAXIS_AI_GRID_ENROLLMENT_IMAGE":
+        "registry.redhat.io/rhoai/odh-praxis-ai-grid-enrollment-rhel9@sha256:e211b13d0ad66915d270ff6f8b54b20d5e6882cd349b7b266aec66282be55cda",
+    "RELATED_IMAGE_ODH_PRAXIS_AI_GRID_POSTGRES_IMAGE":
+        "registry.redhat.io/rhel9/postgresql-16@sha256:435ba5c1d3f686cf8a45ae525b4d169ced6b33753bcfab99a1498bd9e6e99817",
+}
+assert related_images == expected, f"unexpected Grid related images: {related_images}"
+PY
+then
+  ok "Grid payload images are tenant-owned"
+else
+  bad "Grid payload images are tenant-owned" "related-image contract failed"
+fi
+
 printf 'apiVersion: v2\nname: tpl\nversion: 0.1.0\n' > "$T/tpl/Chart.yaml"
 printf '%s\n' '{{ tpl .Values.src (dict "metadata" (dict "labels" .Values.labels) "name" "site") }}' \
   > "$T/tpl/templates/values.yaml"
