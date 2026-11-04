@@ -89,7 +89,7 @@ the old role's values for up to about a minute before it converges.
   namespace and its ClusterSet binding).
 
 Policies in other apps select the same sites: the tenant Policy
-(`apps/rhoai/hub/03-tenant-placement.yaml`: the AITenant, the MaaS tenant
+(`apps/rhoai/hub/03-ingress-clusters-placement.yaml`: the AITenant, the MaaS tenant
 config and the grid `ExternalProvider`) and `maas-db`'s credentials go to
 sites with role ingress or combined.
 `rhoai-prerequisites` (with the model namespace and its NetworkPolicies, the

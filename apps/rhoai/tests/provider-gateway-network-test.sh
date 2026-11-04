@@ -150,6 +150,13 @@ config_maps = {document["metadata"]["name"]: document for document in documents
                if document.get("kind") == "ConfigMap"}
 deployments = {document["metadata"]["name"]: document for document in documents
                if document.get("kind") == "Deployment"}
+payload_image = \
+    "registry.redhat.io/rhoai/odh-praxis-ai-grid-gateway-rhel9@sha256:e2ae6ac64b675ec29a4d9a3728f9c9b19063ef21b59dce26542283034592c150"
+
+if "grid-provider-gateway" in deployments:
+    provider = deployments["grid-provider-gateway"]["spec"]["template"]["spec"]
+    praxis = next(container for container in provider["containers"] if container["name"] == "praxis")
+    assert praxis["image"] == payload_image, "provider gateway lost its RHOAI payload image"
 
 expected_services = {
     "ingress": {"grid-gateway"},
@@ -161,6 +168,9 @@ assert set(services).isdisjoint({"grid-gateway", "grid-provider-gateway"} - expe
     f"unexpected gateways: {set(services) & ({'grid-gateway', 'grid-provider-gateway'} - expected_services)}"
 
 if "grid-gateway" in services:
+    consumer = deployments["grid-gateway"]["spec"]["template"]["spec"]
+    praxis = next(container for container in consumer["containers"] if container["name"] == "praxis")
+    assert praxis["image"] == payload_image, "consumer gateway lost its RHOAI payload image"
     annotations = services["grid-gateway"]["metadata"].get("annotations", {})
     assert annotations.get("service.beta.openshift.io/serving-cert-secret-name") == \
         "grid-gateway-listener-tls", "grid-gateway lost its service certificate"

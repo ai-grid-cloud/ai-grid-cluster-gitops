@@ -4,7 +4,7 @@
     "managerFilePatterns": ["/(^|/)values\\.ya?ml$/", "/(^|/)nightly\\.ya?ml$/"]
   },
   "argocd": {
-    "managerFilePatterns": ["^apps/rhoai/hub/01-applicationset\\.yaml$"]
+    "managerFilePatterns": ["/^apps\\/rhoai\\/hub\\/01-applicationset\\.yaml$/"]
   },
   "packageRules": [
     {
