@@ -156,7 +156,6 @@ spec:
               and has("ModulesReady", "False", "Some modules are not ready: aigateway")
             if shape then
               for _, c in ipairs(obj.status.conditions) do
-                -- Current 3.6 builds report neither; when either is present it must be False.
                 if (c.type == "Progressing" or c.type == "Degraded") and c.status ~= "False" then shape = false end
                 if c.status ~= "True" and c.type ~= "AIGatewayReady" and c.type ~= "Ready"
                   and c.type ~= "ModulesReady" and c.type ~= "Progressing" and c.type ~= "Degraded"
