@@ -42,3 +42,6 @@ spec:
     limits:
       cpu: "2"
       memory: 4Gi
+  # The source-enrolment policy labels CNPG's PodMonitor for RHOAI's collector.
+  monitoring:
+    enablePodMonitor: true
