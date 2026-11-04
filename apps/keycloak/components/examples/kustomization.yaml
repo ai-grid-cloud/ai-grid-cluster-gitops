@@ -13,3 +13,9 @@ configMapGenerator:
       - grid-tenant-2-idp-realm.json
 patches:
   - path: keycloak-grid-keystores.patch.yaml
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
