@@ -1,0 +1,18 @@
+# RHOAI's collector scrapes the replica's instance through this monitor. It replaces the
+# PodMonitor CloudNativePG generates from spec.monitoring.enablePodMonitor, which is deprecated.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: maas-read-metrics
+  namespace: maas-db
+  labels:
+    monitoring.opendatahub.io/scrape: "true"
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: maas-read
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+    - port: metrics
