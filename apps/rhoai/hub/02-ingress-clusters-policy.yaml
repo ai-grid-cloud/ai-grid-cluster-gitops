@@ -79,6 +79,10 @@ spec:
           namespaceSelector:
             include:
               - ai-tenants
+              # Deployment-only (demo1): site-a's pinned ai-gateway-controller
+              # (f36855d) reads the Secret from the MaaSTenantConfig's namespace,
+              # not the AITenant's. Drop with that pin.
+              - models-as-a-service
           object-templates:
             - complianceType: musthave
               objectDefinition:
@@ -87,6 +91,16 @@ spec:
                 metadata:
                   name: tenant-demo-oidc-client
                   namespace: ai-tenants
+                type: Opaque
+                data:
+                  clientSecret: '{{hub fromSecret "maas-db" "keycloak-secrets" "KEYCLOAK_CLIENT_SECRET" hub}}'
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: tenant-demo-oidc-client
+                  namespace: models-as-a-service
                 type: Opaque
                 data:
                   clientSecret: '{{hub fromSecret "maas-db" "keycloak-secrets" "KEYCLOAK_CLIENT_SECRET" hub}}'

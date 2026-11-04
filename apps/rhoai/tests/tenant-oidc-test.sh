@@ -14,7 +14,9 @@ rbac_documents = list(yaml.safe_load_all(open(sys.argv[2])))
 templates = [template["objectDefinition"] for template in policy["spec"]["policy-templates"]]
 secret_policy = next(template for template in templates
                       if template.get("metadata", {}).get("name") == "rhoai-tenant-oidc-client-secret")
-assert secret_policy["spec"]["namespaceSelector"]["include"] == ["ai-tenants"]
+# Deployment-only (demo1): also models-as-a-service, for site-a's pinned controller.
+assert secret_policy["spec"]["namespaceSelector"]["include"] == ["ai-tenants", "models-as-a-service"]
+assert [t["objectDefinition"]["metadata"]["namespace"] for t in secret_policy["spec"]["object-templates"]] == ["ai-tenants", "models-as-a-service"]
 secret = secret_policy["spec"]["object-templates"][0]["objectDefinition"]
 assert secret["metadata"]["namespace"] == "ai-tenants"
 assert secret["metadata"]["name"] == "tenant-demo-oidc-client"
