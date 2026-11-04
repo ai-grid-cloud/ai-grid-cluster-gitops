@@ -1,0 +1,29 @@
+# Temporary: see ../README.md. Values match odh-observability #130.
+apiVersion: policy.open-cluster-management.io/v1
+kind: ConfigurationPolicy
+metadata:
+  name: rhoai-odh-observability-memory
+  namespace: {{ required "clusterNamespace is required" .Values.clusterNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  remediationAction: enforce
+  severity: high
+  object-templates:
+    - complianceType: musthave
+      objectDefinition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: odh-observability
+          namespace: redhat-ods-applications
+        spec:
+          template:
+            spec:
+              containers:
+                - name: manager
+                  resources:
+                    requests:
+                      memory: 2Gi
+                    limits:
+                      memory: 3Gi
