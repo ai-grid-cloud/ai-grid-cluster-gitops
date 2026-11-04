@@ -11,29 +11,27 @@ metadata:
 spec:
   project: default
   sources:
-    # ACM dashboards on Monitoring (11-03): console PR #128's head on
-    # cfchase's fork, which holds that commit. Back to ai-grid-cloud's main
-    # once #128 merges.
+    # Org IdP passthrough (X17, 11-04): console PR #131's head on cfchase's
+    # fork (fix/org-idp-backend-passthrough), which holds that commit. Back to
+    # ai-grid-cloud's main once #131 merges. (#128, ACM dashboards, closed.)
     - repoURL: https://github.com/cfchase/ai-grid-provider-console.git
       # A commit, not a branch: the chart holds ClusterRoleBindings and a
       # ValidatingAdmissionPolicy that Argo CD applies with cluster-admin
       # rights, so what runs here changes only by a reviewed commit. Bump it
       # with the images.
-      targetRevision: 4d53d173a856c18fc5f7291a00d760fc1a72cd47
+      targetRevision: 7bcf2411cac77bb22138d7a194e6fe53be5ebddc
       path: charts/ai-grid-provider-console
       helm:
         releaseName: ai-grid-provider-console
         valuesObject:
-          # By digest: tags can be overwritten. Console and chart are PR #128
-          # (4d53d17, on main 5f0cdb2), built in the hub's registry; the backend
-          # is 064ebd3, the console's .backend-api-version. Move them together:
-          # this console sends what only that backend accepts. Back to main's
-          # sha-<commit> once #128 merges.
+          # By digest: tags can be overwritten. Console and chart are PR #131
+          # (7bcf241, app code identical to 4a2a037), built in the hub's
+          # registry. Back to main's sha-<commit> once #131 merges.
           images:
             console:
               repository: image-registry.openshift-image-registry.svc:5000/ai-grid-provider-console/ai-grid-provider-console-acm
-              tag: pr128-4d53d17
-              digest: sha256:c99f6c258c77e7ac90b9851d63d0cb17139c8482fd2fadaa855e43ab83f24f12
+              tag: pr131-7bcf241
+              digest: sha256:c177655550ccbdafedb5c0d3d679b63ca233274111ce2e9c4d6bb261da091c53
             # SSO (P1, ai-grid-research, 11-04): RJ's backend #64 head bf15ceb,
             # built in the hub's registry. Back to main's sha-<commit> once #64
             # merges.
@@ -51,23 +49,6 @@ spec:
             perses:
               url: https://perses.openshift-cluster-observability-operator.svc:8080
               project: redhat-ods-monitoring
-              # Four of ACM observability's dashboards as more tabs. The relay
-              # passes only these names. On this hub only cluster admins and
-              # platform controllers can write PersesDashboards and
-              # PersesDatasources in that namespace (checked 11-03).
-              extraDashboards:
-                - project: open-cluster-management-observability
-                  dashboards:
-                    - name: acm-clusters-overview
-                      title: Clusters overview
-                    - name: acm-cluster-rsrc-use
-                      title: Cluster resource use
-                    - name: acm-optimization-overview
-                      title: Cluster optimization
-                    - name: acm-alerts-by-cluster
-                      title: Alerts by cluster
-                  datasources:
-                    - rbac-query-proxy-datasource
           backend:
             # Add to AI Grid and Remove patch ManagedCluster labels. The chart's
             # ValidatingAdmissionPolicy limits the backend to the ai-grid/* and
