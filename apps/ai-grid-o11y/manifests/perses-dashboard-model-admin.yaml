@@ -43,9 +43,9 @@ spec:
               datasource:
                 kind: PrometheusDatasource
                 name: cluster-prometheus-datasource
-              labelName: cluster
+              labelName: organization_id
               matchers:
-                - up
+                - '{__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running"}'
       - kind: ListVariable
         spec:
           name: namespace

@@ -46,7 +46,7 @@ spec:
                 name: cluster-prometheus-datasource
               labelName: namespace
               matchers:
-                - kube_pod_info
+                - 'kube_pod_info{cluster=~"$cluster_name"}'
       # Cluster details variables - set by ClusterDetailsVariablesProvider
       - kind: TextVariable
         spec:
