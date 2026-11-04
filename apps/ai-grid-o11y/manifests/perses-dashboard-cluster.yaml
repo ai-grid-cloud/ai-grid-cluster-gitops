@@ -283,7 +283,7 @@ spec:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
                     # Network receive rate in bytes/second
-                    query: sum(rate(container_network_receive_bytes_total[$__rate_interval]{cluster_name=~"$cluster_name"}))
+                    query: sum(rate(container_network_receive_bytes_total{cluster_name=~"$cluster_name"}[$__rate_interval]))
                     seriesNameFormat: Network
       gpuUtilizationByProject:
         kind: Panel
