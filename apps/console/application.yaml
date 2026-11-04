@@ -29,9 +29,13 @@ spec:
             console:
               tag: sha-5f0cdb214eff8d6cbb823a1987daabcb81c9668f
               digest: sha256:ea64d470af4b12a1f7539a8f97168ed0e52fe5edc67c4f8cc1d3e4f11d60aa1e
+            # SSO group test (ai-grid-research, 11-03): backend #64 (tenant IdP)
+            # rebased onto 064ebd3, built in the hub's registry. Revert to
+            # sha-064ebd3 @6cd3b20e after the test.
             backend:
-              tag: sha-064ebd3699e6fff1613670ba4000ff2a343d5bdc
-              digest: sha256:6cd3b20e26c41c87bf4eb2393e1004668138a357d822b398d7941a69ac2705e1
+              repository: image-registry.openshift-image-registry.svc:5000/ai-grid-provider-console/ai-grid-provider-backend-sso
+              tag: pr64-rebased-f29e81a
+              digest: sha256:84c06477bd9f4db441697d3d68a94b5808d0e8b6c0e5b0fa1eba9499e527ccf3
             authProxy:
               tag: ""
               digest: sha256:1a5f6e220362aa2077026bb7e3091c38f80aac861fa060b08045e58e783d5bc5
