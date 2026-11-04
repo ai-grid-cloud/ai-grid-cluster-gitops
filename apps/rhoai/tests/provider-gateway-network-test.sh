@@ -215,6 +215,12 @@ if "grid-gateway" in services:
     config = config_maps["grid-gateway-config"]["data"]["praxis.yaml"]
     assert "/etc/praxis/listener-tls/tls.crt" in config, "grid-gateway lost its listener certificate"
     assert "filter: grid_site_route" in config, "grid-gateway lost its consumer route filter"
+    # A credential Secret the role doesn't render must be optional, or the pod never starts.
+    for volume in consumer["volumes"]:
+        if volume["name"].startswith("credential-") and "secret" in volume:
+            secret = volume["secret"]
+            assert secret["secretName"] in secrets or secret.get("optional"), \
+                f"grid-gateway mounts {secret['secretName']}, which this role doesn't create"
 
 if "grid-provider-gateway" in services:
     annotations = services["grid-provider-gateway"]["metadata"].get("annotations", {})
