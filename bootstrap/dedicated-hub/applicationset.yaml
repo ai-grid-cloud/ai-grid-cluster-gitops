@@ -17,42 +17,56 @@ spec:
     # Keep deployed resources when the root or a generated Application is removed.
     preserveResourcesOnDeletion: true
   generators:
+    # ACM and argo-registration must start before a cluster Secret exists.
+    - git:
+        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+        revision: cloud-provider
+        files:
+          - path: apps/acm/application.yaml
+          - path: apps/acm-models/application.yaml
+          - path: apps/ai-grid-o11y/application.yaml
+          - path: apps/ai-grid-policies/application.yaml
+          - path: apps/ai-grid-spokes/application.yaml
+          - path: apps/cert-manager/application.yaml
+          - path: apps/console/application.yaml
+          - path: apps/gitops-config/application.yaml
+          - path: apps/grid-bootstrap/application.yaml
+          - path: apps/external-services/application.yaml
+          - path: apps/maas-db/application.yaml
+          - path: apps/keycloak/application.yaml
+          - path: apps/limitador-redis/application.yaml
+          - path: apps/external-secrets/application.yaml
+          - path: apps/metallb/application.yaml
+          - path: apps/argo-registration/application.yaml
+          - path: apps/rhoai/application.yaml
+          - path: apps/rhoai-prerequisites/application.yaml
+          # The delivery half of the hub's MaaS usage-log store: the Loki operator that
+          # apps/ai-grid-o11y's LokiStack needs, and the ACM policy that hands each site
+          # the writer token. apps/odf, its object storage, is listed below.
+          - path: apps/ai-grid-usage-logs/application.yaml
+          # Fork-only: no dedicated-hub-root here. It would sync this file
+          # as committed, without bootstrap.sh's DEPLOYMENT_* values, and
+          # drop the deployment's apps. Reapply the root with bootstrap.sh.
+        # The deployment repository: per-cluster values another deployment keeps
+        # outside this repository (docs/acm/hub-onboarding). bootstrap.sh replaces
+        # each value marked # DEPLOYMENT_* from its environment; the defaults name
+        # this repository and a path it doesn't have, so nothing is read.
+        values:
+          deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
+          deploymentRevision: cloud-provider # DEPLOYMENT_REVISION
+          deploymentPath: deployment # DEPLOYMENT_PATH
+          catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git # DEPLOYMENT_CATALOG_REPO_URL
+          templateRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          templateRevision: cloud-provider
+    # Only ODF needs cluster metadata. Wait for ACM registration and its
+    # version label rather than falling back to the chart's default channel.
     - matrix:
         generators:
           - git:
               repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
               revision: cloud-provider
               files:
-                - path: apps/acm/application.yaml
-                - path: apps/acm-models/application.yaml
-                - path: apps/ai-grid-o11y/application.yaml
-                - path: apps/ai-grid-policies/application.yaml
-                - path: apps/ai-grid-spokes/application.yaml
-                - path: apps/cert-manager/application.yaml
-                - path: apps/console/application.yaml
-                - path: apps/gitops-config/application.yaml
-                - path: apps/grid-bootstrap/application.yaml
-                - path: apps/external-services/application.yaml
-                - path: apps/maas-db/application.yaml
-                - path: apps/keycloak/application.yaml
-                - path: apps/limitador-redis/application.yaml
-                - path: apps/external-secrets/application.yaml
-                - path: apps/metallb/application.yaml
-                - path: apps/argo-registration/application.yaml
                 - path: apps/odf/application.yaml
-                - path: apps/rhoai/application.yaml
-                - path: apps/rhoai-prerequisites/application.yaml
-                # The delivery half of the hub's MaaS usage-log store: the Loki operator that
-                # apps/ai-grid-o11y's LokiStack needs, and the ACM policy that hands each site
-                # the writer token. apps/odf, its object storage, is already listed.
-                - path: apps/ai-grid-usage-logs/application.yaml
-                # Fork-only: no dedicated-hub-root here. It would sync this file
-                # as committed, without bootstrap.sh's DEPLOYMENT_* values, and
-                # drop the deployment's apps. Reapply the root with bootstrap.sh.
-              # The deployment repository: per-cluster values another deployment keeps
-              # outside this repository (docs/acm/hub-onboarding). bootstrap.sh replaces
-              # each value marked # DEPLOYMENT_* from its environment; the defaults name
-              # this repository and a path it doesn't have, so nothing is read.
               values:
                 deploymentRepoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git # DEPLOYMENT_REPO_URL
                 deploymentRevision: cloud-provider # DEPLOYMENT_REVISION
@@ -64,6 +78,9 @@ spec:
               selector:
                 matchLabels:
                   apps.open-cluster-management.io/cluster-name: local-cluster
+                matchExpressions:
+                  - key: openshiftVersion-major-minor
+                    operator: Exists
     # The deployment's own apps: one Application per <path>/apps/*.yaml in the
     # deployment repository, in the format of apps/*/application.yaml. With the
     # default path nothing matches.
