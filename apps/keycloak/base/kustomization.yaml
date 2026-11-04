@@ -16,3 +16,42 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: "2"
     files:
       - manifests/realms/saas-realm.json
+# Keep state that can't be recreated identically: generated passwords, signing
+# keystores and the database. A path change or an app removal must not prune them.
+patches:
+  - target:
+      kind: ExternalSecret
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
+  - target:
+      kind: Password
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
+  - target:
+      kind: Issuer
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
+  - target:
+      kind: Database
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
+  - target:
+      kind: DatabaseRole
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: Prune=false,Delete=false
