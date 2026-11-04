@@ -123,7 +123,7 @@ spec:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
                     # Count unique models by model_name and namespace from vLLM metrics
-                    query: count(group(kserve_vllm:num_requests_running{cluster=~"$cluster_name"}) by (model_name, namespace))
+                    query: count(group({__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running"}) by (model_name, namespace))
                     seriesNameFormat: Deployed models
       gpuUtilizationStat:
         kind: Panel
@@ -145,7 +145,7 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: avg(accelerator_gpu_utilization{cluster=~"$cluster_name"})
+                    query: avg(accelerator_gpu_utilization)
                     seriesNameFormat: GPU usage
       successRate:
         kind: Panel
@@ -169,7 +169,7 @@ spec:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
                     # Request success rate using kserve_vllm metrics
-                    query: (sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace", finished_reason=~"length|stop",cluster=~"$cluster_name"}[$__range])) / sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace",cluster=~"$cluster_name"}[$__range]))) and (sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace",cluster=~"$cluster_name"}[$__range])) > 0)
+                    query: (sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace", finished_reason=~"length|stop"}[$__range])) / sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace"}[$__range]))) and (sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace"}[$__range])) > 0)
                     seriesNameFormat: Request success rate
       # Cluster-wide usage - Area charts
       gpuUtilizationArea:
@@ -198,7 +198,7 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: avg(accelerator_gpu_utilization{cluster=~"$cluster_name"})
+                    query: avg(accelerator_gpu_utilization)
                     seriesNameFormat: GPU usage
       memoryUtilizationArea:
         kind: Panel
@@ -316,7 +316,7 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: sum by (exported_namespace) (accelerator_gpu_utilization{exported_namespace=~"$namespace",cluster=~"$cluster_name"}) / scalar(count(accelerator_gpu_utilization{cluster=~"$cluster_name"}))
+                    query: sum by (exported_namespace) (accelerator_gpu_utilization{exported_namespace=~"$namespace"}) / scalar(count(accelerator_gpu_utilization))
                     seriesNameFormat: "{{exported_namespace}}"
       cpuUtilizationByProject:
         kind: Panel
