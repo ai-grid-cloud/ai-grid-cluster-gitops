@@ -1,13 +1,4 @@
 skipCrdCheck: true
-components:
-  aigateway:
-    modelsAsAService:
-      gateway:
-        name: maas-default-gateway
-        namespace: openshift-ingress
-        annotations:
-          ai-grid/maas-gateway-hostname-prefix: maas
-
 operator:
   type: rhoai
   rhoai:
@@ -57,6 +48,11 @@ components:
   aigateway:
     modelsAsAService:
       gateway:
+        # main (3f0b6cc): apps/rhoai/gateway-hostname reads these.
+        name: maas-default-gateway
+        namespace: openshift-ingress
+        annotations:
+          ai-grid/maas-gateway-hostname-prefix: maas
         spec:
           infrastructure:
             annotations:
