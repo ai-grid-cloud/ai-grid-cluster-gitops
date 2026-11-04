@@ -98,8 +98,8 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    # Healthy nodes / Total nodes
-                    query: count(max by (node) (kube_node_status_condition{condition="Ready",status="true",cluster=~"$cluster_name"} == 1)) / count(max by (node) (kube_node_status_condition{condition="Ready",status="true",cluster=~"$cluster_name"}))
+                    # ACM allowlist omits kube_node_status_condition; use allocatable CPU series as node inventory.
+                    query: count(count by (node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"})) / count(count by (node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"}))
                     seriesNameFormat: System health
       deployedModels:
         kind: Panel
