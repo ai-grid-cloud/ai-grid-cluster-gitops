@@ -30,3 +30,6 @@ spec:
     enablePodAntiAffinity: true
     topologyKey: kubernetes.io/hostname
     podAntiAffinityType: preferred
+  # The source-enrolment policy labels CNPG's PodMonitor for RHOAI's collector.
+  monitoring:
+    enablePodMonitor: true

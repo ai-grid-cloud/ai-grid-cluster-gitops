@@ -1,13 +1,4 @@
 skipCrdCheck: true
-components:
-  aigateway:
-    modelsAsAService:
-      gateway:
-        name: maas-default-gateway
-        namespace: openshift-ingress
-        annotations:
-          ai-grid/maas-gateway-hostname-prefix: maas
-
 operator:
   type: rhoai
   rhoai:
@@ -24,11 +15,78 @@ operator:
           # bypass ext_proc, so MaaS API calls stop failing); until the RHOAI 3.6 payload carries it.
           - name: RELATED_IMAGE_ODH_AI_GATEWAY_CONTROLLER_IMAGE
             value: quay.io/sbatsche/odh-ai-gateway-controller@sha256:3968ba3bf7037ae2eba0c6b9239c4b72ba50ef193fed987caf89649e49467015
+
 dependencies:
   opentelemetry:
     olm:
       # Keep aligned with the cert-manager compatibility grant in apps/rhoai-prerequisites/hub/12-otel-cert-manager-policy.yaml.
       namespace: openshift-opentelemetry-operator
+
+# Metrics enrolment from cluster-gitops #169 (carried), ported onto the
+# profile layout: Envoy statistics Istio's default matcher drops, and the grid
+# gateways' TLS metrics listeners in RHOAI's collector.
+components:
+  kserve:
+    gateway:
+      spec:
+        infrastructure:
+          annotations:
+            proxy.istio.io/config: |
+              proxyStatsMatcher:
+                inclusionRegexps:
+                  - ".*ext_proc.*"
+                  - ".*ext_authz.*"
+                  - ".*ratelimit.*"
+                  - ".*wasm.*"
+                  - "http\\..*\\.downstream_rq_.*"
+                  - "http\\..*\\.downstream_cx_.*"
+                  - "listener\\..*\\.downstream_cx_.*"
+                  - "cluster\\..*\\.upstream_(rq|cx)_.*"
+                  - "server\\..*"
+                  - "overload\\..*"
+                  - "cluster\\..*\\.outlier_detection\\..*"
+  aigateway:
+    modelsAsAService:
+      gateway:
+        # main (3f0b6cc): apps/rhoai/gateway-hostname reads these.
+        name: maas-default-gateway
+        namespace: openshift-ingress
+        annotations:
+          ai-grid/maas-gateway-hostname-prefix: maas
+        spec:
+          infrastructure:
+            annotations:
+              proxy.istio.io/config: |
+                proxyStatsMatcher:
+                  inclusionRegexps:
+                    - ".*ext_proc.*"
+                    - ".*ext_authz.*"
+                    - ".*ratelimit.*"
+                    - ".*wasm.*"
+                    - "http\\..*\\.downstream_rq_.*"
+                    - "http\\..*\\.downstream_cx_.*"
+                    - "listener\\..*\\.downstream_cx_.*"
+                    - "cluster\\..*\\.upstream_(rq|cx)_.*"
+                    - "server\\..*"
+                    - "overload\\..*"
+                    - "cluster\\..*\\.outlier_detection\\..*"
+praxis-gateway:
+  metricsListener:
+    fromNamespaces:
+      - redhat-ods-monitoring
+      - openshift-user-workload-monitoring
+    serviceMonitor:
+      labels:
+        monitoring.opendatahub.io/scrape: "true"
+praxis-provider-gateway:
+  metricsListener:
+    fromNamespaces:
+      - redhat-ods-monitoring
+      - openshift-user-workload-monitoring
+    serviceMonitor:
+      labels:
+        monitoring.opendatahub.io/scrape: "true"
+
 # The payload's Grid runtimes. Argo renders these charts, not the operator, so
 # they name the images the operator's payload ships.
 global:
