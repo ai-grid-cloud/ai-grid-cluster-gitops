@@ -95,7 +95,9 @@ cluster-admin rights.
 
 ## Keycloak restart behavior
 
-The default `apps/keycloak` profile imports realm `saas` only when the realm
-does not exist. The backend's Keycloak user and organizations made in the
-console survive a Keycloak restart. The examples profile overrides its realm
-imports on each start, so it is for development and test only.
+Every `apps/keycloak` profile imports a realm only when it does not exist
+(`kc.sh import --override false`), so the backend's Keycloak user and the
+organizations made in the console survive a Keycloak restart. The
+`components/import-override` component rebuilds the imported realms on each
+start instead; it is for throwaway development and test installs only, and you
+rerun `create-secrets.sh` after each Keycloak restart there.

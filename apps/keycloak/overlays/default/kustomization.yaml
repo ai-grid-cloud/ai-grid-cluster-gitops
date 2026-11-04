@@ -1,9 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 # Default install: core plus the grid-tenant example realms, identity
-# providers, organizations, and signing keys. The import mode comes from base
-# (REALM_IMPORT_OVERRIDE, default true); a deployment that keeps
-# console-made organizations sets it to false.
+# providers, organizations, and signing keys.
 resources:
   - ../../base
 components:
