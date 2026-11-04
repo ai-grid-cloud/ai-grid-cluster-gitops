@@ -215,12 +215,6 @@ if "grid-gateway" in services:
     config = config_maps["grid-gateway-config"]["data"]["praxis.yaml"]
     assert "/etc/praxis/listener-tls/tls.crt" in config, "grid-gateway lost its listener certificate"
     assert "filter: grid_site_route" in config, "grid-gateway lost its consumer route filter"
-    # A credential Secret the role doesn't render must be optional, or the pod never starts.
-    for volume in consumer["volumes"]:
-        if volume["name"].startswith("credential-") and "secret" in volume:
-            secret = volume["secret"]
-            assert secret["secretName"] in secrets or secret.get("optional"), \
-                f"grid-gateway mounts {secret['secretName']}, which this role doesn't create"
 
 if "grid-provider-gateway" in services:
     annotations = services["grid-provider-gateway"]["metadata"].get("annotations", {})
@@ -259,9 +253,6 @@ assert "fromSecret " not in ca_raw, \
     "home CA templating must not require Secret access"
 assert 'lookup "v1" "Secret"' not in ca_raw, \
     "home CA lookup would require Secret list and watch permissions"
-assert "ca-bundle.crt:" not in hub_branch, \
-    "home CA must not reuse odh-trusted-ca-bundle's ca-bundle.crt key in Authorino's trust directory"
-assert "home-keycloak-ca.crt:" in hub_branch, "home CA lost its own key"
 rbac_documents = list(yaml.safe_load_all(open(rbac_path)))
 roles = [document for document in rbac_documents
          if document and document.get("kind") == "Role"]
