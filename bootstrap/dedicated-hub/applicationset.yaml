@@ -42,6 +42,10 @@ spec:
                 - path: apps/odf/application.yaml
                 - path: apps/rhoai/application.yaml
                 - path: apps/rhoai-prerequisites/application.yaml
+                # The delivery half of the hub's MaaS usage-log store: the Loki operator that
+                # apps/ai-grid-o11y's LokiStack needs, and the ACM policy that hands each site
+                # the writer token. apps/odf, its object storage, is already listed.
+                - path: apps/ai-grid-usage-logs/application.yaml
                 # Fork-only: no dedicated-hub-root here. It would sync this file
                 # as committed, without bootstrap.sh's DEPLOYMENT_* values, and
                 # drop the deployment's apps. Reapply the root with bootstrap.sh.
