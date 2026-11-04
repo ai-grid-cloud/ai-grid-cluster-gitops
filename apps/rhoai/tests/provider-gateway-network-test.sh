@@ -253,6 +253,9 @@ assert "fromSecret " not in ca_raw, \
     "home CA templating must not require Secret access"
 assert 'lookup "v1" "Secret"' not in ca_raw, \
     "home CA lookup would require Secret list and watch permissions"
+assert "ca-bundle.crt:" not in hub_branch, \
+    "home CA must not reuse odh-trusted-ca-bundle's ca-bundle.crt key in Authorino's trust directory"
+assert "home-keycloak-ca.crt:" in hub_branch, "home CA lost its own key"
 rbac_documents = list(yaml.safe_load_all(open(rbac_path)))
 roles = [document for document in rbac_documents
          if document and document.get("kind") == "Role"]
