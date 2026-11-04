@@ -52,6 +52,8 @@ With a deployment repository, rerun `./bootstrap.sh` with the same `BOOTSTRAP_PR
 
 Every Application it generates syncs from Git on its own.
 
+Both roots set `preserveResourcesOnDeletion: true`: deleting a root, or removing an app from its generator, removes the Application but leaves its deployed resources running, so clean those up separately. An explicit cascading delete from the Argo UI or API can still delete an Application's unprotected resources.
+
 ### Changing the template
 
 To change the template itself, fork this repository, point the fork's Argo sources at itself once, push, and bootstrap from the fork:
@@ -133,7 +135,7 @@ BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh
 
 Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, acm-models, ai-grid-o11y, ai-grid-policies, ai-grid-spokes, argo-registration, cert-manager, console, external-secrets, gitops-config, grid-bootstrap, keycloak, limitador-redis, maas-db, external-services, metallb, odf, rhoai and rhoai-prerequisites. ACM syncs the full [apps/acm/manifests](../../../apps/acm/manifests) — core, observability and Submariner — with [apps/odf](../../../apps/odf) supplying the object storage observability needs. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
 
-[apps/argo-registration](../../../apps/argo-registration) registers every cluster in global with Argo CD, which on a combined hub acm-models does, so the default ApplicationSet skips it. The rhoai app installs RHOAI, and a provider gateway where apps/rhoai/provider-gateway-<cluster>.yaml exists, on each AI Grid site, as [apps/ai-grid-spokes](../../../apps/ai-grid-spokes) selects them by label and role.
+[apps/argo-registration](../../../apps/argo-registration) registers every cluster in global with Argo CD, which on a combined hub acm-models does, so the default ApplicationSet skips it. The rhoai app installs RHOAI and the role's Grid gateways on each AI Grid site, as [apps/ai-grid-spokes](../../../apps/ai-grid-spokes) selects them by label and role.
 
 acm-models brings the sample model and its MaaS objects, to AI Grid sites by role, and the provider console's catalog: its AppProjects and ApplicationSets, which deliver the models and subscriptions the console commits (see [Provider console](#provider-console)). Its GitOpsCluster would duplicate argo-registration, so it stays out. A deployment with its own catalog sets `DEPLOYMENT_CATALOG_REPO_URL` for bootstrap.sh: the console then commits there, acm-models leaves out the catalog files, and the deployment delivers them from its own repository ([examples/deployment](../../../examples/deployment/README.md)).
 
@@ -224,7 +226,7 @@ flowchart TD
 
 * Grid, v0.3.0-rc.2: https://github.com/praxis-proxy/grid/tree/v0.3.0-rc.2
 * grid-enrollment chart: https://github.com/praxis-proxy/grid/tree/v0.3.0-rc.2/charts/grid-enrollment
-* Vendored chart the lab installs: https://github.com/opendatahub-io/odh-gitops/tree/feature-ai-grid/charts/rhai-on-openshift-chart/charts/grid-enrollment
+* Vendored chart the lab installs: https://github.com/opendatahub-io/odh-gitops/tree/main/charts/rhai-on-openshift-chart/charts/grid-enrollment
 * Lab tenant: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops
 * Argo bootstrap: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops/blob/main/bootstrap.sh
 * ACM manifests: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops/tree/main/apps/acm/manifests

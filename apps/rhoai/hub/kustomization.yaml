@@ -6,6 +6,5 @@ resources:
   - 00-managed-cluster-set-binding-grid.yaml
   - 00-tenant-templating-rbac.yaml
   - 01-applicationset.yaml
-  - 02-tenant-policy.yaml
-  - 03-tenant-placement.yaml
-  - 04-provider-gateway-applicationset.yaml
+  - 02-ingress-clusters-policy.yaml
+  - 03-ingress-clusters-placement.yaml
