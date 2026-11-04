@@ -62,15 +62,6 @@ rules:
       - router-ca
     verbs:
       - get
-  # ACM's hub-template lookup lists and watches to fill its cache, even for one
-  # named object; without these the ingress Policy fails to resolve on the hub.
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - list
-      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
