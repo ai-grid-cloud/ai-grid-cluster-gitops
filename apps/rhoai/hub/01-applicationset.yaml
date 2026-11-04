@@ -124,6 +124,10 @@ spec:
               - name: clusterNamespace
                 value: '{{ .name }}'
                 forceString: true
+              # An inference-only site has no MaaS Gateway: the chart renders nothing there.
+              - name: role
+                value: '{{ index .metadata.labels "ai-grid/role" }}'
+                forceString: true
         # Temporary until the pinned RHOAI build carries odh-observability #130;
         # see apps/rhoai/odh-observability-memory/README.md.
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
