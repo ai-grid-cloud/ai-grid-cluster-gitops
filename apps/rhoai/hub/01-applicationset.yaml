@@ -124,6 +124,17 @@ spec:
               - name: clusterNamespace
                 value: '{{ .name }}'
                 forceString: true
+        # Temporary until the pinned RHOAI build carries odh-observability #130;
+        # see apps/rhoai/odh-observability-memory/README.md.
+        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          targetRevision: HEAD
+          path: apps/rhoai/odh-observability-memory
+          helm:
+            releaseName: rhoai-odh-observability-memory
+            parameters:
+              - name: clusterNamespace
+                value: '{{ .name }}'
+                forceString: true
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
           path: apps/rhoai/catalog
