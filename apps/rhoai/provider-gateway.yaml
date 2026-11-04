@@ -59,3 +59,12 @@ resources:
 # networkPolicy.from is set per site by hub/04-provider-gateway-applicationset.yaml.
 networkPolicy:
   enabled: true
+
+# Enrol the existing TLS metrics listener in RHOAI's collector.
+metricsListener:
+  fromNamespaces:
+    - redhat-ods-monitoring
+    - openshift-user-workload-monitoring
+  serviceMonitor:
+    labels:
+      monitoring.opendatahub.io/scrape: "true"
