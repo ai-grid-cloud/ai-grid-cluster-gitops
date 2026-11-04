@@ -118,25 +118,21 @@ by the three realm-specific keystores.
 
 Realm imports replace `${KEYCLOAK_PUBLIC_URL}` with the value from the
 public-URL ConfigMap and the broker/client/test-user keys with values from the
-Keycloak Secret. By default Keycloak starts with `kc.sh import --override false`: it
-creates only realms that don't exist yet, so anything created at runtime (the console
-backend's user, organizations and identity providers made in the console) survives a
-restart. Edits to an import file then no longer reach an existing realm: change it
-through the admin API, or delete the realm so the next start recreates it.
+Keycloak Secret. By default Keycloak starts with `kc.sh import --override true`, so every start rebuilds
+the imported realms from their files: edits to an import file take effect on
+the next restart, and anything created at runtime in those realms (the console
+backend's user, organizations made in the console) is lost on restart. Rerun
+apps/console/create-secrets.sh after a Keycloak restart, with the same
+`KEYCLOAK_BACKEND_URL` and `CURL_CA_BUNDLE` as before: it recreates the backend's
+user, not the organizations.
 
-To rebuild the imported realms from their files at every start instead (a throwaway
-test install), create ConfigMap `keycloak-realm-import-settings` in Keycloak's namespace
-with `REALM_IMPORT_OVERRIDE: "true"`, for example from a deployment repository's app
-([examples/deployment](../../examples/deployment/README.md)). Runtime changes in those
-realms are then lost on restart: rerun apps/console/create-secrets.sh afterwards, with
-the same `KEYCLOAK_BACKEND_URL` and `CURL_CA_BUNDLE` as before. Keycloak reads the
-ConfigMap when it starts.
-
-Keycloak's generated passwords, signing keystores and database objects carry
-`argocd.argoproj.io/sync-options: Prune=false,Delete=false`. Argo CD never deletes them,
-even when the app's path changes or the app is removed, because recreating them
-generates new passwords and keys that no longer match the database or the realms.
-Delete them by hand to start over.
+To keep runtime changes across restarts, create ConfigMap
+`keycloak-realm-import-settings` in Keycloak's namespace with
+`REALM_IMPORT_OVERRIDE: "false"`, for example from a deployment repository's
+app ([examples/deployment](../../examples/deployment/README.md)). Keycloak then
+creates only realms that don't exist yet, and edits to an import file no longer
+reach an existing realm: change it through the admin API instead. Keycloak reads
+the ConfigMap when it starts.
 
 ## Validation
 

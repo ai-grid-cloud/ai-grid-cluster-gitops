@@ -74,12 +74,11 @@ spec:
             - /bin/bash
             - -c
           # REALM_IMPORT_OVERRIDE (optional ConfigMap keycloak-realm-import-settings,
-          # default false): false creates only realms that don't exist yet, so
-          # organizations and users made at runtime survive a restart; true
-          # replaces each realm from its file at every start (README.md).
+          # default true): true replaces each realm from its file at every start;
+          # false creates only realms that don't exist yet (README.md).
           args:
             - |
-              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override "${REALM_IMPORT_OVERRIDE:-false}"
+              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override "${REALM_IMPORT_OVERRIDE:-true}"
               exec /opt/keycloak/bin/kc.sh start
           ports:
             - name: http
