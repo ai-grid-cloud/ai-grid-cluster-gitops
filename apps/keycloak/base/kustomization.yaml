@@ -8,7 +8,6 @@ resources:
   - manifests/public-url-policy.yaml
   - manifests/keycloak.yaml
   - manifests/route.yaml
-  - manifests/redirect-uris.yaml
 configMapGenerator:
   - name: keycloak-realm-import
     options:

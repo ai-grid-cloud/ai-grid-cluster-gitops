@@ -111,32 +111,6 @@ spec:
                     {{- end }}
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: cloud-provider
-          path: apps/rhoai/gateway-hostname
-          helm:
-            releaseName: rhoai-gateway-hostname
-            valueFiles:
-              - $values/apps/rhoai/values.yaml
-            parameters:
-              - name: clusterNamespace
-                value: '{{ .name }}'
-                forceString: true
-              # An inference-only site has no MaaS Gateway: the chart renders nothing there.
-              - name: role
-                value: '{{ index .metadata.labels "ai-grid/role" }}'
-                forceString: true
-        # Temporary until the pinned RHOAI build carries odh-observability #130;
-        # see apps/rhoai/odh-observability-memory/README.md.
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: cloud-provider
-          path: apps/rhoai/odh-observability-memory
-          helm:
-            releaseName: rhoai-odh-observability-memory
-            parameters:
-              - name: clusterNamespace
-                value: '{{ .name }}'
-                forceString: true
-        - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: cloud-provider
           path: apps/rhoai/catalog
           helm:
             releaseName: rhoai-nightly-catalog
@@ -150,13 +124,6 @@ spec:
         server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: redhat-ai-grid
       ignoreDifferences:
-        - group: gateway.networking.k8s.io
-          kind: Gateway
-          name: maas-default-gateway
-          namespace: openshift-ingress
-          jqPathExpressions:
-            - '.spec.listeners[] | select(.name == "http") | .hostname'
-            - '.spec.listeners[] | select(.name == "https") | .hostname'
         # OpenShift injects a generated dockercfg pull secret into this
         # OLM-owned ServiceAccount. Ignore only that controller-generated entry
         # so Argo still owns the explicit catalog pull secret.

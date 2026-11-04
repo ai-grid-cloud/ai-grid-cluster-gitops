@@ -1,5 +1,0 @@
-apiVersion: v2
-name: rhoai-gateway-hostname
-description: Cluster-specific hostnames for the MaaS Gateway listeners
-type: application
-version: 0.1.0

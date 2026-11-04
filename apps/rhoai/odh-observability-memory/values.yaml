@@ -1,2 +1,0 @@
-# The site's cluster namespace, set by the rhoai ApplicationSet.
-clusterNamespace: ""

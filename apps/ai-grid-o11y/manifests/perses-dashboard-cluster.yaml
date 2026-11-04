@@ -46,7 +46,7 @@ spec:
                 name: cluster-prometheus-datasource
               labelName: namespace
               matchers:
-                - 'kube_pod_info{cluster=~"$cluster_name"}'
+                - kube_pod_info
       # Cluster details variables - set by ClusterDetailsVariablesProvider
       - kind: TextVariable
         spec:
@@ -82,18 +82,13 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Nodes
-            description: >-
-              Node count from kube_node_status_allocatable. Ready-condition
-              health is not shown: kube_node_status_condition does not reach
-              the hub's Thanos today.
+            name: System health
           plugin:
             kind: StatChart
             spec:
-              calculation: last-number
+              calculation: mean
               format:
-                unit: decimal
-                decimalPlaces: 0
+                unit: percent-decimal
           queries:
             - kind: TimeSeriesQuery
               spec:
@@ -103,18 +98,14 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    # Hub Thanos has allocatable but not Ready condition; show
-                    # node inventory instead of a fake always-100% health ratio.
-                    query: count(count by (cluster, node) (kube_node_status_allocatable{resource="cpu",cluster=~"$cluster_name"}))
-                    seriesNameFormat: Nodes
+                    # Healthy nodes / Total nodes
+                    query: count(max by (node) (kube_node_status_condition{condition="Ready",status="true",cluster=~"$cluster_name"} == 1)) / count(max by (node) (kube_node_status_condition{condition="Ready",status="true",cluster=~"$cluster_name"}))
+                    seriesNameFormat: System health
       deployedModels:
         kind: Panel
         spec:
           display:
             name: Deployed models
-            description: >-
-              Local UWM vLLM metrics have no cluster label, so this panel
-              ignores the Cluster dropdown and counts models across every site.
           plugin:
             kind: StatChart
             spec:
@@ -132,16 +123,13 @@ spec:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
                     # Count unique models by model_name and namespace from vLLM metrics
-                    query: count(group({__name__=~"kserve_vllm:num_requests_running|vllm:num_requests_running"}) by (model_name, namespace))
+                    query: count(group(kserve_vllm:num_requests_running{cluster=~"$cluster_name"}) by (model_name, namespace))
                     seriesNameFormat: Deployed models
       gpuUtilizationStat:
         kind: Panel
         spec:
           display:
             name: GPU utilization
-            description: >-
-              Local UWM GPU metrics have no cluster label, so this panel
-              ignores the Cluster dropdown and averages GPUs across every site.
           plugin:
             kind: StatChart
             spec:
@@ -157,16 +145,13 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: avg(accelerator_gpu_utilization)
+                    query: avg(accelerator_gpu_utilization{cluster=~"$cluster_name"})
                     seriesNameFormat: GPU usage
       successRate:
         kind: Panel
         spec:
           display:
             name: Request success rate
-            description: >-
-              Local UWM vLLM metrics have no cluster label, so this panel
-              ignores the Cluster dropdown and covers every site.
           plugin:
             kind: StatChart
             spec:
@@ -184,7 +169,7 @@ spec:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
                     # Request success rate using kserve_vllm metrics
-                    query: (sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace", finished_reason=~"length|stop"}[$__range])) / sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace"}[$__range]))) and (sum(increase({__name__=~"kserve_vllm:request_success_total|vllm:request_success_total", namespace=~"$namespace"}[$__range])) > 0)
+                    query: (sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace", finished_reason=~"length|stop",cluster=~"$cluster_name"}[$__range])) / sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace",cluster=~"$cluster_name"}[$__range]))) and (sum(increase(kserve_vllm:request_success_total{namespace=~"$namespace",cluster=~"$cluster_name"}[$__range])) > 0)
                     seriesNameFormat: Request success rate
       # Cluster-wide usage - Area charts
       gpuUtilizationArea:
@@ -192,9 +177,6 @@ spec:
         spec:
           display:
             name: GPU utilization
-            description: >-
-              Local UWM GPU metrics have no cluster label, so this panel
-              ignores the Cluster dropdown and averages GPUs across every site.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -216,7 +198,7 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: avg(accelerator_gpu_utilization)
+                    query: avg(accelerator_gpu_utilization{cluster=~"$cluster_name"})
                     seriesNameFormat: GPU usage
       memoryUtilizationArea:
         kind: Panel
@@ -308,9 +290,6 @@ spec:
         spec:
           display:
             name: GPU utilization
-            description: >-
-              Local UWM GPU metrics have no cluster label, so this panel
-              ignores the Cluster dropdown and shows GPUs across every site.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -337,7 +316,7 @@ spec:
                     datasource:
                       kind: PrometheusDatasource
                       name: cluster-prometheus-datasource
-                    query: sum by (exported_namespace) (accelerator_gpu_utilization{exported_namespace=~"$namespace"}) / scalar(count(accelerator_gpu_utilization))
+                    query: sum by (exported_namespace) (accelerator_gpu_utilization{exported_namespace=~"$namespace",cluster=~"$cluster_name"}) / scalar(count(accelerator_gpu_utilization{cluster=~"$cluster_name"}))
                     seriesNameFormat: "{{exported_namespace}}"
       cpuUtilizationByProject:
         kind: Panel
