@@ -5,9 +5,21 @@
 # Application targets the subchart directly. A dedicated hub runs no RHOAI, so
 # nothing else brings it either.
 #
-# openshift-operators-redhat ships with OpenShift, so it is NOT created here --
-# Argo and Helm both refuse to adopt a namespace they do not own. It does arrive
-# without an OperatorGroup, so that one is ours.
+# openshift-operators-redhat does not ship with OpenShift (absent on a fresh
+# 4.21 hub); the Loki operator's install docs create it, labelled for cluster
+# monitoring. Where it already exists, Argo applies the label to it. Prune=false
+# and Delete=false keep Argo from ever removing it, since other Red Hat
+# operators can share it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-operators-redhat
+  labels:
+    openshift.io/cluster-monitoring: "true"
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
