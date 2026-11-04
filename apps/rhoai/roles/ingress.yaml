@@ -8,3 +8,16 @@ dependencies:
           - odh-trusted-ca-bundle
           - openshift-service-ca.crt
           - home-keycloak-ca
+
+
+# The ai-grid-ingress profile mounts Secret grid-model-client-token into
+# grid-gateway (providerCredentials): the token a local dial sends to a
+# serving gateway. The chart creates that Secret only where KServe is
+# Managed, which an ingress-only site isn't, so a new grid-gateway pod stays in
+# ContainerCreating (FailedMount). An ingress-only site has no serving gateway
+# to dial; mark the mount optional. (An empty list doesn't override the
+# profile.)
+praxis-gateway:
+  providerCredentials:
+    - secretName: grid-model-client-token
+      optional: true
