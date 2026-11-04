@@ -1,0 +1,5 @@
+apiVersion: v2
+name: ai-grid-o11y
+description: "Usage logs for the grid: a LokiStack on object storage, its provisioning, readers and writers, and the RHOAI metrics federation"
+type: application
+version: 0.1.0

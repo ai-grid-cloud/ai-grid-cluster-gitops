@@ -1,0 +1,13 @@
+{{- if eq .Values.objectStorage.mode "obc" }}
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: {{ .Values.name }}-bucket
+  namespace: {{ .Values.namespace }}
+  annotations:
+    # The bucket and its credentials outlive a mode or Application change: never pruned, never deleted by Argo.
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  generateBucketName: {{ .Values.name }}
+  storageClassName: {{ .Values.objectStorage.obc.storageClassName }}
+{{- end }}

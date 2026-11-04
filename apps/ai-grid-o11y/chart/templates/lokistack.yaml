@@ -1,0 +1,41 @@
+{{- include "o11y.validate" . }}
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    # After the wave-1 hook has written the object-storage Secret.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  size: {{ .Values.lokistack.size }}
+  limits:
+    global:
+      otlp:
+        streamLabels:
+          resourceAttributes:
+          - name: service.name
+          - name: subscription
+          - name: model
+          - name: response_type
+          - name: kubernetes_namespace_name
+          - name: cluster_name
+          - name: cluster_id
+      retention:
+        days: {{ .Values.lokistack.retentionDays }}
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: {{ .Values.lokistack.schemaEffectiveDate | quote }}
+    secret:
+      name: {{ include "o11y.secretName" . }}
+      type: s3
+{{- if include "o11y.caName" . }}
+    tls:
+      caName: {{ include "o11y.caName" . }}
+      caKey: {{ include "o11y.caKey" . }}
+{{- end }}
+  storageClassName: {{ .Values.lokistack.storageClassName }}
+  tenants:
+    mode: openshift-logging
+  managementState: Managed

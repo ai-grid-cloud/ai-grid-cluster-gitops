@@ -1,8 +1,8 @@
 apiVersion: perses.dev/v1alpha1
 kind: PersesDatasource
 metadata:
-  name: usage-logs-all
-  namespace: redhat-ods-monitoring
+  name: {{ .Values.name }}-all
+  namespace: {{ .Values.namespace }}
 spec:
   config:
     display:
@@ -14,7 +14,7 @@ spec:
         proxy:
           kind: HTTPProxy
           spec:
-            url: 'https://usage-logs-gateway-http.redhat-ods-monitoring.svc.cluster.local:8080/api/logs/v1/infrastructure'
+            url: 'https://{{ .Values.name }}-gateway-http.{{ .Values.namespace }}.svc.cluster.local:8080/api/logs/v1/infrastructure'
             allowedEndpoints:
               - endpointPattern: "/loki/api/v1/query"
                 method: GET
@@ -24,7 +24,7 @@ spec:
                 method: GET
               - endpointPattern: "/loki/api/v1/label/([a-zA-Z0-9_-]+)/values"
                 method: GET
-            secret: usage-logs-all-secret
+            secret: {{ .Values.name }}-all-secret
   client:
     kubernetesAuth:
       enable: true
