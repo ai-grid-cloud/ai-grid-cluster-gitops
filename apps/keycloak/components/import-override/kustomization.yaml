@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# Opt-in for throwaway installs: replace every imported realm from its file at
+# each Keycloak start. Anything made at runtime in those realms (console-made
+# organizations and identity providers, the console backend's user) is lost on
+# restart. Not for a deployment that keeps organizations.
+patches:
+  - path: keycloak-import-override.yaml

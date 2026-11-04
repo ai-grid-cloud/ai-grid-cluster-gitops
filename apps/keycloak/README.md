@@ -118,9 +118,17 @@ by the three realm-specific keystores.
 
 Realm imports replace `${KEYCLOAK_PUBLIC_URL}` with the value from the
 public-URL ConfigMap and the broker/client/test-user keys with values from the
-Keycloak Secret. Keycloak skips realms that already
-exist in PostgreSQL, so later edits to an import file do not update those
-realms. Use a planned Keycloak export/import for changes to existing realms.
+Keycloak Secret. Keycloak starts with `kc.sh import --override false`, so it
+creates only the realms that don't exist in PostgreSQL yet. Anything made at
+runtime in an existing realm, such as console-made organizations, their identity
+providers and the console backend's user, survives a restart. Later edits to an
+import file don't update an existing realm: change it through the admin API, or
+use a planned Keycloak export/import. (Keycloak's own default is `--override
+true`, which replaces every imported realm at each start.)
+
+For a throwaway test install that should rebuild the imported realms from their
+files at every start, add the `components/import-override` component to the
+overlay. Runtime changes in those realms are then lost on each restart.
 
 ## Validation
 

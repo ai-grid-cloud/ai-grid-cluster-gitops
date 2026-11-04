@@ -73,9 +73,12 @@ spec:
           command:
             - /bin/bash
             - -c
+          # --override false: create only the realms that don't exist yet, so
+          # organizations, identity providers and users made at runtime survive a
+          # restart (Keycloak's own default is true). See README.md, Realm imports.
           args:
             - |
-              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import
+              /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override false
               exec /opt/keycloak/bin/kc.sh start
           ports:
             - name: http
