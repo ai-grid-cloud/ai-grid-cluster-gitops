@@ -22,6 +22,66 @@ dependencies:
       # Keep aligned with the cert-manager compatibility grant in apps/rhoai-prerequisites/hub/12-otel-cert-manager-policy.yaml.
       namespace: openshift-opentelemetry-operator
 
+# Metrics enrolment from cluster-gitops #169 (carried), ported onto the
+# profile layout: Envoy statistics Istio's default matcher drops, and the grid
+# gateways' TLS metrics listeners in RHOAI's collector.
+components:
+  kserve:
+    gateway:
+      spec:
+        infrastructure:
+          annotations:
+            proxy.istio.io/config: |
+              proxyStatsMatcher:
+                inclusionRegexps:
+                  - ".*ext_proc.*"
+                  - ".*ext_authz.*"
+                  - ".*ratelimit.*"
+                  - ".*wasm.*"
+                  - "http\\..*\\.downstream_rq_.*"
+                  - "http\\..*\\.downstream_cx_.*"
+                  - "listener\\..*\\.downstream_cx_.*"
+                  - "cluster\\..*\\.upstream_(rq|cx)_.*"
+                  - "server\\..*"
+                  - "overload\\..*"
+                  - "cluster\\..*\\.outlier_detection\\..*"
+  aigateway:
+    modelsAsAService:
+      gateway:
+        spec:
+          infrastructure:
+            annotations:
+              proxy.istio.io/config: |
+                proxyStatsMatcher:
+                  inclusionRegexps:
+                    - ".*ext_proc.*"
+                    - ".*ext_authz.*"
+                    - ".*ratelimit.*"
+                    - ".*wasm.*"
+                    - "http\\..*\\.downstream_rq_.*"
+                    - "http\\..*\\.downstream_cx_.*"
+                    - "listener\\..*\\.downstream_cx_.*"
+                    - "cluster\\..*\\.upstream_(rq|cx)_.*"
+                    - "server\\..*"
+                    - "overload\\..*"
+                    - "cluster\\..*\\.outlier_detection\\..*"
+praxis-gateway:
+  metricsListener:
+    fromNamespaces:
+      - redhat-ods-monitoring
+      - openshift-user-workload-monitoring
+    serviceMonitor:
+      labels:
+        monitoring.opendatahub.io/scrape: "true"
+praxis-provider-gateway:
+  metricsListener:
+    fromNamespaces:
+      - redhat-ods-monitoring
+      - openshift-user-workload-monitoring
+    serviceMonitor:
+      labels:
+        monitoring.opendatahub.io/scrape: "true"
+
 # The payload's Grid runtimes. Argo renders these charts, not the operator, so
 # they name the images the operator's payload ships.
 global:
