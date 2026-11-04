@@ -76,6 +76,11 @@ spec:
   # ODF's operator channel follows the hub's OpenShift minor version.
   templatePatch: |
     {{- $spec := .spec }}
+    {{- if eq .metadata.name "ai-grid-o11y" }}
+    {{- $operator := dict "repoURL" $spec.source.repoURL "targetRevision" $spec.source.targetRevision "path" "apps/ai-grid-o11y/loki-operator" }}
+    {{- $_ := set $spec "sources" (list $operator $spec.source) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
     {{- if eq .metadata.name "grid-bootstrap" }}
     {{- range $spec.sources }}{{ if hasKey . "helm" }}
     {{- $_ := set .helm "parameters" (list (dict "name" "external.certManager.ca.mode" "value" "Generate") (dict "name" "managedClusters.createClusterSetBinding" "value" "true")) }}

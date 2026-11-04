@@ -1,0 +1,15 @@
+# Match dependencies.loki.olm in rhai-on-openshift-chart 3.6.0-dev.13.1.
+# Like RHOAI, track the channel rather than pinning an independent startingCSV.
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: loki-operator
+  namespace: openshift-operators-redhat
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: loki-operator
+  channel: stable-6.5
+  installPlanApproval: Automatic

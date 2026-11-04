@@ -1,0 +1,11 @@
+# Use the same shared, all-namespaces OperatorGroup as the RHOAI Loki dependency.
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-operators-redhat
+  namespace: openshift-operators-redhat
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    # Other Red Hat operators can share this group; retain it on profile changes.
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec: {}
