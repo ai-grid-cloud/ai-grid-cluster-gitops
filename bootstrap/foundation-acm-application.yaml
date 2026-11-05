@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-    targetRevision: HEAD
+    targetRevision: cloud-provider
     path: apps/acm/manifests
     directory:
       # Keep foundation setup to ACM itself. The repository's full `acm`
