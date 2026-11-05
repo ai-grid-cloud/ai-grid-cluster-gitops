@@ -48,7 +48,7 @@ spec:
       project: default
       sources:
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           ref: values
         # The deployment repository (bootstrap.sh DEPLOYMENT_REPO_URL,
         # DEPLOYMENT_REVISION, DEPLOYMENT_PATH), for per-cluster values.
@@ -121,7 +121,7 @@ spec:
                         {{- end }}
                     {{- end }}
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           path: apps/rhoai/gateway-hostname
           helm:
             releaseName: rhoai-gateway-hostname
@@ -136,7 +136,7 @@ spec:
                 value: '{{ index .metadata.labels "ai-grid/role" }}'
                 forceString: true
         - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-          targetRevision: HEAD
+          targetRevision: cloud-provider
           path: apps/rhoai/catalog
           helm:
             releaseName: rhoai-nightly-catalog
