@@ -2,8 +2,13 @@ apiVersion: maas.opendatahub.io/v1alpha1
 kind: MaaSSubscription
 metadata:
   annotations:
+    # Delete=false: a cluster removed from AI Grid keeps this object, so MaaS doesn't revoke
+    # its API keys on every cluster. The label tells the provider backend the cluster's copy has it.
+    argocd.argoproj.io/sync-options: Delete=false
     argocd.argoproj.io/sync-wave: "4"
     openshift.io/display-name: tenant-53d4f57e-3588-55e8-b96c-4ec54a7c42fa-bob
+  labels:
+    ai-grid/kept-on-removal: "true"
   name: tenant-53d4f57e-3588-55e8-b96c-4ec54a7c42fa-bob
   namespace: models-as-a-service
 spec:

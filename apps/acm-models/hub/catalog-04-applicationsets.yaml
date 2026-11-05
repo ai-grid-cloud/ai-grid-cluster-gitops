@@ -199,8 +199,13 @@ spec:
     metadata:
       name: 'acm-models-catalog-subscriptions-{{.name}}'
       namespace: openshift-gitops
-      # Fail closed: deleting the Application (or the ApplicationSet) deletes
-      # what it delivered, so no subscription or auth policy outlives it.
+      # Deleting the Application (or the ApplicationSet) deletes what it
+      # delivered, except each MaaSSubscription, which the console writes with
+      # the sync option Delete=false: MaaS revokes a deleted MaaSSubscription's
+      # API keys in the database every ingress cluster shares, so a cluster
+      # removed from AI Grid keeps its copy. It loses the MaaSAuthPolicy, so it
+      # stops serving the subscription's users. A file deleted in Git is still
+      # pruned everywhere (apps/acm-models/README.md).
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:

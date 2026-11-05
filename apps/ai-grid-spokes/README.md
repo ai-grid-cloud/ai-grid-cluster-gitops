@@ -65,11 +65,15 @@ What goes and what stays:
   installed, and the provider gateway (both ApplicationSets set
   `preserveResourcesOnDeletion`), and the catalog's models.
 - Deleted: the site's `maas-db` replica (a full copy of every tenant's API
-  keys), and the catalog's MaaS objects and subscriptions on that site.
+  keys), and the catalog's MaaS objects on that site, except the
+  MaaSSubscriptions.
 - Stays, and needs cleanup: the Secrets that Policies delivered
-  (`maas-db-config`, `maas-db-app`, `maas-db-replication`) and the tenant
-  objects. Copies may exist, so rotate the shared credentials after removing a
-  site.
+  (`maas-db-config`, `maas-db-app`, `maas-db-replication`), the tenant
+  objects, and the MaaSSubscriptions, which carry `Delete=false` because MaaS
+  would revoke their API keys on every cluster if one copy were deleted.
+  Remove a MaaSSubscription's finalizer before deleting it
+  ([acm-models](../acm-models/README.md)). Copies may exist, so rotate the
+  shared credentials after removing a site.
 
 A role change reaches the Placements at once, and the `rhoai` template a few
 seconds later (through Argo CD's cluster Secret), so the Application can render
