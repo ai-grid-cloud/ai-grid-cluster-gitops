@@ -127,6 +127,7 @@ spec:
   # catalogRepoURL is the provider console's catalog. With another catalog,
   # acm-models leaves out the catalog files here, and the deployment delivers
   # them itself, pointed at its catalog (examples/deployment).
+  # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "grid-bootstrap" }}
@@ -135,7 +136,11 @@ spec:
     {{- end }}{{ end }}
     {{- end }}
     {{- if eq .metadata.name "odf" }}
-    {{- $_ := set $spec.source.helm "parameters" (list (dict "name" "openshift.version" "value" (index .metadata.labels "openshiftVersion-major-minor"))) }}
+    {{- $params := list (dict "name" "openshift.version" "value" (index .metadata.labels "openshiftVersion-major-minor")) }}
+    {{- if eq (index .metadata.labels "ai-grid/odf-operatorgroup") "existing" }}
+    {{- $params = append $params (dict "name" "operatorGroup.create" "value" "false") }}
+    {{- end }}
+    {{- $_ := set $spec.source.helm "parameters" $params }}
     {{- end }}
     {{- if eq .metadata.name "acm-models" }}
     {{- if eq .values.catalogRepoURL "https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git" }}

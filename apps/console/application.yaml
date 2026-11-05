@@ -11,7 +11,6 @@ metadata:
 spec:
   project: default
   sources:
-    # Console main a3b4d8e (#129, #131, #136, #137).
     - repoURL: https://github.com/ai-grid-cloud/ai-grid-provider-console.git
       # A commit, not a branch: the chart holds ClusterRoleBindings and a
       # ValidatingAdmissionPolicy that Argo CD applies with cluster-admin
@@ -22,16 +21,15 @@ spec:
       helm:
         releaseName: ai-grid-provider-console
         valuesObject:
-          # By digest: tags can be overwritten. Console main a3b4d8e and the
-          # backend it names (.backend-api-version 57b2fba: #64 plus #70's
-          # trustEmail), both from ghcr.io.
+          # By digest: tags can be overwritten. Console and chart are main
+          # a3b4d8e (console #131); the backend is 57b2fba, the console's
+          # .backend-api-version. Move them together: this console sends what
+          # only that backend accepts.
           images:
             console:
-              repository: ghcr.io/ai-grid-cloud/ai-grid-provider-console
               tag: sha-a3b4d8e098a4466844b12fce8c674deab65c7de8
               digest: sha256:11de05eaad5709d817ebc0537cd29f7fa348852660de004fefb12fc8c94934d6
             backend:
-              repository: ghcr.io/ai-grid-cloud/ai-grid-provider-backend
               tag: sha-57b2fbac336777bb06ba562c826e4e0a0a516f0e
               digest: sha256:a1f6086f00ccaa157026a9559df4f63bd1a9f11e1014581eda690619fe43a371
             authProxy:
@@ -49,18 +47,11 @@ spec:
             # ValidatingAdmissionPolicy limits the backend to the ai-grid/* and
             # location labels and the ai-grid/* annotations.
             clusterWrites: true
-            # Organization IdP client secrets: manifests/idp-secrets.yaml owns
-            # namespace ai-grid-idp-secrets, so the chart (console PR #136 and
-            # later) adds only its get-only Role there. Charts before #136
-            # refuse this key: bump targetRevision to one with #136 in the
-            # same commit.
-            idpSecrets:
-              createNamespace: false
             # The catalog repository. The token that pushes to it is Secret
             # ai-grid-backend-git, never in git; keep it scoped to this
             # repository alone.
             git:
-              url: '@catalogRepoURL@'
+              url: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
               branch: main
               # Where the backend writes models. The catalog's delivery, its
               # AppProject and its status Policy all assume this namespace,
@@ -68,7 +59,7 @@ spec:
               modelsNamespace: ai-grid-internal-models
     # What the chart doesn't hold: ACM Search access for the backend.
     - repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-      targetRevision: cloud-provider
+      targetRevision: HEAD
       path: apps/console/manifests
   destination:
     server: https://kubernetes.default.svc
