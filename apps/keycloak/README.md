@@ -85,9 +85,9 @@ redirect URIs to:
 - `http://localhost:8000/callback` for the browserless smoke test.
 
 The job replaces the complete redirect list, so removing a cluster's ingress or
-combined role removes its callback on the next run. A Keycloak restart imports
-the realm from Git and resets the client to the smoke-test redirect; the next
-CronJob run restores the cluster callbacks.
+combined role removes its callback on the next run. A Keycloak restart doesn't
+re-import an existing realm, so the client keeps its redirect URIs; after a
+fresh import the next CronJob run adds the cluster callbacks.
 
 The updater authenticates with the realm-scoped `keycloak-redirect-uris`
 service account, whose generated client secret is stored in the dedicated
@@ -107,13 +107,13 @@ by the three realm-specific keystores.
 
 Realm imports replace `${KEYCLOAK_PUBLIC_URL}` with the value from the
 public-URL ConfigMap and the broker/client/test-user keys with values from the
-Keycloak Secret. Keycloak starts with `kc.sh import --override true`, so every start rebuilds
-the imported realms from their files: edits to an import file take effect on
-the next restart, and anything created at runtime in those realms (the console
-backend's user, organizations made in the console) is lost on restart. Rerun
-apps/console/create-secrets.sh after a Keycloak restart, with the same
-`KEYCLOAK_BACKEND_URL` and `CURL_CA_BUNDLE` as before: it recreates the backend's
-user, not the organizations.
+Keycloak Secret. Keycloak starts with `kc.sh import --override false`, so it
+imports only the realms that don't exist in PostgreSQL yet and skips the rest.
+Anything created at runtime in an existing realm, such as the console backend's
+user and organizations made in the console, survives a restart. Later edits to
+an import file don't update an existing realm: change it through the admin API,
+or delete the realm so that the next start imports it again. Keycloak's own
+default, `--override true`, replaces every imported realm at each start.
 
 ## Validation
 
