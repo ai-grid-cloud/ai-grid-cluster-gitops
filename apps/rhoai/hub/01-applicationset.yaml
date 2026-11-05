@@ -89,6 +89,7 @@ spec:
             values: |
               praxis-gateway:
                 networkPolicy:
+                  enabled: true
                   from:
                     - podSelector:
                         matchLabels:
@@ -98,6 +99,7 @@ spec:
                           network.openshift.io/policy-group: ingress
               praxis-provider-gateway:
                 networkPolicy:
+                  enabled: true
                   from:
                     - podSelector:
                         matchLabels:
