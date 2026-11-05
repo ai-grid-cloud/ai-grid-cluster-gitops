@@ -6,9 +6,9 @@ resources:
   - manifests/signing-keys.yaml
   - manifests/database.yaml
   - manifests/public-url-policy.yaml
-  - manifests/redirect-uris.yaml
   - manifests/keycloak.yaml
   - manifests/route.yaml
+  - manifests/redirect-uris.yaml
 configMapGenerator:
   - name: keycloak-realm-import
     options:
@@ -16,5 +16,3 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: "2"
     files:
       - manifests/realms/saas-realm.json
-      - manifests/realms/grid-tenant-1-idp-realm.json
-      - manifests/realms/grid-tenant-2-idp-realm.json
