@@ -14,7 +14,10 @@ rbac_documents = list(yaml.safe_load_all(open(sys.argv[2])))
 templates = [template["objectDefinition"] for template in policy["spec"]["policy-templates"]]
 secret_policy = next(template for template in templates
                       if template.get("metadata", {}).get("name") == "rhoai-tenant-oidc-client-secret")
-assert secret_policy["spec"]["namespaceSelector"]["include"] == ["ai-tenants"]
+# ai-tenants holds the AITenant; models-as-a-service is its status.tenantNamespace,
+# where ai-gateway-controller reads spec.oidc.clientSecretRef.
+assert secret_policy["spec"]["namespaceSelector"]["include"] == ["ai-tenants", "models-as-a-service"]
+assert [t["objectDefinition"]["metadata"]["namespace"] for t in secret_policy["spec"]["object-templates"]] == ["ai-tenants", "models-as-a-service"]
 secret = secret_policy["spec"]["object-templates"][0]["objectDefinition"]
 assert secret["metadata"]["namespace"] == "ai-tenants"
 assert secret["metadata"]["name"] == "tenant-demo-oidc-client"
