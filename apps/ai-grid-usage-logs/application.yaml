@@ -36,7 +36,9 @@ spec:
     # store/lokistack.yaml, no store/object-storage.yaml, no values.schema.json
     # -- so it cannot render the store at all. Retarget once it catches up.
     - repoURL: https://github.com/opendatahub-io/odh-gitops.git
-      targetRevision: main
+      # Deployment-only (demo1): odh-gitops main at #262's merge (spokePolicy.endpoint as
+      # an ACM hub template). A commit, so the store changes only by a commit here.
+      targetRevision: f81a338ff5d4c6ebcb4ae3ab206d1a46c9fed2ac
       path: charts/rhai-on-openshift-chart/charts/ai-grid-o11y-hub
       helm:
         releaseName: ai-grid-usage-logs
