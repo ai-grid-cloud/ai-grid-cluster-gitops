@@ -427,8 +427,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: 'Load: reported against counted'
-            description: 'Reported: the site''s own KV cache use plus its spread. Counted: requests in flight over the ceiling. The nearer one sets the load used to choose.'
+            name: 'Load: site report vs this gateway''s in-flight requests'
+            description: Two readings of the same load per model and site. The site report is the figure the site publishes about itself, polled a few seconds ago and complete. The in-flight count is what
+              this gateway has sent to that candidate and is still waiting on, current but only its own traffic.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -453,7 +454,7 @@ spec:
                 spec:
                   datasource: *id001
                   query: max by (site, backend) (grid_route_site_rho_reported{site=~"$site",backend=~"$backend",cluster=~"$cluster_name"})
-                  seriesNameFormat: reported {{site}} {{backend}}
+                  seriesNameFormat: site report {{site}} {{backend}}
           - kind: TimeSeriesQuery
             spec:
               plugin:
@@ -461,7 +462,7 @@ spec:
                 spec:
                   datasource: *id001
                   query: max by (site, backend) (grid_route_site_rho_counted{site=~"$site",backend=~"$backend",cluster=~"$cluster_name"})
-                  seriesNameFormat: counted {{site}} {{backend}}
+                  seriesNameFormat: this gateway in flight {{site}} {{backend}}
       weight:
         kind: Panel
         spec:
