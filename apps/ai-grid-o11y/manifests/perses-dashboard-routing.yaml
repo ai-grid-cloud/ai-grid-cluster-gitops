@@ -69,8 +69,8 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Decision rate (requests/sec)
-            description: Requests this gateway decided per second, routed or refused.
+            name: Requests decided (requests/sec)
+            description: Requests per second this gateway made a routing decision for, whether it sent them to a site or refused them.
           plugin:
             kind: StatChart
             spec:
@@ -90,9 +90,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Refusal rate
-            description: 'Share of decisions answered without routing: no ready site, no route, a bad request, or shed. A request that names no model, such as GET /v1/models from a client health check,
-              counts as a bad request.'
+            name: Requests refused
+            description: 'Share of requests this gateway answered with an error instead of sending to a site. The reasons: no site was ready for the model (503), the chosen site had no route from this gateway
+              (503), the request named no model or one nobody serves (400 or 404), or the model was shed because every site serving it was full.'
           plugin:
             kind: StatChart
             spec:
