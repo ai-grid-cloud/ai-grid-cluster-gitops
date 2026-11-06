@@ -199,7 +199,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Routed per candidate (requests/sec)
+            name: Routed per model and site (requests/sec)
             description: Requests sent to each site and cluster.
           plugin:
             kind: TimeSeriesChart
@@ -396,7 +396,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Load per candidate
+            name: Load per model and site
             description: 'Saturation the draw weighs each candidate by: the nearer of its counted and reported load, smoothed. 1 means no room. A gap means unmeasured.'
           plugin:
             kind: TimeSeriesChart
@@ -553,7 +553,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Score per candidate
+            name: Score per model and site
             description: Score each candidate ranks by in the current snapshot. A gap means excluded or demoted. A 1 on the unavailable line means the selector had no score for that candidate and could
               only fall back.
           plugin:
@@ -593,7 +593,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Full candidates
+            name: Full per model and site
             description: 1 while a candidate has had a backlog at its ceiling long enough to shed.
           plugin:
             kind: TimeSeriesChart
@@ -625,7 +625,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Silent candidates
+            name: Silent per model and site
             description: 1 while a site that has published sent nothing within the freshness window. A silent site takes no request while a live one can.
           plugin:
             kind: TimeSeriesChart
@@ -889,7 +889,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Share of requests per candidate
+            name: Share of requests per model and site
             description: Each candidate's share of the requests this gateway sent anywhere, routed or fallback.
           plugin:
             kind: TimeSeriesChart
@@ -1004,7 +1004,7 @@ spec:
     - kind: Grid
       spec:
         display:
-          title: Why this site
+          title: Load and availability per model and site
           collapse:
             open: true
         items:
