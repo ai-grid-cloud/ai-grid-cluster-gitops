@@ -467,8 +467,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Capacity weight
-            description: Capacity the draw weights each candidate by. A gap means unmeasured; the draw then uses the mean of the known weights.
+            name: Capacity per model and site
+            description: How many requests the gateway believes each candidate can carry at once, measured from how it has been serving. A bigger capacity gets a bigger share of the traffic. A gap means
+              not yet measured, and the gateway then assumes the average of the others.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -498,9 +499,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Capacity the selector believed
-            description: Requests in flight at each candidate against the ceiling the selector used, with the soft bound it learned from congestion and the hard bound the site declared. In flight near the
-              ceiling with the soft bound below the hard one means the selector capped the site below what it declared.
+            name: In flight vs ceiling per model and site
+            description: Requests this gateway has running at each candidate against the ceiling it used. The soft bound is what it learned from congestion and the hard bound is what the site declared.
+              In flight near the ceiling with the soft bound under the hard one means the gateway capped the site below what it declared.
           plugin:
             kind: TimeSeriesChart
             spec:
