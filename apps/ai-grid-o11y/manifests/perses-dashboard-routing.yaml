@@ -113,8 +113,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Fallback rate
-            description: Share of requests served by a site the gateway had marked unhealthy, because no healthy site was left for that model.
+            name: Requests sent to unhealthy sites
+            description: Share of requests this gateway sent to a site it had marked unhealthy, because no healthy site was left for that model. The request still gets served. Above zero means the grid
+              is running a model on sites it would normally avoid.
           plugin:
             kind: StatChart
             spec:
