@@ -721,7 +721,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Peer polls (requests/sec)
+            name: Peer polls per second
             description: This gateway's polls of each peer site's signals endpoint, by result. Anything but ok leaves that peer's readings to age.
           plugin:
             kind: TimeSeriesChart
