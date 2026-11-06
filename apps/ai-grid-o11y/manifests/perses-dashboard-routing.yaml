@@ -428,8 +428,8 @@ spec:
         spec:
           display:
             name: 'Load: site report vs this gateway''s in-flight requests'
-            description: Two readings of the same load per model and site. The site report is the figure the site publishes about itself, polled a few seconds ago and complete. The in-flight count is what
-              this gateway has sent to that candidate and is still waiting on, current but only its own traffic.
+            description: Two readings of the same load per model and site. The site report is the KV cache use the site publishes about itself, plus its spread, polled a few seconds ago and complete. The
+              in-flight count is what this gateway has sent to that candidate and is still waiting on, over its ceiling, current but only its own traffic.
           plugin:
             kind: TimeSeriesChart
             spec:
