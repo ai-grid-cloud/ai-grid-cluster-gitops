@@ -1112,7 +1112,7 @@ spec:
     - kind: Grid
       spec:
         display:
-          title: Peer signal freshness
+          title: Freshness of site load readings
           collapse:
             open: false
         items:
