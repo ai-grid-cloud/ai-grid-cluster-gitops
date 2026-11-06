@@ -108,19 +108,47 @@ spokePolicy:
   createNamespace: false
 
   placement:
+    # Named for what it selects. This Placement serves one Policy -- the usage-log
+    # credentials -- and the chart default `ai-grid-maas-spokes` reads like a
+    # fleet-wide selector others could bind to. Nothing else references it.
+    name: ai-grid-maas-usage-logs
+
     # This fleet binds `global`, not the chart's `default`.
     clusterSet: global
     # Same reason as createNamespace above: apps/ai-grid-policies already binds
     # global into this namespace.
     createClusterSetBinding: false
-    # Left at the chart default, ai-grid.redhat.com/maas=true: a site forwards
-    # usage logs only once labelled, which is deliberately separate from
-    # ai-grid/role. Overriding matchLabels here would ADD to the default rather
-    # than replace it, and the Placement would then match nothing.
-    excludeLocalCluster: true
+
+    # A site must be labelled for MaaS *and* be an ingress or combined site.
+    #
+    # The maas label keeps forwarding an explicit per-site opt-in rather than
+    # something that follows from enrollment. It repeats the chart default rather
+    # than relying on it, so the whole predicate is readable here -- Helm merges
+    # maps, so restating it changes nothing and a later change to the chart's
+    # default cannot alter this selector silently.
+    #
+    # The role requirement cannot go in matchLabels: that is a map of key to a
+    # single value, so it can say `combined` but not `ingress or combined`, and an
+    # ingress-only site would be missed. Both credentials are usable on either --
+    # the writer feeds the collector that the gateway's access logs reach, and the
+    # reader is read by maas-api in redhat-ai-gateway-infra. Only an inference-only
+    # site has neither, and that namespace does not exist there, so the read
+    # credential could not be placed and this Policy would be permanently
+    # NonCompliant, which Argo's Policy health check reports as Degraded.
+    #
+    # matchLabels for equality and matchExpressions for set-based requirements is
+    # how the fleet's other Placements are written -- apps/ai-grid-spokes'
+    # ai-grid-ingress expresses this same role predicate the same way.
     matchLabels:
-      ai-grid.redhat.com/maas: null
-      ai-grid/role: combined
+      ai-grid.redhat.com/maas: "true"
+    matchExpressions:
+      - key: ai-grid/role
+        operator: In
+        values:
+          - ingress
+          - combined
+
+    excludeLocalCluster: true
 
   spoke:
     monitoringNamespace: redhat-ods-monitoring
