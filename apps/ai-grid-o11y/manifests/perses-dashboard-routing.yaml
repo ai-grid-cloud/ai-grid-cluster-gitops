@@ -660,7 +660,7 @@ spec:
         spec:
           display:
             name: Age of the reading each decision used
-            description: A line that only climbs is a frozen reading, not a steady one.
+            description: How old the peer's load reading was when each decision used it. A line that only climbs is a frozen reading, not a steady one.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -691,7 +691,7 @@ spec:
         spec:
           display:
             name: Since the last poll of each peer
-            description: Seconds since this site's operator last polled each peer. Empty for this site.
+            description: Seconds since this gateway last got a load reading from each peer site. Empty for its own site.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -721,8 +721,8 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Gateway polls of its operator (requests/sec)
-            description: The gateway reads every site's load from its own operator. Anything but success leaves readings to age.
+            name: Peer polls (requests/sec)
+            description: This gateway's polls of each peer site's signals endpoint, by result. Anything but ok leaves that peer's readings to age.
           plugin:
             kind: TimeSeriesChart
             spec:
@@ -1112,7 +1112,7 @@ spec:
     - kind: Grid
       spec:
         display:
-          title: Signal freshness
+          title: Peer signal freshness
           collapse:
             open: false
         items:
