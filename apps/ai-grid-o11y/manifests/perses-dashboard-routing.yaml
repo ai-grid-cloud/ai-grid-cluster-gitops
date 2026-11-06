@@ -156,7 +156,7 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Sites full
+            name: Site capacity full
             description: Candidates at their ceiling with work waiting for 5 s. This reading has no hold and flips near the ceiling. A model sheds only when every site stays full, so read Shedding for the
               decision.
           plugin:
