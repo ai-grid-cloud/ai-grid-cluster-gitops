@@ -338,6 +338,7 @@ claims="$tmpdir/claims.json"
 jq -R 'split(".") | .[1] | @base64d | fromjson' "$token_file" > "$claims"
 
 printf '  token file: %s\n' "$token_file"
+printf '  Authorization: Bearer %s\n' "$(< "$token_file")"
 printf '  subject: %s\n' "$(jq -r '.sub' "$claims")"
 printf '  preferred username: %s\n' "$(jq -r '.preferred_username' "$claims")"
 printf '  audience: %s\n' "$(jq -r '.aud | if type == "array" then join(", ") else . end' "$claims")"
