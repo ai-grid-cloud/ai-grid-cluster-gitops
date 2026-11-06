@@ -178,8 +178,9 @@ spec:
         kind: Panel
         spec:
           display:
-            name: Oldest load reading
-            description: Age of the oldest load reading any decision used. A large value means a site is routed on stale data.
+            name: Oldest site load reading in use
+            description: Age of the stalest load reading any routing decision used, across every site this gateway routes to. The gateway refreshes readings every few seconds, so a value in the tens of
+              seconds means a site has stopped answering and is routed on old data.
           plugin:
             kind: StatChart
             spec:
