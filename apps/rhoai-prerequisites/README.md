@@ -127,3 +127,21 @@ kubectl --context "$SPOKE_CONTEXT" -n limitador-redis get serviceimport \
 kubectl --context "$SPOKE_CONTEXT" -n kuadrant-system get limitador limitador \
   -o jsonpath='{.spec.storage.redis.configSecretRef.name}{"\n"}'
 ```
+
+## Application metrics
+
+Enabled grid sites collect grid, Authorino, database and Redis metrics through
+RHOAI's collector, which scrapes monitors labelled
+`monitoring.opendatahub.io/scrape: "true"`. The gateway charts, the Redis
+exporter and the database PodMonitors carry the label in Git. A policy adds
+only the label to the grid operator's and Kuadrant's Authorino monitors, which
+their operators own. Removing the policy leaves those labels in place, so
+withdrawal must remove them as well.
+
+A supplemental gateway monitor collects the wider Envoy statistics and leaves
+out the serving gateway's Istio request families RHOAI already collects.
+Kuadrant's gateway and Limitador monitors stay unlabelled to avoid duplicate
+collection. NetworkPolicies admit the collector to the grid operator and the
+Redis exporter. The Cluster Observability Operator comes from the RHOAI chart
+on spokes and from ACM on the hub (`apps/rhoai/hub/01-applicationset.yaml`).
+Hub delivery uses `rhai-metrics` in `ai-grid-o11y`.

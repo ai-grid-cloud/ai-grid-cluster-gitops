@@ -28,3 +28,11 @@ kubectl -n kuadrant-system get limitador limitador \
 After both values are `limitador-redis`, exhaust a subscription's token quota
 through one gateway and immediately call the other gateway. The second call
 must return HTTP `429` without another exhaustion request.
+
+## Disconnected sites
+
+The Redis exporter sidecar runs the Opstree exporter image pinned by digest in
+`manifests/10-redis-replication.yaml`. It is not in the operator's catalog, so
+a disconnected site mirrors that digest with its other images and either routes
+it through an `ImageDigestMirrorSet` or points `redisExporter.image` at the
+mirror.

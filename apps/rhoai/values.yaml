@@ -7,6 +7,32 @@ components:
         namespace: openshift-ingress
         annotations:
           ai-grid/maas-gateway-hostname-prefix: maas
+        spec:
+          infrastructure:
+            annotations:
+              # Envoy statistics Istio's default matcher drops: ext_proc, ext_authz, the Kuadrant wasm
+              # shim and Limitador, downstream and upstream counters. Changing it restarts the gateway pods.
+              proxy.istio.io/config: &envoy-stats |
+                proxyStatsMatcher:
+                  inclusionRegexps:
+                    - ".*ext_proc.*"
+                    - ".*ext_authz.*"
+                    - ".*ratelimit.*"
+                    - ".*wasm.*"
+                    - "http\\..*\\.downstream_rq_.*"
+                    - "http\\..*\\.downstream_cx_.*"
+                    - "listener\\..*\\.downstream_cx_.*"
+                    - "cluster\\..*\\.upstream_(rq|cx)_.*"
+                    - "server\\..*"
+                    - "overload\\..*"
+                    - "cluster\\..*\\.outlier_detection\\..*"
+  kserve:
+    gateway:
+      spec:
+        infrastructure:
+          annotations:
+            # The same statistics for the serving gateway.
+            proxy.istio.io/config: *envoy-stats
 
 operator:
   type: rhoai
@@ -29,3 +55,17 @@ global:
   relatedImages:
     - name: RELATED_IMAGE_ODH_PRAXIS_AI_GRID_GATEWAY_IMAGE
       value: registry.redhat.io/rhoai/odh-praxis-ai-grid-gateway-rhel9@sha256:fa06fe6911c549583c8870c8ac5cae094108c40889357e273f313888b71d6633
+
+# The ingress profile enrols the consumer gateway's TLS metrics listener in RHOAI's collector;
+# this does the same for the provider gateway. The listener needs the NetworkPolicy, whose
+# peers the ApplicationSet sets per site.
+praxis-provider-gateway:
+  networkPolicy:
+    enabled: true
+  metricsListener:
+    fromNamespaces:
+      - redhat-ods-monitoring
+      - openshift-user-workload-monitoring
+    serviceMonitor:
+      labels:
+        monitoring.opendatahub.io/scrape: "true"
