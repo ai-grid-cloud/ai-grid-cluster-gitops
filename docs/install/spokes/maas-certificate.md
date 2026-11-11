@@ -14,7 +14,7 @@ the usual way to issue its certificate.
 
 ## Use ours
 
-Not available: the library has no input for this certificate yet ([known gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+Not available: the library has no input for this certificate yet ([known gaps](../known-gaps.md)).
 
 ## Bring your own
 

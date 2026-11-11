@@ -142,7 +142,7 @@ calls return 401.
 **Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a` send the
 portal's token in the wrong header ([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)).
 **Workaround:** pin FBC `d0ee30a` or later; until then, create API keys through the MaaS API
-([troubleshooting](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
+([tenant access](../tenant-access.md#create-an-api-key-and-call-with-it)).
 
 **Symptom:** about one call in six fails the TLS handshake or hangs.
 **Cause:** an address of the gateway's load balancer is in a zone with no gateway pod (infrastructure).
@@ -220,7 +220,7 @@ in the table. The chart's Subscriptions use the same package names and namespace
 Subscription with another name for the same package in the same namespace can conflict. *(Unverified.)*
 
 To stop the chart from managing them on a site, set both off in that site's `values/clusters/SITE/rhoai.yaml`. The
-chart lets explicit values override the profile, but the library doesn't test this ([gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+chart lets explicit values override the profile, but the library doesn't test this ([gaps](../known-gaps.md)).
 *(Unverified.)*
 
 ```yaml

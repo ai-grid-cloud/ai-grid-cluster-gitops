@@ -33,6 +33,10 @@ your **deployment repository** (which components run, the inputs, each site's fi
   the lines that select it.
 - [Spokes](spokes/README.md): what each site brings and what the hub installs there.
 - [Appendix A: inputs and values reference](appendix-a-inputs.md).
+- [Operate](operate.md): upgrade, add and remove sites, rotate credentials, uninstall.
+- [Tenant access](tenant-access.md): API keys, refusal checks, revoking a key.
+- [Troubleshooting after install](troubleshooting.md).
+- [Known gaps](known-gaps.md): what this release of the library doesn't do yet.
 
 ## Install AI Grid
 

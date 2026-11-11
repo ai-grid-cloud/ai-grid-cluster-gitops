@@ -54,7 +54,7 @@ You should see an `EXTERNAL-IP` (an address or hostname) on every Service, not `
 
 If a site has no load balancer for Submariner, `loadBalancerEnable` must be `false` before the hub's first sync, and
 the gateway nodes must be reachable from the other sites on their own addresses. That value is in the library, not in
-your deployment repository, so changing it today means changing the library ([gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+your deployment repository, so changing it today means changing the library ([gaps](../known-gaps.md)).
 *(Unverified.)*
 
 ### Use ours
@@ -112,7 +112,7 @@ Removing MetalLB from a site is a manual step.
 - **Symptom:** A site needs more than one pool, or already runs the MetalLB operator, and your deployment repository
   has nowhere to say so.
   **Cause:** The MetalLB ApplicationSet reads per-site overrides (`apps/metallb/values-CLUSTER.yaml`) from the library,
-  not from your deployment repository ([gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+  not from your deployment repository ([gaps](../known-gaps.md)).
   **Workaround:** Use one range per site through the label, or install MetalLB yourself and leave `apps/metallb` out.
 
 ## Submariner gateways
