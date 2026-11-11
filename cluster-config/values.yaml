@@ -1,8 +1,9 @@
 # Users granted cluster-admin on the hub through the `ai-grid-admins` Group and
 # its `cluster-admin-ai-grid-admins` ClusterRoleBinding (hub-only; see
 # clusterrolebinding.yaml). Empty by default: a deployment lists its own users
-# in cluster-admins.yaml, which the ApplicationSet reads when it exists.
-# Editing the list edits Group membership; the binding is unaffected.
+# in its repository's values/cluster-admins.yaml, which the ApplicationSet
+# requires (cluster_admins: [] for none). Editing the list edits Group
+# membership; the binding is unaffected.
 # The `cluster-admins` Group itself is managed by OCM, not Git.
 #
 # Entries must be Kubernetes usernames; Group members are not constrained to

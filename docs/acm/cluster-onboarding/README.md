@@ -53,8 +53,10 @@ No `ManagedCluster`, join token, kubeconfig, API URL, or cluster name needs to
 be committed to this repository. No values file per site either, beyond the
 optional overrides a few apps accept (`apps/rhoai`, `apps/metallb`). The grid
 operator derives the gateways' routing from the models each site publishes, so
-one values file serves every site. A file named values-<cluster>.yaml is read
-as an override when present.
+one values file serves every site. An override is read when present:
+`values/clusters/<cluster>/rhoai.yaml` in the deployment repository for
+`apps/rhoai` (this repository's own `values/` for the lab roots), and
+`apps/metallb/values-<cluster>.yaml` here for `apps/metallb`.
 
 ## What the site must provide
 

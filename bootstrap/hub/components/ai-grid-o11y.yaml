@@ -9,10 +9,20 @@ metadata:
   namespace: openshift-gitops
 spec:
   project: default
-  source:
-    repoURL: '@libraryRepoURL@'
-    targetRevision: '@libraryRevision@'
-    path: charts/ai-grid-o11y
+  sources:
+    # The deployment's optional values/hub/ai-grid-o11y/values.yaml, layered
+    # over the chart's defaults, as the lab's own values/hub/ai-grid-o11y.
+    - repoURL: '@deploymentRepoURL@'
+      targetRevision: '@deploymentRevision@'
+      ref: deployment
+    - repoURL: '@libraryRepoURL@'
+      targetRevision: '@libraryRevision@'
+      path: charts/ai-grid-o11y
+      helm:
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - values.yaml
+          - $deployment/values/hub/ai-grid-o11y/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: open-cluster-management-observability

@@ -1,0 +1,11 @@
+# The lab's grid enrollment values (apps/grid-bootstrap reads them after its own
+# values.yaml). The lab's grid CA already exists.
+external:
+  certManager:
+    ca:
+      mode: Existing
+      secretName: grid-ca-key
+# The combined lab root keeps the rhoai app's global binding; the dedicated lab
+# root sets this back to true with a Helm parameter.
+managedClusters:
+  createClusterSetBinding: false

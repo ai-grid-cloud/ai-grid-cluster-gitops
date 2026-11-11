@@ -109,5 +109,5 @@ placeholder; if the home's
 certificate is not publicly trusted, follow the cluster trust procedure in
 `docs/acm/cluster-onboarding/README.md` ("Trusting the MaaS home's ingress
 CA"). A site that needs more CA ConfigMaps lists the complete set in
-`apps/rhoai/values-<cluster>.yaml` under
+its deployment file, `values/clusters/<cluster>/rhoai.yaml`, under
 `dependencies.rhcl.config.authorinoTrustedCA.configMaps`.

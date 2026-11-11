@@ -34,11 +34,27 @@ creates no Application. A value must be non-empty and must not contain `"`,
 | Input | Meaning |
 |---|---|
 | `libraryRepoURL`, `libraryRevision` | this repository and the pinned commit; every self-reference |
+| `deploymentRepoURL`, `deploymentRevision` | the deployment repository, read for `values/` |
 | `catalogRepoURL`, `catalogRevision` | the repository the console's git writer commits models and subscriptions to, and its branch |
 
 Directories whose manifests take inputs (nested ApplicationSets, Policies) are
 kustomizations with an `inputs.yaml`. A bare `kustomize build` of one shows
 each input as `REQUIRED-<name>`.
+
+## Files a deployment repository holds
+
+Read from `deploymentRepoURL` at `deploymentRevision`:
+
+- `values/cluster-admins.yaml`: `cluster_admins`, the users bound to
+  `cluster-admin` on every cluster (`cluster-config`).
+  Required by `cluster-config`; `cluster_admins: []` for none.
+- `values/grid-bootstrap.yaml`: the grid's enrollment values, at least
+  `external.certManager.ca.mode` (`Generate` for a new grid, `Existing` to keep
+  a CA). Required by `grid-bootstrap`.
+- `values/clusters/<cluster>/rhoai.yaml`: values for one site, optional, such as
+  the MaaS gateway hostname prefix
+  (`components.aigateway.modelsAsAService.gateway.annotations.ai-grid/maas-gateway-hostname-prefix`,
+  `maas` by default).
 
 ## Upstream's lab roots
 
@@ -46,7 +62,9 @@ each input as `REQUIRED-<name>`.
 upstream's own lab, and of any fork pointed at itself with
 `scripts/set-tenant-repo.sh`. They read every component from this repository and
 set every input themselves, to the lab's values, in their generator `values`
-and `templatePatch`. A new hub uses this directory instead.
+and `templatePatch`. This repository is also their deployment repository: they
+read the lab's `values/` here (`values/README.md`). A new hub uses this
+directory instead.
 
 ## Check a deployment
 
