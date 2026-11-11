@@ -5,6 +5,9 @@ metadata:
   namespace: open-cluster-management-observability
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Moved here from apps/acm: on an existing install that Application's prune
+    # must not delete this before this one adopts it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   generateBucketName: acm-observability-thanos
   storageClassName: openshift-storage.noobaa.io

@@ -47,6 +47,10 @@ spec:
           - path: apps/limitador-redis/application.yaml
           - path: apps/maas-db/application.yaml
           - path: apps/metallb/application.yaml
+          # Object storage for ACM observability: select one, or none and bring
+          # your own Secret (apps/object-storage/README.md).
+          - path: apps/object-storage/odf/application.yaml
+          - path: apps/object-storage/s4/application.yaml
           - path: apps/rhoai/application.yaml
           - path: apps/rhoai-prerequisites/application.yaml
           - path: cluster-config/application.yaml

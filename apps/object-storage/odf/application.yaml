@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Object storage for ACM observability from ODF's Multicloud Object Gateway:
+  # an ObjectBucketClaim, and a Job that renders its bucket and keys into
+  # Secret thanos-object-storage (apps/object-storage/README.md). Needs ODF
+  # (apps/odf) with NooBaa.
+  name: object-storage-odf
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
+    path: apps/object-storage/odf/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management-observability
+  syncPolicy:
+    automated:
+      # Never prune: deleting a file must not delete the bucket's claim.
+      prune: false
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

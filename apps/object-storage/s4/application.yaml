@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Object storage for ACM observability from S4 (rh-aiservices-bu/s4), one
+  # S3 server pod on a PVC in the observability namespace. One replica: for
+  # demos and tests, not production. Writes Secret thanos-object-storage
+  # (apps/object-storage/README.md). Needs external-secrets (apps/external-secrets)
+  # for its keys and a default StorageClass.
+  name: object-storage-s4
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
+    path: apps/object-storage/s4/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management-observability
+  syncPolicy:
+    automated:
+      # Never prune: deleting a file must not delete stored metrics.
+      prune: false
+      selfHeal: true
+    retry:
+      refresh: true
+      limit: 20
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

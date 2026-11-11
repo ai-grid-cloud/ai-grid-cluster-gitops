@@ -1,0 +1,45 @@
+# Creates bucket "thanos" in S4 on every sync; safe to rerun. From the archived
+# ai-grid-cloud/ai-grid-env-setup apps/observability/manifests/setup-jobs.yaml
+# at 6b767601ce3b02bc51cc64b425b3f6124e23d359. Keys come from the environment,
+# never argv or logs.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: thanos-bucket
+  namespace: open-cluster-management-observability
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: bucket
+          # S4's own image carries node and the AWS SDK.
+          image: quay.io/rh-aiservices-bu/s4@sha256:25f29f0953e17627bc3f8fb04f6be51a00b10a2599d3c8ab3a2bdb76511ebc90 # 0.3.2-2
+          workingDir: /opt/app-root/bin/s4/backend
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: thanos-object-storage
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: thanos-object-storage
+                  key: AWS_SECRET_ACCESS_KEY
+          command:
+            - node
+            - -e
+            - |
+              const { S3Client, CreateBucketCommand, HeadBucketCommand } = require('@aws-sdk/client-s3');
+              const s3 = new S3Client({ endpoint: 'http://s4:7480', region: 'us-east-1', forcePathStyle: true });
+              (async () => {
+                try { await s3.send(new HeadBucketCommand({ Bucket: 'thanos' })); console.log('bucket thanos exists'); }
+                catch { await s3.send(new CreateBucketCommand({ Bucket: 'thanos' })); console.log('bucket thanos created'); }
+              })().catch(e => { console.error(e.name, e.message); process.exit(1); });

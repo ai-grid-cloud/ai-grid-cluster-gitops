@@ -34,6 +34,9 @@ Checks, each reported as ok or FAIL:
                    mode) come from the deployment repository, not the library
   admins           no user names in cluster-config/ or apps/gitops-config/;
                    cluster admins come from the deployment's values
+  object-storage   ACM renders no bucket; apps/object-storage offers ODF and S4,
+                   each its own component, S4's credentials from Password
+                   generators, never literal Secrets
   samples          no model, MaaS object or subscription outside the selectable
                    apps/acm-models-samples component
   move-guards      objects moved between Applications carry Prune=false
@@ -609,6 +612,58 @@ def admins():
         fail("cluster-config: values/cluster-admins.yaml must be required, not ignoreMissingValueFiles")
 
 
+OBJECT_STORAGE = os.path.join("apps", "object-storage")
+# Loki's bucket: ai-grid-o11y has no object-storage input yet (a known gap).
+OBC_ALLOWED = (os.path.join(OBJECT_STORAGE, "odf") + os.sep, os.path.join("apps", "ai-grid-o11y") + os.sep)
+
+
+@check("object-storage")
+def object_storage(inputs):
+    """Object storage is a contract (Secret thanos-object-storage, key
+    thanos.yaml) that a selectable option or the deployment fulfils."""
+    with open(os.path.join(ROOT, "apps", "acm", "application.yaml")) as handle:
+        app = yaml.safe_load(substitute(handle.read(), inputs))
+    output, error = kustomize_build(os.path.join(ROOT, "apps", "acm", "manifests"),
+                                    app["spec"]["source"]["kustomize"]["patches"])
+    if error:
+        fail("apps/acm/manifests: kustomize build failed: %s" % error.splitlines()[-1])
+    else:
+        kinds = {(doc["kind"], doc["metadata"]["name"]) for doc in yaml.safe_load_all(output) if doc}
+        for kind, name in sorted(kinds):
+            if kind == "ObjectBucketClaim" or name == "mco-thanos-bridge":
+                fail("apps/acm/manifests renders %s %s: object storage is a separate option" % (kind, name))
+    for path in library_files(("apps",)):
+        relative = rel(path)
+        if relative.startswith(OBC_ALLOWED) or not relative.endswith(".yaml") or "/templates/" in relative:
+            continue
+        with open(path) as handle:
+            if re.search(r"^kind: ObjectBucketClaim", handle.read(), re.M):
+                fail("%s: an ObjectBucketClaim outside the ODF object-storage option" % relative)
+    for option in ("odf", "s4"):
+        if not os.path.isfile(os.path.join(ROOT, OBJECT_STORAGE, option, "application.yaml")):
+            fail("%s/%s/application.yaml is missing" % (OBJECT_STORAGE, option))
+    if not os.path.isfile(os.path.join(ROOT, OBJECT_STORAGE, "README.md")):
+        fail("%s/README.md (the contract) is missing" % OBJECT_STORAGE)
+    s4 = os.path.join(ROOT, OBJECT_STORAGE, "s4", "manifests")
+    if not os.path.isdir(s4):
+        return
+    documents = [doc for doc in yaml.safe_load_all(read_directory(s4, False)) if doc]
+    for doc in documents:
+        if doc["kind"] == "Secret" and (doc.get("data") or doc.get("stringData")):
+            fail("s4: Secret %s holds literal data in git" % doc["metadata"]["name"])
+    contract = [doc for doc in documents if doc["kind"] == "ExternalSecret"
+                and doc["spec"]["target"]["name"] == "thanos-object-storage"]
+    if not contract:
+        fail("s4: no ExternalSecret writes Secret thanos-object-storage")
+    for doc in contract:
+        if "thanos.yaml" not in ((doc["spec"]["target"].get("template") or {}).get("data") or {}):
+            fail("s4: ExternalSecret %s doesn't render key thanos.yaml" % doc["metadata"]["name"])
+        generators = [item["sourceRef"]["generatorRef"]["kind"] for item in doc["spec"].get("dataFrom", [])
+                      if "generatorRef" in item.get("sourceRef", {})]
+        if not generators or set(generators) != {"Password"}:
+            fail("s4: credentials must come from Password generators, got %s" % generators)
+
+
 SAMPLES = os.path.join("apps", "acm-models-samples") + os.sep
 CATALOG_KINDS = ("MaaSSubscription", "MaaSAuthPolicy", "LLMInferenceService", "ExternalModel", "MaaSModelRef")
 
@@ -631,6 +686,7 @@ def samples():
 
 
 MOVED = (
+    ("apps/object-storage/odf/manifests/obc.yaml", "ObjectBucketClaim", "acm-observability-thanos"),
     ("apps/acm-models-samples/hub/facebook-opt-125m-03-applicationset.yaml", "ApplicationSet", "acm-models-facebook-opt-125m"),
     ("apps/acm-models-samples/hub/maas-03-applicationset.yaml", "ApplicationSet", "acm-models-maas"),
     ("apps/acm-models-samples/hub/smollm2-135m-instruct-03-applicationset.yaml", "ApplicationSet", "acm-models-smollm2-135m-instruct"),
@@ -662,6 +718,7 @@ def main():
     lab_roots()
     deployment_values()
     admins()
+    object_storage(inputs)
     samples()
     move_guards()
     failed = sum(1 for _, ok in results if not ok)
