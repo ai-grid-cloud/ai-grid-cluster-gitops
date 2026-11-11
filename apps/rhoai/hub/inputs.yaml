@@ -1,0 +1,14 @@
+# The inputs this directory takes. A local-config object: kustomize reads it
+# for the replacements in kustomization.yaml and never renders it. A bare build
+# shows each value as REQUIRED-<name>; the owning application.yaml patches it
+# with @<name>@ tokens, which the root ApplicationSet replaces from the
+# deployment's values.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: library-inputs
+  annotations:
+    config.kubernetes.io/local-config: "true"
+data:
+  libraryRepoURL: REQUIRED-libraryRepoURL
+  libraryRevision: REQUIRED-libraryRevision

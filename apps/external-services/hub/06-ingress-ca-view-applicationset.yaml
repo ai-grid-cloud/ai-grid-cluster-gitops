@@ -23,8 +23,8 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-        targetRevision: HEAD
+        repoURL: REQUIRED-libraryRepoURL
+        targetRevision: REQUIRED-libraryRevision
         path: apps/external-services/ingress-ca-view
       destination:
         server: https://kubernetes.default.svc

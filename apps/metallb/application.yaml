@@ -6,9 +6,24 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-    targetRevision: HEAD
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
     path: apps/metallb/hub
+    # The library's own repository and revision for the ApplicationSets in
+    # this directory (its inputs.yaml), from the root's values.
+    kustomize:
+      patches:
+        - target:
+            kind: ConfigMap
+            name: library-inputs
+          patch: |-
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: library-inputs
+            data:
+              libraryRepoURL: '@libraryRepoURL@'
+              libraryRevision: '@libraryRevision@'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops

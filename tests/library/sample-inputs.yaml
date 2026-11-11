@@ -1,0 +1,5 @@
+# Every input a deployment sets in the root ApplicationSet's generator values,
+# with distinct fake values. inputs_test.py substitutes these for @<name>@ and
+# checks that each component resolves to them and to nothing else.
+libraryRepoURL: https://example.invalid/library.git
+libraryRevision: 0123456789abcdef0123456789abcdef01234567
