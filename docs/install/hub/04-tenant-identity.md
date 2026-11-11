@@ -221,4 +221,4 @@ The library's Keycloak image moves with the library pin. Read Known issues befor
 - **Symptom:** None; a security consideration with the library's Keycloak.
   **Cause:** Its client secret is a key in `maas-db/keycloak-secrets`, which also holds Keycloak's admin password, and
   the tenant Policy may read that whole Secret.
-  **Workaround:** None in the library yet. See [Gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md).
+  **Workaround:** None in the library yet. See [Gaps](../known-gaps.md).

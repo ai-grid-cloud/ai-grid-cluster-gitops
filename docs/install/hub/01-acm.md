@@ -90,7 +90,7 @@ The library has no input to skip only the operator and `MultiClusterHub` while k
 leaving `apps/acm` out also leaves out the add-ons in the list. Create the equivalents yourself from
 [`apps/acm/manifests`](../../../apps/acm/manifests) and [`apps/acm/submariner`](../../../apps/acm/submariner).
 Selecting `apps/acm` on a hub where ACM is already installed under a different Subscription name is untested. See
-[Gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md). *(Unverified.)*
+[Gaps](../known-gaps.md). *(Unverified.)*
 
 Check that your ACM version and add-ons match:
 
@@ -330,5 +330,5 @@ the first sync, because S4 creates its user from them on first start. Switching 
 
 - **Symptom:** You can't select the usage-log stack (`apps/ai-grid-o11y`, `apps/ai-grid-usage-logs`) with S4 or your
   own S3.
-  **Cause:** Loki claims its own ODF bucket; it has no object-storage input yet ([gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+  **Cause:** Loki claims its own ODF bucket; it has no object-storage input yet ([gaps](../known-gaps.md)).
   **Workaround:** Leave the usage-log components out, as the example deployment does, or run ODF.

@@ -4,7 +4,7 @@ MaaS on every ingress or combined site shares two services: the MaaS database pr
 keys and subscriptions, and the Redis that holds the rate-limit counters. They aren't part of the hub's control plane:
 the sites reach them through Submariner, so they run on the hub by default or on one labelled site
 ([run them on a site](#run-the-shared-services-on-a-site)). Running your own isn't supported yet
-([known gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)); what MaaS reads from each is in [MaaS external services](../../external-services/README.md).
+([known gaps](../known-gaps.md)); what MaaS reads from each is in [MaaS external services](../../external-services/README.md).
 
 | | |
 |---|---|
@@ -92,7 +92,7 @@ with two keys:
 The library writes that Secret from its own CloudNativePG cluster, and has no input that points it at another database.
 To use your own PostgreSQL, leave `apps/maas-db` out and deliver `maas-db-config` to each ingress or combined site
 yourself, for example with your own ACM Policy reading your credentials. The library's Keycloak still needs
-`apps/maas-db`. Nothing in the library has run against a user-owned database. See [Gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md).
+`apps/maas-db`. Nothing in the library has run against a user-owned database. See [Gaps](../known-gaps.md).
 *(Unverified.)*
 
 ### Skip
@@ -182,7 +182,7 @@ Not supported yet. Limitador reads Secret `kuadrant-system/limitador-redis`, key
 ingress or combined site. Policy `rhoai-limitador-redis` writes that Secret with the library's Submariner address, and
 the library has no input for another Redis. To use your own, leave `apps/limitador-redis` out and deliver the Secret and
 the `Limitador` storage reference to each site yourself; `apps/rhoai-prerequisites` still writes its own, so you'd have
-to change that Policy too. See [Gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md). *(Unverified.)*
+to change that Policy too. See [Gaps](../known-gaps.md). *(Unverified.)*
 
 ### Skip
 
@@ -190,7 +190,7 @@ You can't skip it today. `apps/rhoai-prerequisites` enforces Policy `rhoai-limit
 combined site: it writes Secret `kuadrant-system/limitador-redis` and sets each site's Limitador storage to that Redis.
 Without this component, Limitador points at a Redis that doesn't exist, and the Policy puts the setting back if you
 remove it. Making Redis optional, so counters stay local to each site, needs a library change
-([known gaps](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/appendix-c-gaps.md)).
+([known gaps](../known-gaps.md)).
 
 ### Upgrade
 
