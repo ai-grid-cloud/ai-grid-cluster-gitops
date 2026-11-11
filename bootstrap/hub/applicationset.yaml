@@ -1,0 +1,134 @@
+# The root ApplicationSet of an AI Grid hub, for a deployment repository to
+# use as a kustomize remote base at a pinned commit (README.md). It generates one
+# Application per selected component, from that component's application.yaml.
+#
+# A deployment patches, with JSON patches:
+#   /spec/generators/0/git/repoURL and /revision        this repository, the pinned commit
+#   /spec/generators/0/git/files                        the components it selects
+#   /spec/generators/0/git/values                       every input
+#   /spec/generators/1                                  the same for ODF, or remove it
+# Generator fields can't be templated, so REQUIRED-<name> marks each one.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    applicationsSync: sync
+    # Keep deployed resources when the root or a generated Application is removed.
+    preserveResourcesOnDeletion: true
+  generators:
+    # Every component in this repository except ODF (generator 1). A deployment
+    # replaces files with the ones it selects.
+    - git:
+        repoURL: REQUIRED-libraryRepoURL
+        revision: REQUIRED-libraryRevision
+        files:
+          - path: apps/acm/application.yaml
+          - path: apps/acm-models/application.yaml
+          - path: bootstrap/hub/components/ai-grid-o11y.yaml
+          - path: apps/ai-grid-policies/application.yaml
+          - path: apps/ai-grid-spokes/application.yaml
+          - path: apps/ai-grid-usage-logs/application.yaml
+          - path: apps/argo-registration/application.yaml
+          - path: apps/cert-manager/application.yaml
+          - path: apps/console/application.yaml
+          - path: apps/external-secrets/application.yaml
+          - path: apps/external-services/application.yaml
+          - path: apps/gitops-config/application.yaml
+          - path: apps/grid-bootstrap/application.yaml
+          - path: apps/keycloak/application.yaml
+          - path: apps/limitador-redis/application.yaml
+          - path: apps/maas-db/application.yaml
+          - path: apps/metallb/application.yaml
+          - path: apps/rhoai/application.yaml
+          - path: apps/rhoai-prerequisites/application.yaml
+          - path: cluster-config/application.yaml
+        # The deployment's inputs. Components write them as @<name>@; the
+        # templatePatch below replaces them. A value must be non-empty and must
+        # not contain ", \, ' or @.
+        values:
+          libraryRepoURL: REQUIRED-libraryRepoURL
+          libraryRevision: REQUIRED-libraryRevision
+    # Only ODF needs cluster metadata. Wait for ACM registration and its
+    # version label rather than falling back to the chart's default channel.
+    - matrix:
+        generators:
+          - git:
+              repoURL: REQUIRED-libraryRepoURL
+              revision: REQUIRED-libraryRevision
+              files:
+                - path: apps/odf/application.yaml
+              values:
+                libraryRepoURL: REQUIRED-libraryRepoURL
+                libraryRevision: REQUIRED-libraryRevision
+          - clusters:
+              selector:
+                matchLabels:
+                  apps.open-cluster-management.io/cluster-name: local-cluster
+                matchExpressions:
+                  - key: openshiftVersion-major-minor
+                    operator: Exists
+  template:
+    metadata:
+      name: '{{.metadata.name}}'
+      namespace: '{{.metadata.namespace}}'
+    spec:
+      project: '{{.spec.project}}'
+      destination:
+        server: '{{.spec.destination.server}}'
+        namespace: '{{.spec.destination.namespace}}'
+  # Per component, for a hub that runs no Grid or RHOAI workloads:
+  # - grid-bootstrap: a new grid generates its CA and binds global in place of
+  #   the rhoai app's binding.
+  # - odf: the operator channel follows the hub's OpenShift minor version; a hub
+  #   labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
+  # - acm-models: the sample model and the console's catalog, not the
+  #   GitOpsCluster (argo-registration registers clusters here).
+  # - limitador-redis: Limitador runs on the sites, so no storage config here.
+  # - rhoai: grid-bootstrap owns the global binding.
+  # Then every @<name>@ is replaced from the generator's values. An input the
+  # deployment didn't set fails the Application with "missing input: <name>",
+  # and an empty value, or one with ", ', \ or @ (which would break the JSON or
+  # YAML it lands in), with "invalid input: <name>", instead of creating it.
+  templatePatch: |
+    {{- $spec := .spec }}
+    {{- if eq .metadata.name "grid-bootstrap" }}
+    {{- range $spec.sources }}{{ if hasKey . "helm" }}
+    {{- $_ := set .helm "parameters" (list (dict "name" "external.certManager.ca.mode" "value" "Generate") (dict "name" "managedClusters.createClusterSetBinding" "value" "true")) }}
+    {{- end }}{{ end }}
+    {{- end }}
+    {{- if eq .metadata.name "odf" }}
+    {{- $params := list (dict "name" "openshift.version" "value" (index .metadata.labels "openshiftVersion-major-minor")) }}
+    {{- if eq (index .metadata.labels "ai-grid/odf-operatorgroup") "existing" }}
+    {{- $params = append $params (dict "name" "operatorGroup.create" "value" "false") }}
+    {{- end }}
+    {{- $_ := set $spec.source.helm "parameters" $params }}
+    {{- end }}
+    {{- if eq .metadata.name "acm-models" }}
+    {{- $deletes := list
+          "$patch: delete\napiVersion: apps.open-cluster-management.io/v1beta1\nkind: GitOpsCluster\nmetadata:\n  name: acm-models\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n" }}
+    {{- $patches := $spec.source.kustomize.patches }}
+    {{- range $deletes }}{{ $patches = append $patches (dict "patch" .) }}{{ end }}
+    {{- $_ := set $spec.source.kustomize "patches" $patches }}
+    {{- end }}
+    {{- if eq .metadata.name "limitador-redis" }}
+    {{- $_ := set $spec.source "directory" (dict "exclude" "{04-limitador-redis-secret.yaml,20-limitador-storage.yaml}") }}
+    {{- end }}
+    {{- if eq .metadata.name "rhoai" }}
+    {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
+    {{- end }}
+    {{- $json := toJson $spec }}
+    {{- range $name, $value := $.values }}
+    {{- if or (eq $value "") (regexMatch `["'\\@]` $value) }}{{ fail (printf "invalid input: %s (empty, or contains \" ' \\ or @)" $name) }}{{ end }}
+    {{- $json = replace (printf "@%s@" $name) $value $json }}
+    {{- end }}
+    {{- with regexFind "@[a-zA-Z]+@" $json }}{{ fail (printf "missing input: %s" (trimAll "@" .)) }}{{ end }}
+    {{- with regexFind "REQUIRED-[a-zA-Z]+" $json }}{{ fail (printf "missing input: %s" (trimPrefix "REQUIRED-" .)) }}{{ end }}
+    spec: {{ $json }}
