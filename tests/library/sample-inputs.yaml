@@ -7,3 +7,11 @@ catalogRepoURL: https://example.invalid/catalog.git
 catalogRevision: catalog-revision
 deploymentRepoURL: https://example.invalid/deployment.git
 deploymentRevision: deployment-revision
+idpIssuerURL: https://idp.example.invalid/realms/sample-realm
+idpClientID: sample-client-id
+idpClientSecretNamespace: sample-secret-namespace
+idpClientSecretName: sample-secret-name
+idpClientSecretKey: sample-secret-key
+idpCANamespace: sample-ca-namespace
+idpCAName: sample-ca-name
+idpCAKey: sample-ca-key

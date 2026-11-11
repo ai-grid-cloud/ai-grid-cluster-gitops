@@ -60,6 +60,17 @@ spec:
           # The lab's catalog: the console commits models and subscriptions here.
           catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
           catalogRevision: main
+          # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+          # by a hub template on the cluster labelled ai-grid/external-services,
+          # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+          idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+          idpClientID: tenant-demo
+          idpClientSecretNamespace: maas-db
+          idpClientSecretName: keycloak-secrets
+          idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+          idpCANamespace: openshift-config-managed
+          idpCAName: default-ingress-cert
+          idpCAKey: ca-bundle.crt
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -75,6 +86,14 @@ spec:
                 targetRevision: HEAD
                 catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
                 catalogRevision: main
+                idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+                idpClientID: tenant-demo
+                idpClientSecretNamespace: maas-db
+                idpClientSecretName: keycloak-secrets
+                idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+                idpCANamespace: openshift-config-managed
+                idpCAName: default-ingress-cert
+                idpCAKey: ca-bundle.crt
           - clusters:
               selector:
                 matchLabels:
@@ -100,7 +119,10 @@ spec:
   # the opt-125m sample model from apps/acm-models-samples, which used to share
   # its directory, so the sample keeps its Application. gitops-config syncs
   # the lab's cluster-admins Group (bootstrap/lab). This repository is also
-  # the deployment repository: the lab's values are in values/.
+  # the deployment repository: the lab's values are in values/. rhoai also
+  # syncs the RBAC for the lab issuer's lookups (bootstrap/lab/rhoai), and
+  # external-services the library's Keycloak there
+  # (apps/keycloak-external-services), which used to be part of it.
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
   # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
@@ -146,6 +168,16 @@ spec:
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
+    {{- $lookups := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "bootstrap/lab/rhoai" }}
+    {{- $_ := set $spec "sources" (list $spec.source $lookups) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
+    {{- if eq .metadata.name "external-services" }}
+    {{- $keycloak := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/keycloak-external-services/hub"
+          "kustomize" (dict "patches" (list (dict "target" (dict "kind" "ConfigMap" "name" "library-inputs")
+            "patch" "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: library-inputs\ndata:\n  libraryRepoURL: '@libraryRepoURL@'\n  libraryRevision: '@libraryRevision@'\n"))) }}
+    {{- $_ := set $spec "sources" (list $spec.source $keycloak) }}
+    {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- if eq .metadata.name "acm" }}
     {{- $storage := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/object-storage/odf/manifests" }}

@@ -44,6 +44,7 @@ spec:
           - path: apps/gitops-config/application.yaml
           - path: apps/grid-bootstrap/application.yaml
           - path: apps/keycloak/application.yaml
+          - path: apps/keycloak-external-services/application.yaml
           - path: apps/limitador-redis/application.yaml
           - path: apps/maas-db/application.yaml
           - path: apps/metallb/application.yaml
@@ -64,6 +65,14 @@ spec:
           deploymentRevision: REQUIRED-deploymentRevision
           catalogRepoURL: REQUIRED-catalogRepoURL
           catalogRevision: REQUIRED-catalogRevision
+          idpIssuerURL: REQUIRED-idpIssuerURL
+          idpClientID: REQUIRED-idpClientID
+          idpClientSecretNamespace: REQUIRED-idpClientSecretNamespace
+          idpClientSecretName: REQUIRED-idpClientSecretName
+          idpClientSecretKey: REQUIRED-idpClientSecretKey
+          idpCANamespace: REQUIRED-idpCANamespace
+          idpCAName: REQUIRED-idpCAName
+          idpCAKey: REQUIRED-idpCAKey
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -80,6 +89,14 @@ spec:
                 deploymentRevision: REQUIRED-deploymentRevision
                 catalogRepoURL: REQUIRED-catalogRepoURL
                 catalogRevision: REQUIRED-catalogRevision
+                idpIssuerURL: REQUIRED-idpIssuerURL
+                idpClientID: REQUIRED-idpClientID
+                idpClientSecretNamespace: REQUIRED-idpClientSecretNamespace
+                idpClientSecretName: REQUIRED-idpClientSecretName
+                idpClientSecretKey: REQUIRED-idpClientSecretKey
+                idpCANamespace: REQUIRED-idpCANamespace
+                idpCAName: REQUIRED-idpCAName
+                idpCAKey: REQUIRED-idpCAKey
           - clusters:
               selector:
                 matchLabels:

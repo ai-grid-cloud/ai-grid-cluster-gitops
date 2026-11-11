@@ -3,7 +3,9 @@ kind: Application
 metadata:
   # Only a dedicated hub syncs this. On a hub that is also a site, MaaS's shared
   # state runs on the hub through the keycloak, limitador-redis, external-secrets
-  # and maas-db apps, so the default root ApplicationSet excludes it.
+  # and maas-db apps, so the default root ApplicationSet excludes it. The
+  # library's Keycloak on the external-services cluster is a separate
+  # component, apps/keycloak-external-services.
   name: external-services
   namespace: openshift-gitops
 spec:

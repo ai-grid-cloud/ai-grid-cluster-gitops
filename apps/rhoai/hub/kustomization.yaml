@@ -1,5 +1,8 @@
 # A kustomization so apps/rhoai/application.yaml can hand the ApplicationSet
-# the library's and the deployment's repositories and revisions (inputs.yaml).
+# the library's and the deployment's repositories and revisions, and the
+# tenant IdP's coordinates for the tenant Policy and its RBAC (inputs.yaml).
+# The hub-template strings take the Secret's and ConfigMap's namespace, name
+# and key as the 1st, 3rd and 5th '"'-delimited parts.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -55,3 +58,132 @@ replacements:
           name: rhoai
         fieldPaths:
           - spec.template.spec.sources.[ref=deployment].targetRevision
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpIssuerURL
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.3.objectDefinition.spec.object-templates.0.objectDefinition.spec.oidc.issuerUrl
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpClientID
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.3.objectDefinition.spec.object-templates.0.objectDefinition.spec.oidc.clientId
+          - spec.policy-templates.3.objectDefinition.spec.object-templates.0.objectDefinition.spec.oidc.audience
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpClientSecretNamespace
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.2.objectDefinition.spec.object-templates.0.objectDefinition.data.clientSecret
+        options:
+          delimiter: '"'
+          index: 1
+      - select:
+          kind: Role
+          name: rhoai-tenant-idp-client-secret
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: RoleBinding
+          name: rhoai-tenant-idp-client-secret
+        fieldPaths:
+          - metadata.namespace
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpClientSecretName
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.2.objectDefinition.spec.object-templates.0.objectDefinition.data.clientSecret
+        options:
+          delimiter: '"'
+          index: 3
+      - select:
+          kind: Role
+          name: rhoai-tenant-idp-client-secret
+        fieldPaths:
+          - rules.0.resourceNames.0
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpClientSecretKey
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.2.objectDefinition.spec.object-templates.0.objectDefinition.data.clientSecret
+        options:
+          delimiter: '"'
+          index: 5
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpCANamespace
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.0.objectDefinition.spec.object-templates.0.objectDefinition.binaryData.[home-keycloak-ca.crt]
+        options:
+          delimiter: '"'
+          index: 1
+      - select:
+          kind: Role
+          name: rhoai-tenant-idp-ca
+        fieldPaths:
+          - metadata.namespace
+      - select:
+          kind: RoleBinding
+          name: rhoai-tenant-idp-ca
+        fieldPaths:
+          - metadata.namespace
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpCAName
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.0.objectDefinition.spec.object-templates.0.objectDefinition.binaryData.[home-keycloak-ca.crt]
+        options:
+          delimiter: '"'
+          index: 3
+      - select:
+          kind: Role
+          name: rhoai-tenant-idp-ca
+        fieldPaths:
+          - rules.0.resourceNames.0
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.idpCAKey
+    targets:
+      - select:
+          kind: Policy
+          name: rhoai-ingress-clusters
+        fieldPaths:
+          - spec.policy-templates.0.objectDefinition.spec.object-templates.0.objectDefinition.binaryData.[home-keycloak-ca.crt]
+        options:
+          delimiter: '"'
+          index: 5

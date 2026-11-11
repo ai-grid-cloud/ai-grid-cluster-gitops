@@ -1,0 +1,39 @@
+# Keycloak's public URL on the external-services cluster: the library's
+# Keycloak there (apps/keycloak-external-services/keycloak) reads ConfigMap
+# maas-db/keycloak-public-url. apps/keycloak-external-services/hub includes
+# this directory and binds it to apps/external-services' Placement. Guarded: a cluster with no Route
+# maas-db/keycloak gets nothing, instead of a template error.
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: external-services-keycloak-public-url
+  namespace: external-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: external-services-keycloak-public-url
+        spec:
+          remediationAction: enforce
+          severity: high
+          namespaceSelector:
+            include:
+              - maas-db
+          object-templates-raw: |
+            {{- with (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak") }}
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: keycloak-public-url
+                  namespace: maas-db
+                data:
+                  KEYCLOAK_PUBLIC_URL: {{ printf "https://%s" (index .status.ingress 0).host | quote }}
+            {{- end }}

@@ -7,3 +7,6 @@ that used to carry it, so it keeps its Application:
 - `gitops-config/group.yaml`: the lab's `cluster-admins` Group, synced by
   `gitops-config`. A deployment ships its own Group, if it wants one, as one of
   its apps.
+- `rhoai/tenant-idp-lookups.yaml`: the RBAC for the lookups the lab's issuer
+  makes (`idpIssuerURL` is a hub template that finds the library's Keycloak),
+  synced by `rhoai`.

@@ -16,13 +16,16 @@ manifests:
 |---|---|
 | External Secrets Operator | `apps/external-secrets/manifests` |
 | `maas-db` primary | `apps/maas-db/primary`, without its ServiceExport |
-| Keycloak | `apps/keycloak`, without the hub's public-URL Policy |
 | Limitador's Redis | `apps/limitador-redis/manifests`, without its ServiceExport |
 
-The hub Policies here give this cluster its Keycloak public URL and `maas-api`'s
-database connection, both read from this cluster's own Route and Secrets. The
-tenant Policy (`apps/rhoai/hub`) finds Keycloak on this cluster through its
-console-URL cluster claim.
+The hub Policy here gives this cluster `maas-api`'s database connection, read
+from this cluster's own Secrets.
+
+The library's Keycloak isn't part of this component. To run it on this cluster
+too, also select `apps/keycloak-external-services`: it installs `apps/keycloak`
+here, without the hub's public-URL Policy, and binds its own public-URL Policy
+to this component's Placement. Either way the tenant Policy (`apps/rhoai/hub`)
+reads the issuer from the `idpIssuerURL` input.
 
 The label selects this cluster through Argo CD's cluster Secret, which ACM never
 removes a label from, and the ApplicationSet preserves what it installed, so

@@ -12,7 +12,4 @@ placementRef:
 subjects:
   - apiGroup: policy.open-cluster-management.io
     kind: Policy
-    name: external-services-keycloak-public-url
-  - apiGroup: policy.open-cluster-management.io
-    kind: Policy
     name: external-services-api-credentials

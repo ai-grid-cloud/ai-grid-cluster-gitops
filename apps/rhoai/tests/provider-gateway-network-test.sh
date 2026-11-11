@@ -241,36 +241,36 @@ if role in {"ingress", "combined"}:
 policy = yaml.safe_load(open(policy_path))
 templates = policy["spec"]["policy-templates"]
 ca_configuration = next(template["objectDefinition"] for template in templates
-                        if template["objectDefinition"]["metadata"]["name"] == "rhoai-authorino-home-keycloak-ca")
-ca_raw = ca_configuration["spec"]["object-templates-raw"]
-assert "home-keycloak-ca" in ca_raw, "ACM lost the home Keycloak CA distribution"
-assert "operator.authorino.kuadrant.io/v1beta1" in ca_raw, "ACM lost the Authorino CR volume contract"
-hub_branch = ca_raw.split("{{hub- else hub}}", 1)[0]
-assert "binaryData:" in hub_branch, "combined-hub Authorino CA branch is empty"
-assert 'fromConfigMap "openshift-config-managed" "default-ingress-cert" "ca-bundle.crt"' in ca_raw, \
-    "home CA must use the public default ingress certificate ConfigMap"
-assert "fromSecret " not in ca_raw, \
-    "home CA templating must not require Secret access"
-assert 'lookup "v1" "Secret"' not in ca_raw, \
-    "home CA lookup would require Secret list and watch permissions"
-assert "ca-bundle.crt:" not in hub_branch, \
-    "home CA must not reuse odh-trusted-ca-bundle's ca-bundle.crt key in Authorino's trust directory"
-assert "home-keycloak-ca.crt:" in hub_branch, "home CA lost its own key"
-assert "complianceType: mustonlyhave" in hub_branch, \
+                        if template["objectDefinition"]["metadata"]["name"] == "rhoai-tenant-idp-ca")
+ca_object = ca_configuration["spec"]["object-templates"][0]
+assert ca_object["complianceType"] == "mustonlyhave", \
     "home CA must use mustonlyhave so the old ca-bundle.crt key is removed"
+ca_map = ca_object["objectDefinition"]
+assert ca_map["metadata"]["name"] == "home-keycloak-ca", "ACM lost the tenant IdP CA distribution"
+assert list(ca_map["binaryData"]) == ["home-keycloak-ca.crt"], \
+    "home CA must keep its own key, not odh-trusted-ca-bundle's ca-bundle.crt"
+assert ca_map["binaryData"]["home-keycloak-ca.crt"] == \
+    '{{hub fromConfigMap "REQUIRED-idpCANamespace" "REQUIRED-idpCAName" "REQUIRED-idpCAKey" | base64enc hub}}', \
+    "home CA must come from the idpCA* inputs"
+authorino_configuration = next(template["objectDefinition"] for template in templates
+                               if template["objectDefinition"]["metadata"]["name"] == "rhoai-authorino-home-keycloak-ca")
+ca_raw = authorino_configuration["spec"]["object-templates-raw"]
+assert "home-keycloak-ca" in ca_raw, "Authorino lost the tenant IdP CA mount"
+assert "operator.authorino.kuadrant.io/v1beta1" in ca_raw, "ACM lost the Authorino CR volume contract"
+assert "fromSecret " not in ca_raw and 'lookup "v1" "Secret"' not in ca_raw, \
+    "the Authorino patch must not read Secrets"
 rbac_documents = list(yaml.safe_load_all(open(rbac_path)))
 roles = [document for document in rbac_documents
          if document and document.get("kind") == "Role"]
 assert not any(role["metadata"]["namespace"] == "openshift-ingress-operator" for role in roles), \
     "home CA templating must not use ingress-operator Secret RBAC"
 managed_config_role = next(role for role in roles
-                           if role["metadata"]["namespace"] == "openshift-config-managed")
-config_map_rule = next(rule for rule in managed_config_role["rules"]
-                       if rule["resources"] == ["configmaps"])
-assert "resourceNames" not in config_map_rule, \
-    "ConfigMap list and watch permissions cannot be constrained by resourceNames"
-assert config_map_rule["verbs"] == ["get", "list", "watch"], \
-    "home CA Role must only read public ingress ConfigMaps"
+                           if role["metadata"]["name"] == "rhoai-tenant-idp-ca")
+assert managed_config_role["metadata"]["namespace"] == "REQUIRED-idpCANamespace"
+assert managed_config_role["rules"] == [{"apiGroups": [""], "resources": ["configmaps"],
+                                        "resourceNames": ["REQUIRED-idpCAName"],
+                                        "verbs": ["get", "list", "watch"]}], \
+    "home CA Role must read only the CA input's ConfigMap"
 configuration = next(template["objectDefinition"] for template in templates
                      if template["objectDefinition"]["metadata"]["name"] == "rhoai-grid-external-provider")
 external_provider = next(object_template["objectDefinition"]

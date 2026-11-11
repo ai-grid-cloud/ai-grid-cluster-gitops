@@ -30,8 +30,11 @@ Optional environment:
   HUB_CONTEXT             Hub kubeconfig context.
   NAMESPACE               The console's namespace; defaults to ai-grid-provider-console.
   KEYCLOAK_REALM          The realm whose organizations the console manages;
-                          defaults to saas.
-  KEYCLOAK_NAMESPACE      Keycloak's namespace; defaults to maas-db.
+                          defaults to saas, the library's Keycloak realm.
+  KEYCLOAK_NAMESPACE      Keycloak's namespace, holding Route keycloak and
+                          Secret keycloak-secrets; defaults to maas-db, where
+                          the library's Keycloak (apps/keycloak) runs. With
+                          your own Keycloak, set both (apps/keycloak/README.md).
   KEYCLOAK_BACKEND_USER   The backend's Keycloak user; defaults to
                           ai-grid-console-backend.
   ADOPT_KEYCLOAK_USER_ID  The id of an existing backend user to adopt, when no
