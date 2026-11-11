@@ -10,5 +10,6 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
 data:
-  libraryRepoURL: REQUIRED-libraryRepoURL
-  libraryRevision: REQUIRED-libraryRevision
+  # The console's git writer commits here; a branch, since it pushes to it.
+  catalogRepoURL: REQUIRED-catalogRepoURL
+  catalogRevision: REQUIRED-catalogRevision

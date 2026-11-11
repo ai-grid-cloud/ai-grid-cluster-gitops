@@ -13,6 +13,7 @@ Checks, each reported as ok or FAIL:
   static-revision  no upstream URL and no HEAD revision under apps/, bootstrap/,
                    cluster-config/ (Markdown, tests and upstream's lab entry
                    points excepted)
+  static-catalog   no lab catalog repository under those directories
   components       each apps/*/application.yaml and cluster-config/application.yaml,
                    with sample-inputs.yaml substituted the way the root does it,
                    resolves: no @token@ or REQUIRED- left, every git source is the
@@ -29,6 +30,9 @@ Checks, each reported as ok or FAIL:
                    components checks; an input left out or left REQUIRED- fails
                    with "missing input: <name>", an empty one or one with
                    ", ', \\ or @ with "invalid input: <name>"
+  samples          no model, MaaS object or subscription outside the selectable
+                   apps/acm-models-samples component
+  move-guards      objects moved between Applications carry Prune=false
   lab-roots        each Application upstream's lab roots generate, through
                    their own templatePatch, resolves every input to the lab's
                    value and passes the components checks (needs Go)
@@ -62,6 +66,7 @@ LEGACY_ROOTS = {
     "bootstrap/dedicated-hub/application.yaml",
     "bootstrap/foundation-acm-application.yaml",
 }
+CATALOG_PATTERNS = [re.compile(r"ai-grid-shared-catalog")]
 REVISION_PATTERNS = [
     re.compile(r"ai-grid-cloud/ai-grid-cluster-gitops"),
     re.compile(r"\b(target)?[rR]evision:\s*['\"]?HEAD\b"),
@@ -72,8 +77,6 @@ EXTERNAL_PREFIXES = (
     "https://github.com/opendatahub-io/",
     "https://github.com/ai-grid-cloud/ai-grid-provider-console",
     "oci://",
-    # The lab's catalog, until the catalog repository is an input.
-    "https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git",
 )
 TOKEN = re.compile(r"@[a-zA-Z]+@")
 
@@ -140,6 +143,11 @@ def grep(patterns, label):
 @check("static-revision")
 def static_revision():
     grep(REVISION_PATTERNS, "upstream self-reference")
+
+
+@check("static-catalog")
+def static_catalog():
+    grep(CATALOG_PATTERNS, "lab catalog")
 
 
 def classify(repo, inputs):
@@ -464,6 +472,14 @@ def lab_roots():
     for root_path in LAB_ROOTS:
         appset = load(root_path)
         generators = appset["spec"]["generators"]
+        # The templatePatch reads the values of whichever generator produced
+        # the Application, so every generator carries the same ones.
+        all_values = [element.get("values") for generator in generators if "list" in generator
+                      for element in generator["list"]["elements"]]
+        all_values += [(generator.get("git") or generator["matrix"]["generators"][0]["git"]).get("values")
+                       for generator in generators if "list" not in generator]
+        if any(values != all_values[-1] for values in all_values):
+            fail("%s: the generators' values differ" % root_path)
         first = generators[0]["git"]
         for index, generator in enumerate(generators):
             if "list" in generator:
@@ -500,7 +516,13 @@ def lab_roots():
                 if error:
                     fail("%s: %s: templatePatch failed: %s" % (root_path, path, error))
                     continue
-                check_application("%s through %s" % (path, root_path), {"spec": patch["spec"]}, lab)
+                where = "%s through %s" % (path, root_path)
+                if path in LEGACY_ROOTS:
+                    # The dedicated root's own Application: it syncs the root,
+                    # whose templatePatch names the tokens it replaces.
+                    scan_text(where, yaml.safe_dump(patch["spec"]))
+                    continue
+                check_application(where, {"spec": patch["spec"]}, lab)
 
 
 @check("bare-inputs")
@@ -520,14 +542,58 @@ def bare_inputs():
         fail("no directory declares its inputs (inputs.yaml)")
 
 
+SAMPLES = os.path.join("apps", "acm-models-samples") + os.sep
+CATALOG_KINDS = ("MaaSSubscription", "MaaSAuthPolicy", "LLMInferenceService", "ExternalModel", "MaaSModelRef")
+
+
+@check("samples")
+def samples():
+    """Models and subscriptions are the catalog's. The library's own samples
+    (and the lab's subscriptions) are one component a deployment selects."""
+    if not os.path.isfile(os.path.join(ROOT, SAMPLES, "application.yaml")):
+        fail("%sapplication.yaml is missing" % SAMPLES)
+    for path in library_files(("apps",)):
+        relative = rel(path)
+        if relative.startswith(SAMPLES) or not relative.endswith(".yaml") or "/templates/" in relative:
+            continue
+        with open(path) as handle:
+            text = handle.read()
+        for kind in CATALOG_KINDS:
+            if re.search(r"^kind: %s$" % kind, text, re.M):
+                fail("%s: a %s outside %s" % (relative, kind, SAMPLES))
+
+
+MOVED = (
+    ("apps/acm-models-samples/hub/facebook-opt-125m-03-applicationset.yaml", "ApplicationSet", "acm-models-facebook-opt-125m"),
+    ("apps/acm-models-samples/hub/maas-03-applicationset.yaml", "ApplicationSet", "acm-models-maas"),
+)
+
+
+@check("move-guards")
+def move_guards():
+    """Objects a deployment's Applications own under other names than the lab
+    roots' carry Prune=false, so when a hub moves from a lab root to a
+    deployment repository the old owner's prune can't delete them (and what
+    they created) before the new owner adopts them."""
+    for path, kind, name in MOVED:
+        with open(os.path.join(ROOT, path)) as handle:
+            doc = next(d for d in yaml.safe_load_all(handle) if d and d["kind"] == kind)
+        options = doc["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-options", "")
+        if doc["metadata"]["name"] != name or "Prune=false" not in options.split(","):
+            fail("%s: %s %s has no argocd.argoproj.io/sync-options Prune=false" % (path, kind, name))
+
+
 def main():
     inputs = load_inputs()
     static_revision()
+    static_catalog()
     components(inputs)
     bare_inputs()
     root(inputs)
     root_render(inputs)
     lab_roots()
+    samples()
+    move_guards()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0

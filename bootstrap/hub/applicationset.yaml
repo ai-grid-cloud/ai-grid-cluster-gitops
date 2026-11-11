@@ -31,6 +31,7 @@ spec:
         files:
           - path: apps/acm/application.yaml
           - path: apps/acm-models/application.yaml
+          - path: apps/acm-models-samples/application.yaml
           - path: bootstrap/hub/components/ai-grid-o11y.yaml
           - path: apps/ai-grid-policies/application.yaml
           - path: apps/ai-grid-spokes/application.yaml
@@ -55,6 +56,8 @@ spec:
         values:
           libraryRepoURL: REQUIRED-libraryRepoURL
           libraryRevision: REQUIRED-libraryRevision
+          catalogRepoURL: REQUIRED-catalogRepoURL
+          catalogRevision: REQUIRED-catalogRevision
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -67,6 +70,8 @@ spec:
               values:
                 libraryRepoURL: REQUIRED-libraryRepoURL
                 libraryRevision: REQUIRED-libraryRevision
+                catalogRepoURL: REQUIRED-catalogRepoURL
+                catalogRevision: REQUIRED-catalogRevision
           - clusters:
               selector:
                 matchLabels:
@@ -88,8 +93,8 @@ spec:
   #   the rhoai app's binding.
   # - odf: the operator channel follows the hub's OpenShift minor version; a hub
   #   labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
-  # - acm-models: the sample model and the console's catalog, not the
-  #   GitOpsCluster (argo-registration registers clusters here).
+  # - acm-models: the console's catalog, not the GitOpsCluster
+  #   (argo-registration registers clusters here).
   # - limitador-redis: Limitador runs on the sites, so no storage config here.
   # - rhoai: grid-bootstrap owns the global binding.
   # Then every @<name>@ is replaced from the generator's values. An input the

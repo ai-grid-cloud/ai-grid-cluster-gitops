@@ -30,11 +30,10 @@ on the hub, installed from its Helm chart: one pod with kube-auth-proxy
   binds the backend to ACM's `global-search-user`, which lets it read every
   managed cluster's indexed resources: more than the GPU nodes it asks for, so
   the backend stays behind the console's sign-in (the file says why).
-- **Models and subscriptions:** commits to the catalog repository,
-  [ai-grid-cloud/ai-grid-shared-catalog](https://github.com/ai-grid-cloud/ai-grid-shared-catalog),
-  which `apps/acm-models` delivers and `apps/ai-grid-policies` reports on.
-  That URL is the one value another environment changes, here
-  (`backend.git.url`) and in `apps/acm-models/hub/catalog-*`.
+- **Models and subscriptions:** commits to the catalog repository, the
+  inputs `catalogRepoURL` and `catalogRevision` (`backend.git.url` and
+  `backend.git.branch`), which `apps/acm-models` delivers and
+  `apps/ai-grid-policies` reports on.
 
 ## Before the first sync completes
 

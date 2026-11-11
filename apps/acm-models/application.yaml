@@ -1,8 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  # Dedicated GitOps app for the AI Grid model ApplicationSet. It is
-  # discovered automatically by the bootstrap ApplicationSet.
+  # The provider console's catalog: its AppProjects and the ApplicationSets
+  # that deliver the models and subscriptions the console commits (and a
+  # GitOpsCluster a dedicated hub leaves out). The library's sample models are
+  # apps/acm-models-samples.
   name: acm-models
   namespace: openshift-gitops
 spec:
@@ -11,8 +13,8 @@ spec:
     repoURL: '@libraryRepoURL@'
     targetRevision: '@libraryRevision@'
     path: apps/acm-models/hub
-    # The library's own repository and revision for the ApplicationSets in
-    # this directory (its inputs.yaml), from the root's values.
+    # The catalog repository and branch for the ApplicationSets in this
+    # directory (its inputs.yaml), from the root's values.
     kustomize:
       patches:
         - target:
@@ -24,8 +26,8 @@ spec:
             metadata:
               name: library-inputs
             data:
-              libraryRepoURL: '@libraryRepoURL@'
-              libraryRevision: '@libraryRevision@'
+              catalogRepoURL: '@catalogRepoURL@'
+              catalogRevision: '@catalogRevision@'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
