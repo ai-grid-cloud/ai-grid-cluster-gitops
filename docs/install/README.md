@@ -3,6 +3,32 @@
 This directory is the reference for the library's components, versioned with the code it describes. Read it at the
 library commit your deployment pins.
 
+## How AI Grid works
+
+AI Grid serves models from many OpenShift clusters as one service. Tenants call one endpoint, Models-as-a-Service
+(MaaS) checks their identity and subscription, and the grid routes each request to a site that runs the model. A hub
+cluster runs Red Hat Advanced Cluster Management (ACM), Argo CD and the provider console, and delivers everything else
+to the sites.
+
+```text
+                tenants (OIDC tokens or API keys)
+                              |
+                              v
+   +---------------- ingress site ----------------+       +---- inference site ----+
+   | MaaS gateway, Org UI, grid consumer gateway  | mTLS  | grid provider gateway, |
+   | (a combined site is ingress + inference)     |------>| models                 |
+   +----------------------------------------------+       +------------------------+
+                  ^                                                  ^
+                  |  ACM policies, Argo CD applications, Submariner  |
+                  +---------------------- hub -----------------------+
+        ACM, Argo CD, grid enrollment, site and model delivery, provider console,
+        MaaS database and Redis, tenant identity provider
+```
+
+The hub's Argo CD reads three repositories: the **library** (this repository: the components, pinned at one commit),
+your **deployment repository** (which components run, the inputs, each site's files), and your **catalog repository**
+(models and subscriptions, written by the provider console).
+
 - [Hub and external dependencies](hub/README.md): the hub's eight items, each with your options, what it requires and
   the lines that select it.
 - [Spokes](spokes/README.md): what each site brings and what the hub installs there.
