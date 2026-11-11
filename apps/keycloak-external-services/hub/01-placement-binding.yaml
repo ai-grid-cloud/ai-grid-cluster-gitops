@@ -1,0 +1,17 @@
+# Applies Keycloak's public-URL Policy (apps/keycloak/external-services-policy)
+# to the external-services cluster, through apps/external-services' Placement.
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: external-services-keycloak
+  namespace: external-services
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+placementRef:
+  apiGroup: cluster.open-cluster-management.io
+  kind: Placement
+  name: external-services
+subjects:
+  - apiGroup: policy.open-cluster-management.io
+    kind: Policy
+    name: external-services-keycloak-public-url

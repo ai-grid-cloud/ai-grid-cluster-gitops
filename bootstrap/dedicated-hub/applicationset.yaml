@@ -61,6 +61,17 @@ spec:
           # The lab's catalog: the console commits models and subscriptions here.
           catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
           catalogRevision: main
+          # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+          # by a hub template on the cluster labelled ai-grid/external-services,
+          # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+          idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+          idpClientID: tenant-demo
+          idpClientSecretNamespace: maas-db
+          idpClientSecretName: keycloak-secrets
+          idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+          idpCANamespace: openshift-config-managed
+          idpCAName: default-ingress-cert
+          idpCAKey: ca-bundle.crt
     # ai-grid-o11y is specified here rather than in
     # apps/ai-grid-o11y/application.yaml. The ref source exposes this repo to
     # the chart source as $values, so values/hub/ai-grid-o11y/values.yaml
@@ -74,6 +85,17 @@ spec:
               # The lab's catalog: the console commits models and subscriptions here.
               catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
               catalogRevision: main
+              # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+              # by a hub template on the cluster labelled ai-grid/external-services,
+              # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+              idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+              idpClientID: tenant-demo
+              idpClientSecretNamespace: maas-db
+              idpClientSecretName: keycloak-secrets
+              idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+              idpCANamespace: openshift-config-managed
+              idpCAName: default-ingress-cert
+              idpCAKey: ca-bundle.crt
             metadata:
               name: ai-grid-o11y
               namespace: openshift-gitops
@@ -123,6 +145,17 @@ spec:
                 # The lab's catalog: the console commits models and subscriptions here.
                 catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
                 catalogRevision: main
+                # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+                # by a hub template on the cluster labelled ai-grid/external-services,
+                # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+                idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+                idpClientID: tenant-demo
+                idpClientSecretNamespace: maas-db
+                idpClientSecretName: keycloak-secrets
+                idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+                idpCANamespace: openshift-config-managed
+                idpCAName: default-ingress-cert
+                idpCAKey: ca-bundle.crt
           - clusters:
               selector:
                 matchLabels:
@@ -147,7 +180,8 @@ spec:
   # GitOpsCluster: argo-registration registers clusters here. It also syncs
   # the opt-125m sample model from apps/acm-models-samples, which used to share
   # its directory, so the sample keeps its Application. This repository is also
-  # the deployment repository: the lab's values are in values/.
+  # the deployment repository: the lab's values are in values/. rhoai also
+  # syncs the RBAC for the lab issuer's lookups (bootstrap/lab/rhoai).
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
   # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
@@ -187,6 +221,9 @@ spec:
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
+    {{- $lookups := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "bootstrap/lab/rhoai" }}
+    {{- $_ := set $spec "sources" (list $spec.source $lookups) }}
+    {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- if eq .metadata.name "acm" }}
     {{- $storage := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/object-storage/odf/manifests" }}

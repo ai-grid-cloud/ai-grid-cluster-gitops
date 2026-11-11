@@ -11,6 +11,38 @@ spec:
   hubTemplateOptions:
     serviceAccountName: rhoai-tenant-templating
   policy-templates:
+    # The tenant IdP is an input (apps/rhoai/hub/inputs.yaml): its issuer, its
+    # client, the hub Secret holding the client's secret, and the hub ConfigMap
+    # holding the CA that signs the issuer's certificate. The hub templates read
+    # the Secret and ConfigMap as rhoai-tenant-templating
+    # (00-tenant-templating-rbac.yaml). apps/keycloak/README.md has the contract.
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: rhoai-tenant-idp-ca
+        spec:
+          remediationAction: enforce
+          severity: high
+          namespaceSelector:
+            include:
+              - kuadrant-system
+          object-templates:
+            # Its own key: Authorino mounts this ConfigMap in one directory with
+            # odh-trusted-ca-bundle, whose key is ca-bundle.crt, and a second
+            # ca-bundle.crt would replace the system bundle (an issuer behind a
+            # public certificate then fails OIDC discovery). mustonlyhave drops
+            # the old key from existing ConfigMaps.
+            - complianceType: mustonlyhave
+              objectDefinition:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: home-keycloak-ca
+                  namespace: kuadrant-system
+                binaryData:
+                  home-keycloak-ca.crt: '{{hub fromConfigMap "REQUIRED-idpCANamespace" "REQUIRED-idpCAName" "REQUIRED-idpCAKey" | base64enc hub}}'
+
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
         kind: ConfigurationPolicy
@@ -23,31 +55,6 @@ spec:
             include:
               - kuadrant-system
           object-templates-raw: |
-            {{hub- $hubKeycloak := lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak" hub}}
-            {{hub- if $hubKeycloak hub}}
-            # Its own key: Authorino mounts this ConfigMap in one directory with
-            # odh-trusted-ca-bundle, whose key is ca-bundle.crt, and a second
-            # ca-bundle.crt would replace the system bundle (Keycloak behind a
-            # public certificate then fails OIDC discovery). mustonlyhave drops
-            # the old key from existing ConfigMaps.
-            - complianceType: mustonlyhave
-              objectDefinition:
-                apiVersion: v1
-                kind: ConfigMap
-                metadata:
-                  name: home-keycloak-ca
-                  namespace: kuadrant-system
-                binaryData:
-                  home-keycloak-ca.crt: '{{hub fromConfigMap "openshift-config-managed" "default-ingress-cert" "ca-bundle.crt" | base64enc hub}}'
-            {{hub- else hub}}
-            - complianceType: musthave
-              objectDefinition:
-                apiVersion: v1
-                kind: ConfigMap
-                metadata:
-                  name: home-keycloak-ca
-                  namespace: kuadrant-system
-            {{hub- end hub}}
             {{- if (lookup "operator.authorino.kuadrant.io/v1beta1" "Authorino" "kuadrant-system" "authorino") }}
             - complianceType: musthave
               objectDefinition:
@@ -93,7 +100,7 @@ spec:
                   namespace: models-as-a-service
                 type: Opaque
                 data:
-                  clientSecret: '{{hub fromSecret "maas-db" "keycloak-secrets" "KEYCLOAK_CLIENT_SECRET" hub}}'
+                  clientSecret: '{{hub fromSecret "REQUIRED-idpClientSecretNamespace" "REQUIRED-idpClientSecretName" "REQUIRED-idpClientSecretKey" hub}}'
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
@@ -122,14 +129,13 @@ spec:
                   oidc:
                     accessTokenPurpose: access
                     accessTokenPurposeClaim: token_use
-                    clientId: tenant-demo
-                    audience: tenant-demo
+                    # MaaS matches the token's azp against clientId.
+                    clientId: REQUIRED-idpClientID
+                    audience: REQUIRED-idpClientID
                     clientSecretRef:
                       name: tenant-demo-oidc-client
                       key: clientSecret
-                    # Keycloak on the cluster labelled ai-grid/external-services, at the default Route
-                    # host under its apps domain, else Keycloak on the hub.
-                    issuerUrl: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+                    issuerUrl: REQUIRED-idpIssuerURL
 
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1

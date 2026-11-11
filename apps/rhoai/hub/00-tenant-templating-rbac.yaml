@@ -1,3 +1,14 @@
+# The tenant Policy's hub templates (02-ingress-clusters-policy.yaml) run as
+# this ServiceAccount, which may read only the tenant IdP inputs: the Secret
+# holding the client's secret and the ConfigMap holding the issuer's CA. Their
+# namespaces and names come from inputs.yaml through kustomization.yaml.
+#
+# Every verb is limited to the input's name. ACM resolves a hub template's
+# fromSecret or fromConfigMap with a get, then a list and watch carrying the
+# field selector metadata.name=<name> (stolostron/kubernetes-dependency-watches
+# client/client.go, watchLatest), and Kubernetes RBAC authorizes such a list
+# or watch by resourceNames. So no rule covers the whole namespace, which may
+# hold other Secrets, such as the IdP's own admin credentials.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -9,47 +20,27 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: rhoai-tenant-templating
-  namespace: maas-db
+  name: rhoai-tenant-idp-client-secret
+  namespace: REQUIRED-idpClientSecretNamespace
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 rules:
   - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    resourceNames:
-      - keycloak
-    verbs:
-      - get
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
-      - list
-      - watch
-  - apiGroups:
       - ""
     resources:
       - secrets
     resourceNames:
-      - keycloak-secrets
+      - REQUIRED-idpClientSecretName
     verbs:
       - get
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
       - list
       - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: rhoai-tenant-templating
-  namespace: maas-db
+  name: rhoai-tenant-idp-client-secret
+  namespace: REQUIRED-idpClientSecretNamespace
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 subjects:
@@ -59,13 +50,13 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: rhoai-tenant-templating
+  name: rhoai-tenant-idp-client-secret
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: rhoai-tenant-templating
-  namespace: openshift-config-managed
+  name: rhoai-tenant-idp-ca
+  namespace: REQUIRED-idpCANamespace
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 rules:
@@ -73,94 +64,25 @@ rules:
       - ""
     resources:
       - configmaps
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: rhoai-tenant-templating
-  namespace: openshift-config-managed
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-subjects:
-  - kind: ServiceAccount
-    name: rhoai-tenant-templating
-    namespace: redhat-ai-grid
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: rhoai-tenant-templating
----
-# Finds the external-services cluster, which holds Keycloak when it is not the hub.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: rhoai-tenant-templating
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-rules:
-  - apiGroups:
-      - cluster.open-cluster-management.io
-    resources:
-      - managedclusters
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: rhoai-tenant-templating
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-subjects:
-  - kind: ServiceAccount
-    name: rhoai-tenant-templating
-    namespace: redhat-ai-grid
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: rhoai-tenant-templating
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: rhoai-hub-templating-routes
-  namespace: maas-db
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-rules:
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
     resourceNames:
-      - keycloak
+      - REQUIRED-idpCAName
     verbs:
       - get
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
       - list
       - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: rhoai-hub-templating-routes
-  namespace: maas-db
+  name: rhoai-tenant-idp-ca
+  namespace: REQUIRED-idpCANamespace
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 subjects:
-  - kind: Group
-    name: system:open-cluster-management:addon:governance-standalone-hub-templating
+  - kind: ServiceAccount
+    name: rhoai-tenant-templating
+    namespace: redhat-ai-grid
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: rhoai-hub-templating-routes
+  name: rhoai-tenant-idp-ca

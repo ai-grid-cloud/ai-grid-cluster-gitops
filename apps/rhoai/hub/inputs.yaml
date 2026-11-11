@@ -14,3 +14,14 @@ data:
   libraryRevision: REQUIRED-libraryRevision
   deploymentRepoURL: REQUIRED-deploymentRepoURL
   deploymentRevision: REQUIRED-deploymentRevision
+  # The tenant OIDC issuer and its client (MaaS matches the token's azp).
+  idpIssuerURL: REQUIRED-idpIssuerURL
+  idpClientID: REQUIRED-idpClientID
+  # The hub Secret holding that client's secret.
+  idpClientSecretNamespace: REQUIRED-idpClientSecretNamespace
+  idpClientSecretName: REQUIRED-idpClientSecretName
+  idpClientSecretKey: REQUIRED-idpClientSecretKey
+  # The hub ConfigMap holding the CA that signs the issuer's certificate.
+  idpCANamespace: REQUIRED-idpCANamespace
+  idpCAName: REQUIRED-idpCAName
+  idpCAKey: REQUIRED-idpCAKey

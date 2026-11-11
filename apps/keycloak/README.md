@@ -11,6 +11,72 @@ or users. Upgrades of populated realms and migration procedures are outside
 the scope of this change. Realm sync initializes the broker settings and
 maintains Git-owned configuration after installation.
 
+## Skipping this Keycloak: the tenant IdP contract
+
+This app is optional. AI Grid's tenant Policy (`apps/rhoai/hub`) names no
+Keycloak: it reads the tenant IdP from the deployment's inputs (the root's
+generator values, `bootstrap/hub/README.md`). To skip this app, leave
+`apps/keycloak/application.yaml` out of the root's `files` and set:
+
+| Input | What it points to |
+|---|---|
+| `idpIssuerURL` | the OIDC issuer, exactly as tokens carry it in `iss` |
+| `idpClientID` | the tenant client; MaaS matches it against the token's `azp` and uses it as the audience |
+| `idpClientSecretNamespace`, `idpClientSecretName`, `idpClientSecretKey` | a hub Secret holding that client's secret |
+| `idpCANamespace`, `idpCAName`, `idpCAKey` | a hub ConfigMap holding the CA that signs the issuer's TLS certificate (PEM). Ingress sites' Authorino trusts it as `kuadrant-system/home-keycloak-ca`. For a publicly trusted issuer, point it at any ConfigMap holding that public CA. |
+
+The tenant Policy's hub templates read the Secret and the ConfigMap as
+ServiceAccount `redhat-ai-grid/rhoai-tenant-templating`. `apps/rhoai/hub`
+creates a Role in each of the two namespaces for it, so the namespaces must
+exist before `rhoai` syncs. Each Role grants `get`, `list` and `watch` on the
+named object only (`resourceNames`): the ServiceAccount can't read any other
+Secret in the IdP's namespace.
+
+Upstream's lab roots (`bootstrap/applicationset.yaml`,
+`bootstrap/dedicated-hub/`) select this app and set the inputs to it: client
+`tenant-demo`, its secret in `maas-db/keycloak-secrets`
+(`KEYCLOAK_CLIENT_SECRET`), the CA in
+`openshift-config-managed/default-ingress-cert`, and as the issuer a hub
+template that finds this Keycloak on the cluster labelled
+`ai-grid/external-services`, else on the hub, in realm `saas`. That lookup
+needs more RBAC, which the lab roots add from `bootstrap/lab/rhoai`.
+
+A replacement IdP must provide:
+
+- **The client**: a confidential OIDC client named `idpClientID`, with
+  `https://<MaaS gateway host>/oauth2/callback` among its redirect URIs, for
+  the portal's sign-in.
+- **The claims** in the access token: `token_use: access` (the AITenant's
+  `accessTokenPurposeClaim`), `org_id` and `org_name` for the user's
+  organization, `roles`, and `groups` as plain names (such as
+  `ai-grid-users`). MaaS prefixes each group with `org_id` itself and drops any
+  group that already starts with an organization ID, so subscriptions name
+  `<org_id>/<group>` while the token carries `<group>` (flat claims, ODH ADR PR
+  181). Both the
+  console and this repository's MaaS objects use the qualified form.
+  `preferred_username` is optional; MaaS shows it as the user's name.
+- **Organizations, for the console**: the provider console creates and lists
+  organizations through the Keycloak admin API (Keycloak Organizations). A
+  replacement that the console manages is a Keycloak realm
+  with Organizations turned on. `apps/console/create-secrets.sh` signs in to
+  it through Route `keycloak` and Secret `keycloak-secrets`
+  (`KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD`) in
+  `KEYCLOAK_NAMESPACE`, and manages realm `KEYCLOAK_REALM`.
+  `base/manifests/realms/saas-realm.json` here shows the client scopes and mappers that
+  produce the claims above.
+
+### What this Keycloak needs
+
+This app runs Keycloak as a plain Deployment (community image
+`quay.io/keycloak/keycloak`), not through a Keycloak operator. Selecting it
+needs:
+
+- the `maas-db` CloudNativePG cluster (`apps/maas-db`): its `DatabaseRole` and
+  `Database` create the `keycloak` role and database there;
+- External Secrets (`apps/external-secrets`), for its generated Secrets;
+- the cluster-wide read in the redirect-URIs CronJob's ClusterRole
+  (`base/manifests/redirect-uris.yaml`), which lists the ingress sites' hosts.
+
 ## Install profiles
 
 The app has two profiles. Each profile is a kustomize overlay.

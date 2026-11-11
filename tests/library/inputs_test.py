@@ -37,6 +37,12 @@ Checks, each reported as ok or FAIL:
   object-storage   ACM renders no bucket; apps/object-storage offers ODF and S4,
                    each its own component, S4's credentials from Password
                    generators, never literal Secrets
+  idp              the tenant Policy reads the IdP inputs (issuer, client,
+                   client-secret Secret, CA ConfigMap), no manifest outside
+                   apps/keycloak names the library's Keycloak, and the Policy's
+                   ServiceAccount can read both inputs, by name only
+  keycloak-separable  nothing outside apps/keycloak* installs or includes
+                   Keycloak (the lab entry points excepted)
   samples          no model, MaaS object or subscription outside the selectable
                    apps/acm-models-samples component
   move-guards      objects moved between Applications carry Prune=false
@@ -692,6 +698,123 @@ def object_storage(inputs):
             fail("s4: credentials must come from Password generators, got %s" % generators)
 
 
+# The library Keycloak's namespace, Secret, realm and client. "tenant-demo" is
+# also the start of the spoke Secret's name, tenant-demo-oidc-client, kept so
+# existing sites don't see it renamed.
+IDP_FORBIDDEN = ('"maas-db"', "keycloak-secrets", "realms/saas", re.compile(r"tenant-demo(?!-oidc-client)"))
+
+
+def names(text, word):
+    if isinstance(word, str):
+        return word in text
+    return bool(word.search(text))
+
+
+def strings(node):
+    if isinstance(node, dict):
+        for value in node.values():
+            yield from strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from strings(value)
+    elif isinstance(node, str):
+        yield node
+
+
+def rendered_rhoai_hub(inputs):
+    with open(os.path.join(ROOT, "apps", "rhoai", "application.yaml")) as handle:
+        app = yaml.safe_load(substitute(handle.read(), inputs))
+    output, error = kustomize_build(os.path.join(ROOT, "apps", "rhoai", "hub"),
+                                    app["spec"]["source"]["kustomize"]["patches"])
+    if error:
+        fail("apps/rhoai/hub: kustomize build failed: %s" % error.splitlines()[-1])
+        return []
+    return [doc for doc in yaml.safe_load_all(output) if doc]
+
+
+@check("idp")
+def idp(inputs):
+    """The tenant IdP is an input: the tenant Policy names no Keycloak."""
+    for path in library_files((os.path.join("apps", "rhoai"),)):
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        for word in IDP_FORBIDDEN:
+            if names(text, word):
+                fail("%s names %s, the library's Keycloak" % (rel(path), getattr(word, "pattern", word)))
+    # Outside apps/keycloak, no manifest may reach the library's Keycloak by
+    # its Route, Secret, realm or client ("maas-db" alone is also the
+    # database's namespace, so it's checked only in apps/rhoai).
+    keycloak = os.path.join("apps", "keycloak") + os.sep
+    for path in library_files(("apps",)):
+        relative = rel(path)
+        if relative.startswith(keycloak) or not relative.endswith((".yaml", ".json")):
+            continue
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        for word in IDP_FORBIDDEN[1:] + ('"Route" "maas-db" "keycloak"',):
+            if names(text, word) and not relative.startswith(os.path.join("apps", "rhoai") + os.sep):
+                fail("%s names %s, the library's Keycloak; that belongs in apps/keycloak"
+                     % (relative, getattr(word, "pattern", word)))
+    documents = rendered_rhoai_hub(inputs)
+    policy = next((doc for doc in documents if doc["kind"] == "Policy"
+                   and doc["metadata"]["name"] == "rhoai-ingress-clusters"), None)
+    if not policy:
+        fail("apps/rhoai/hub renders no Policy rhoai-ingress-clusters")
+        return
+    text = "\n".join(strings(policy))
+    for key in ("idpIssuerURL", "idpClientID"):
+        if inputs[key] not in text:
+            fail("the tenant Policy doesn't carry %s (%s)" % (key, inputs[key]))
+    secret_template = 'fromSecret "%s" "%s" "%s"' % (inputs["idpClientSecretNamespace"],
+                                                   inputs["idpClientSecretName"], inputs["idpClientSecretKey"])
+    if secret_template not in text:
+        fail("the tenant Policy doesn't read the client secret input: %s" % secret_template)
+    ca_template = 'fromConfigMap "%s" "%s" "%s"' % (inputs["idpCANamespace"], inputs["idpCAName"], inputs["idpCAKey"])
+    if ca_template not in text:
+        fail("the tenant Policy doesn't read the CA input: %s" % ca_template)
+    # Hub templates resolve as the Policy's ServiceAccount, which must be able
+    # to read the input Secret and ConfigMap where they are.
+    account = policy["spec"]["hubTemplateOptions"]["serviceAccountName"]
+    bound = {doc["metadata"]["namespace"]: doc["roleRef"]["name"] for doc in documents
+             if doc["kind"] == "RoleBinding"
+             and {"kind": "ServiceAccount", "name": account, "namespace": "redhat-ai-grid"} in doc.get("subjects", [])}
+    roles = {(doc["metadata"]["namespace"], doc["metadata"]["name"]): doc for doc in documents if doc["kind"] == "Role"}
+    for namespace, resource, name in ((inputs["idpClientSecretNamespace"], "secrets", inputs["idpClientSecretName"]),
+                                      (inputs["idpCANamespace"], "configmaps", inputs["idpCAName"])):
+        role = roles.get((namespace, bound.get(namespace)))
+        rules = (role or {}).get("rules", [])
+        if not any(resource in rule.get("resources", []) and "get" in rule.get("verbs", [])
+                   and name in rule.get("resourceNames", [name]) for rule in rules):
+            fail("ServiceAccount %s can't get %s %s in namespace %s" % (account, resource, name, namespace))
+        # ACM's dependency watcher lists and watches a named object with a
+        # metadata.name field selector, which RBAC authorizes by resourceNames,
+        # so no rule needs the whole namespace (the input namespace may hold
+        # other Secrets, such as an IdP's admin credentials).
+        for rule in rules:
+            if rule.get("resourceNames") != [name]:
+                fail("Role %s/%s: rule %s isn't limited to resourceNames [%s]"
+                     % (namespace, role["metadata"]["name"], rule, name))
+
+
+KEYCLOAK_REFERENCE = re.compile(r"(apps/keycloak\b|\.\./keycloak\b|external-services/keycloak\b)")
+
+
+@check("keycloak-separable")
+def keycloak_separable():
+    """Keycloak is installed only by components named apps/keycloak*:
+    selecting another component (external-services) brings no Keycloak."""
+    for path in library_files(("apps", "bootstrap", "cluster-config")):
+        relative = rel(path)
+        if relative.startswith("apps/keycloak") or relative in LEGACY_ROOTS \
+                or not relative.endswith((".yaml", ".yml", ".json")):
+            continue
+        with open(path, encoding="utf-8") as handle:
+            for number, line in enumerate(handle, 1):
+                code = line.split("#", 1)[0] if not line.lstrip().startswith("#") else ""
+                if KEYCLOAK_REFERENCE.search(code) and "application.yaml" not in code:
+                    fail("%s:%d references the Keycloak component: %s" % (relative, number, line.strip()))
+
+
 SAMPLES = os.path.join("apps", "acm-models-samples") + os.sep
 CATALOG_KINDS = ("MaaSSubscription", "MaaSAuthPolicy", "LLMInferenceService", "ExternalModel", "MaaSModelRef")
 
@@ -746,6 +869,8 @@ def main():
     deployment_values()
     admins()
     object_storage(inputs)
+    idp(inputs)
+    keycloak_separable()
     samples()
     move_guards()
     failed = sum(1 for _, ok in results if not ok)

@@ -1,0 +1,5 @@
+# Included by apps/keycloak-external-services/hub (see public-url-policy.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - public-url-policy.yaml

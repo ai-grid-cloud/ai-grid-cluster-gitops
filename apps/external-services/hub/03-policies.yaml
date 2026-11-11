@@ -1,38 +1,6 @@
-# Both read the external-services cluster's own Route and Secrets where they are applied, so
-# nothing about this cluster is copied through the hub.
-apiVersion: policy.open-cluster-management.io/v1
-kind: Policy
-metadata:
-  name: external-services-keycloak-public-url
-  namespace: external-services
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  remediationAction: enforce
-  disabled: false
-  policy-templates:
-    - objectDefinition:
-        apiVersion: policy.open-cluster-management.io/v1
-        kind: ConfigurationPolicy
-        metadata:
-          name: external-services-keycloak-public-url
-        spec:
-          remediationAction: enforce
-          severity: high
-          namespaceSelector:
-            include:
-              - maas-db
-          object-templates:
-            - complianceType: musthave
-              objectDefinition:
-                apiVersion: v1
-                kind: ConfigMap
-                metadata:
-                  name: keycloak-public-url
-                  namespace: maas-db
-                data:
-                  KEYCLOAK_PUBLIC_URL: '{{ printf "https://%s" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host }}'
----
+# Reads the external-services cluster's own Secrets where it is applied, so
+# nothing about this cluster is copied through the hub. Keycloak there, and
+# its public-URL Policy, are the separate component apps/keycloak-external-services.
 apiVersion: policy.open-cluster-management.io/v1
 kind: Policy
 metadata:

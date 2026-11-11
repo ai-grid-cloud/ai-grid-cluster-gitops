@@ -4,6 +4,10 @@ metadata:
   # Applied by hand on a dedicated hub whose MaaS state runs on a labelled site.
   # Neither root ApplicationSet generates it: both run that state on the hub
   # through the keycloak, limitador-redis, external-secrets and maas-db apps.
+  # The library's Keycloak on that site is a separate component,
+  # apps/keycloak-external-services. Both name this repository as
+  # @libraryRepoURL@ at @libraryRevision@: replace those when you apply them
+  # (README.md).
   name: external-services
   namespace: openshift-gitops
 spec:

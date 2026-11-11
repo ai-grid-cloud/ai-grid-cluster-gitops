@@ -36,6 +36,13 @@ creates no Application. A value must be non-empty and must not contain `"`,
 | `libraryRepoURL`, `libraryRevision` | this repository and the pinned commit; every self-reference |
 | `deploymentRepoURL`, `deploymentRevision` | the deployment repository, read for `values/` |
 | `catalogRepoURL`, `catalogRevision` | the repository the console's git writer commits models and subscriptions to, and its branch |
+| `idpIssuerURL`, `idpClientID` | the tenant OIDC issuer and its client (MaaS matches the token's `azp`) |
+| `idpClientSecretNamespace`, `idpClientSecretName`, `idpClientSecretKey` | the hub Secret holding that client's secret |
+| `idpCANamespace`, `idpCAName`, `idpCAKey` | the hub ConfigMap holding the CA that signs the issuer's certificate |
+
+The tenant Policy reads the `idpClientSecret*` Secret and the `idpCA*`
+ConfigMap through a ServiceAccount that may read only those two objects, by
+name (`apps/keycloak/README.md` has the IdP contract).
 
 Directories whose manifests take inputs (nested ApplicationSets, Policies) are
 kustomizations with an `inputs.yaml`. A bare `kustomize build` of one shows

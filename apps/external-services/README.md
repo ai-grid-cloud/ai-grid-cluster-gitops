@@ -7,10 +7,18 @@ ones the user owns in production. See
 
 ```sh
 oc label managedcluster site-a ai-grid/external-services=true
-oc apply -f apps/external-services/application.yaml
+for app in external-services keycloak-external-services; do
+  sed -e 's|@libraryRepoURL@|https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git|g' \
+      -e 's|@libraryRevision@|HEAD|g' "apps/$app/application.yaml" | oc apply -f -
+done
 ```
 
-No root ApplicationSet generates this app, so a hub that runs MaaS state itself
+The Applications name this repository as `@libraryRepoURL@` at
+`@libraryRevision@`, so replace both as you apply them: a fork uses its own URL
+and revision. Leave out `keycloak-external-services` if the site doesn't run the
+library's Keycloak.
+
+No root ApplicationSet generates these apps, so a hub that runs MaaS state itself
 carries no external-services Placement.
 
 The `external-services` ApplicationSet installs these on it, reusing each app's
@@ -20,13 +28,16 @@ manifests:
 |---|---|
 | External Secrets Operator | `apps/external-secrets/manifests` |
 | `maas-db` primary | `apps/maas-db/primary`, without its ServiceExport |
-| Keycloak | `apps/keycloak`, without the hub's public-URL Policy |
 | Limitador's Redis | `apps/limitador-redis/manifests`, without its ServiceExport |
 
-The hub Policies here give this cluster its Keycloak public URL and `maas-api`'s
-database connection, both read from this cluster's own Route and Secrets. The
-tenant Policy (`apps/rhoai/hub`) finds Keycloak on this cluster through its
-console-URL cluster claim.
+The hub Policy here gives this cluster `maas-api`'s database connection, read
+from this cluster's own Secrets.
+
+The library's Keycloak isn't part of this component. To run it on this cluster
+too, also select `apps/keycloak-external-services`: it installs `apps/keycloak`
+here, without the hub's public-URL Policy, and binds its own public-URL Policy
+to this component's Placement. Either way the tenant Policy (`apps/rhoai/hub`)
+reads the issuer from the `idpIssuerURL` input.
 
 The label selects this cluster through Argo CD's cluster Secret, which ACM never
 removes a label from, and the ApplicationSet preserves what it installed, so

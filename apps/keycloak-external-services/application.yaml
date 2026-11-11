@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The library's Keycloak on the cluster labelled ai-grid/external-services,
+  # for a deployment that selects apps/external-services and the library's
+  # Keycloak. Needs apps/external-services (its namespace, Placement and the
+  # database there). Leave it out with your own IdP (apps/keycloak/README.md).
+  name: keycloak-external-services
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
+    path: apps/keycloak-external-services/hub
+    # The library's own repository and revision for the ApplicationSets in
+    # this directory (its inputs.yaml), from the root's values.
+    kustomize:
+      patches:
+        - target:
+            kind: ConfigMap
+            name: library-inputs
+          patch: |-
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: library-inputs
+            data:
+              libraryRepoURL: '@libraryRepoURL@'
+              libraryRevision: '@libraryRevision@'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 20
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 30m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

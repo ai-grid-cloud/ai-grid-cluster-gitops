@@ -3,7 +3,7 @@ kind: Kustomization
 # Keycloak as the hub runs it, without its public-URL Policy: on the external-services cluster
 # that ConfigMap comes from apps/external-services/hub.
 resources:
-  - ../../keycloak
+  - ../../keycloak/overlays/default
 patches:
   - patch: |-
       $patch: delete

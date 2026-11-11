@@ -1,0 +1,50 @@
+# The library's Keycloak on the cluster labelled ai-grid/external-services,
+# beside the shared state apps/external-services installs there. The
+# Application keeps the name it had as an element of that component's
+# ApplicationSet.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: external-services-keycloak
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            apps.open-cluster-management.io/acm-cluster: "true"
+            ai-grid/external-services: "true"
+  template:
+    metadata:
+      name: 'external-services-keycloak-{{ .name | trunc 22 }}'
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: REQUIRED-libraryRepoURL
+        targetRevision: REQUIRED-libraryRevision
+        path: apps/keycloak-external-services/keycloak
+      destination:
+        server: '{{ .server }}'
+        namespace: maas-db
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          refresh: true
+          limit: 20
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 30m
+        syncOptions:
+          - ServerSideApply=true
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true

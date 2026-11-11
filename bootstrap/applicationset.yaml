@@ -37,6 +37,9 @@ spec:
           # ODF is generated separately once the hub's version is known.
           - path: apps/odf/application.yaml
             exclude: true
+          # The library's Keycloak on that labelled site, likewise.
+          - path: apps/keycloak-external-services/application.yaml
+            exclude: true
           # Sample models: acm-models syncs them (see the templatePatch).
           - path: apps/acm-models-samples/application.yaml
             exclude: true
@@ -53,6 +56,17 @@ spec:
           # The lab's catalog: the console commits models and subscriptions here.
           catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
           catalogRevision: main
+          # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+          # by a hub template on the cluster labelled ai-grid/external-services,
+          # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+          idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+          idpClientID: tenant-demo
+          idpClientSecretNamespace: maas-db
+          idpClientSecretName: keycloak-secrets
+          idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+          idpCANamespace: openshift-config-managed
+          idpCAName: default-ingress-cert
+          idpCAKey: ca-bundle.crt
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label: the operator channel must match the hub's OpenShift version.
     - matrix:
@@ -69,6 +83,17 @@ spec:
                 # The lab's catalog: the console commits models and subscriptions here.
                 catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
                 catalogRevision: main
+                # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+                # by a hub template on the cluster labelled ai-grid/external-services,
+                # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+                idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+                idpClientID: tenant-demo
+                idpClientSecretNamespace: maas-db
+                idpClientSecretName: keycloak-secrets
+                idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+                idpCANamespace: openshift-config-managed
+                idpCAName: default-ingress-cert
+                idpCAKey: ca-bundle.crt
           - clusters:
               selector:
                 matchLabels:
@@ -89,6 +114,17 @@ spec:
               # The lab's catalog: the console commits models and subscriptions here.
               catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
               catalogRevision: main
+              # The lab's tenant IdP: the library's Keycloak (apps/keycloak), found
+              # by a hub template on the cluster labelled ai-grid/external-services,
+              # else on the hub. bootstrap/lab/rhoai grants the lookups it makes.
+              idpIssuerURL: '{{hub $homes := (lookup "cluster.open-cluster-management.io/v1" "ManagedCluster" "" "" "ai-grid/external-services=true").items hub}}{{hub if $homes hub}}{{hub range (index $homes 0).status.clusterClaims hub}}{{hub if eq .name "consoleurl.cluster.open-cluster-management.io" hub}}{{hub printf "https://keycloak-maas-db.%s/realms/saas" (splitn "." 2 (replace "https://" "" .value))._1 hub}}{{hub end hub}}{{hub end hub}}{{hub else hub}}{{hub printf "https://%s/realms/saas" (index (lookup "route.openshift.io/v1" "Route" "maas-db" "keycloak").status.ingress 0).host hub}}{{hub end hub}}'
+              idpClientID: tenant-demo
+              idpClientSecretNamespace: maas-db
+              idpClientSecretName: keycloak-secrets
+              idpClientSecretKey: KEYCLOAK_CLIENT_SECRET
+              idpCANamespace: openshift-config-managed
+              idpCAName: default-ingress-cert
+              idpCAKey: ca-bundle.crt
             metadata:
               name: ai-grid-o11y
               namespace: openshift-gitops
@@ -133,7 +169,8 @@ spec:
         namespace: '{{.spec.destination.namespace}}'
   # acm-models also syncs the sample models (apps/acm-models-samples), and acm
   # the ODF object storage for observability (apps/object-storage/odf), so
-  # they keep their Application. Then every @<name>@ a component writes is
+  # they keep their Application. rhoai also syncs the RBAC for the lab issuer's
+  # lookups (bootstrap/lab/rhoai). Then every @<name>@ a component writes is
   # replaced from $inputs, JSON-escaped. This repository is also the
   # deployment repository: the lab's values are in values/.
   templatePatch: |
@@ -155,6 +192,11 @@ spec:
     {{- if eq .metadata.name "acm" }}
     {{- $storage := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/object-storage/odf/manifests" }}
     {{- $_ := set $spec "sources" (list $spec.source $storage) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
+    {{- if eq .metadata.name "rhoai" }}
+    {{- $lookups := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "bootstrap/lab/rhoai" }}
+    {{- $_ := set $spec "sources" (list $spec.source $lookups) }}
     {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision

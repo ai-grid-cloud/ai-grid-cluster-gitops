@@ -38,11 +38,6 @@ spec:
                   namespace: maas-db
                   exclude: 20-service-export.yaml
                   prune: "false"
-                - component: keycloak
-                  path: apps/external-services/keycloak
-                  namespace: maas-db
-                  exclude: ""
-                  prune: "true"
                 - component: limitador-redis
                   path: apps/limitador-redis/manifests
                   namespace: limitador-redis

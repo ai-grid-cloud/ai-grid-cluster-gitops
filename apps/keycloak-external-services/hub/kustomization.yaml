@@ -1,0 +1,30 @@
+# A kustomization so apps/keycloak-external-services/application.yaml can hand
+# the ApplicationSet the library's repository and revision (inputs.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - inputs.yaml
+  - ../../keycloak/external-services-policy
+  - 01-placement-binding.yaml
+  - 02-applicationset.yaml
+replacements:
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRepoURL
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: external-services-keycloak
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: external-services-keycloak
+        fieldPaths:
+          - spec.template.spec.source.targetRevision
