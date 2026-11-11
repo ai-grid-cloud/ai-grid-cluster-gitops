@@ -9,9 +9,24 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
-    targetRevision: HEAD
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
     path: apps/external-services/hub
+    # The library's own repository and revision for the ApplicationSets in
+    # this directory (its inputs.yaml), from the root's values.
+    kustomize:
+      patches:
+        - target:
+            kind: ConfigMap
+            name: library-inputs
+          patch: |-
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: library-inputs
+            data:
+              libraryRepoURL: '@libraryRepoURL@'
+              libraryRevision: '@libraryRevision@'
   # maas-db, created untracked, holds the rhoai app's tenant RBAC Role; this
   # app's own objects name the external-services namespace.
   destination:

@@ -35,6 +35,14 @@ spec:
           - path: apps/odf/application.yaml
             exclude: true
           - path: cluster-config/application.yaml
+        # This repository is both the library and this root's deployment:
+        # components write it as @libraryRepoURL@ at @libraryRevision@, and the
+        # templatePatch fills those from these two values.
+        # scripts/set-tenant-repo.sh rewrites them with the generator's
+        # repoURL and revision above.
+        values:
+          repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          targetRevision: HEAD
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label: the operator channel must match the hub's OpenShift version.
     - matrix:
@@ -44,6 +52,10 @@ spec:
               revision: HEAD
               files:
                 - path: apps/odf/application.yaml
+              # As in the first generator: set-tenant-repo.sh rewrites these.
+              values:
+                repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+                targetRevision: HEAD
           - clusters:
               selector:
                 matchLabels:
@@ -57,7 +69,11 @@ spec:
     # layers environment-specific configuration over the chart's defaults.
     - list:
         elements:
-          - metadata:
+          # values: as in the first generator, for the templatePatch.
+          - values:
+              repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+              targetRevision: HEAD
+            metadata:
               name: ai-grid-o11y
               namespace: openshift-gitops
             spec:
@@ -99,6 +115,7 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
+  # Every @<name>@ a component writes is replaced from $inputs, JSON-escaped.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "odf" }}
@@ -108,4 +125,9 @@ spec:
     {{- end }}
     {{- $_ := set $spec.source.helm "parameters" $params }}
     {{- end }}
-    spec: {{ $spec | toJson }}
+    {{- $inputs := dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision }}
+    {{- $json := toJson $spec }}
+    {{- range $name, $value := $inputs }}
+    {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}
+    {{- end }}
+    spec: {{ $json }}
