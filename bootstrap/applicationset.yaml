@@ -1,3 +1,6 @@
+# Upstream's lab root: it reads every component from this repository and sets
+# every input to the lab's value itself. A hub installed from a deployment
+# repository uses bootstrap/hub instead (bootstrap/hub/README.md).
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:

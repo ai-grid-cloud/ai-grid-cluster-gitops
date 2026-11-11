@@ -1,3 +1,6 @@
+# Upstream's lab root: it reads every component from this repository and sets
+# every input to the lab's value itself. A hub installed from a deployment
+# repository uses bootstrap/hub instead (bootstrap/hub/README.md).
 # Root ApplicationSet for a hub that runs no Grid or RHOAI workloads.
 # Install it with BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh. It generates an
 # Application (dedicated-hub-root) that syncs bootstrap/dedicated-hub, so after

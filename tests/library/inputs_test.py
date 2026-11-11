@@ -21,10 +21,24 @@ Checks, each reported as ok or FAIL:
                    it reads builds with the Application's own patches
   bare-inputs      each directory with an inputs.yaml builds without patches and
                    shows its inputs as REQUIRED-<name>
+  root             bootstrap/hub/applicationset.yaml lists every component and
+                   marks its repository, revision and every input REQUIRED-
+  root-render      each listed component through the root's templatePatch,
+                   rendered as the ApplicationSet controller does
+                   (tests/library/templatepatch, needs Go), passes the
+                   components checks; an input left out or left REQUIRED- fails
+                   with "missing input: <name>", an empty one or one with
+                   ", ', \\ or @ with "invalid input: <name>"
+  lab-roots        each Application upstream's lab roots generate, through
+                   their own templatePatch, resolves every input to the lab's
+                   value and passes the components checks (needs Go)
 
 Run: bash tests/library/inputs-test.sh   (needs python3 with PyYAML, kustomize)
 """
 
+import fnmatch
+import glob
+import json
 import os
 import re
 import shutil
@@ -215,12 +229,24 @@ def kustomize_build(directory, patches=None):
         shutil.rmtree(work, ignore_errors=True)
 
 
-def read_directory(directory, recurse):
+def glob_match(name, pattern):
+    """Argo CD's directory include and exclude: a glob, or {a,b} of globs."""
+    if pattern.startswith("{") and pattern.endswith("}"):
+        return any(fnmatch.fnmatchcase(name, item) for item in pattern[1:-1].split(","))
+    return fnmatch.fnmatchcase(name, pattern)
+
+
+def read_directory(directory, recurse, include=None, exclude=None):
     texts = []
     for base, subdirs, files in os.walk(directory):
         if not recurse:
             subdirs[:] = []
         for name in sorted(files):
+            relative = os.path.relpath(os.path.join(base, name), directory)
+            if include and not glob_match(relative, include):
+                continue
+            if exclude and glob_match(relative, exclude):
+                continue
             if name.endswith((".yaml", ".yml", ".json")):
                 with open(os.path.join(base, name)) as handle:
                     texts.append(handle.read())
@@ -244,38 +270,211 @@ def component_files():
     return paths
 
 
+def check_application(where, app, inputs):
+    """One Application's sources, and what each library source renders."""
+    scan_text(where, yaml.safe_dump(app))
+    for index, source in enumerate(sources_of(app.get("spec", {}))):
+        source_where = "%s source %d" % (where, index)
+        kind = check_repo(source_where, source.get("repoURL", ""), source.get("targetRevision"), inputs)
+        if kind != "library" or not source.get("path"):
+            continue
+        directory = os.path.join(ROOT, source["path"])
+        if not os.path.isdir(directory):
+            fail("%s: library path %s does not exist" % (source_where, source["path"]))
+            continue
+        if os.path.isfile(os.path.join(directory, "Chart.yaml")):
+            continue
+        kustomize = source.get("kustomize")
+        if os.path.isfile(os.path.join(directory, "kustomization.yaml")):
+            if "directory" in source:
+                fail("%s: a kustomize source can't use directory include or exclude" % source_where)
+            output, error = kustomize_build(directory, (kustomize or {}).get("patches"))
+            if error:
+                fail("%s: kustomize build %s failed: %s" % (source_where, source["path"], error.splitlines()[-1]))
+                continue
+        else:
+            if kustomize:
+                fail("%s: kustomize options on %s, which has no kustomization.yaml" % (source_where, source["path"]))
+            options = source.get("directory") or {}
+            output = read_directory(directory, options.get("recurse", False),
+                                    options.get("include"), options.get("exclude"))
+        # Scan the objects, not the files' comments.
+        output = yaml.safe_dump_all([doc for doc in yaml.safe_load_all(output) if doc])
+        scan_text("%s (%s)" % (source_where, source["path"]), output)
+        check_nested("%s (%s)" % (source_where, source["path"]), list(yaml.safe_load_all(output)), inputs)
+
+
 @check("components")
 def components(inputs):
     for path in component_files():
         with open(os.path.join(ROOT, path)) as handle:
             text = substitute(handle.read(), inputs)
-        scan_text(path, text)
-        app = yaml.safe_load(text)
-        for index, source in enumerate(sources_of(app.get("spec", {}))):
-            where = "%s source %d" % (path, index)
-            kind = check_repo(where, source.get("repoURL", ""), source.get("targetRevision"), inputs)
-            if kind != "library" or not source.get("path"):
+        check_application(path, yaml.safe_load(text), inputs)
+
+
+ROOT_APPSET = os.path.join("bootstrap", "hub", "applicationset.yaml")
+ODF = os.path.join("apps", "odf", "application.yaml")
+
+
+def load(path):
+    with open(os.path.join(ROOT, path)) as handle:
+        return yaml.safe_load(handle)
+
+
+def load_root():
+    with open(os.path.join(ROOT, ROOT_APPSET)) as handle:
+        return yaml.safe_load(handle)
+
+
+def check_generator(where, git, inputs):
+    if git.get("repoURL") != "REQUIRED-libraryRepoURL" or git.get("revision") != "REQUIRED-libraryRevision":
+        fail("%s: repoURL and revision must be REQUIRED-libraryRepoURL and REQUIRED-libraryRevision" % where)
+    values = git.get("values") or {}
+    if set(values) != set(inputs):
+        fail("%s: values keys %s, not the inputs %s" % (where, sorted(values), sorted(inputs)))
+    for key, value in values.items():
+        if value != "REQUIRED-" + key:
+            fail("%s: values.%s is %r, not REQUIRED-%s" % (where, key, value, key))
+
+
+@check("root")
+def root(inputs):
+    if not os.path.isfile(os.path.join(ROOT, ROOT_APPSET)):
+        fail("%s is missing" % ROOT_APPSET)
+        return
+    with open(os.path.join(ROOT, "bootstrap", "hub", "kustomization.yaml")) as handle:
+        if "applicationset.yaml" not in (yaml.safe_load(handle).get("resources") or []):
+            fail("bootstrap/hub/kustomization.yaml does not list applicationset.yaml")
+    generators = load_root()["spec"]["generators"]
+    first = generators[0]["git"]
+    check_generator("generator 0", first, inputs)
+    listed = {item["path"] for item in first.get("files", [])}
+    expected = set(component_files()) - {ODF}
+    if listed != expected:
+        fail("generator 0 files: missing %s, extra %s" % (sorted(expected - listed), sorted(listed - expected)))
+    odf = generators[1]["matrix"]["generators"][0]["git"]
+    check_generator("generator 1 (ODF)", odf, inputs)
+    if [item["path"] for item in odf.get("files", [])] != [ODF]:
+        fail("generator 1 must list only %s" % ODF)
+
+
+def template_patch_renderer():
+    """Builds tests/library/templatepatch, which renders a templatePatch as the
+    ApplicationSet controller does. None if Go isn't installed."""
+    if not shutil.which("go"):
+        return None
+    out = os.path.join(tempfile.mkdtemp(prefix="templatepatch-"), "templatepatch")
+    source = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templatepatch")
+    env = dict(os.environ, GOFLAGS="-mod=mod")
+    result = subprocess.run(["go", "build", "-o", out, "."], cwd=source, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        fail("go build tests/library/templatepatch: %s" % result.stderr.strip())
+        return None
+    return out
+
+
+def render_patch(renderer, appset, params):
+    request = {"templatePatch": appset["spec"]["templatePatch"],
+               "options": appset["spec"].get("goTemplateOptions", []), "params": params}
+    result = subprocess.run([renderer], input=json.dumps(request), capture_output=True, text=True)
+    if result.returncode != 0:
+        return None, result.stderr.strip()
+    return yaml.safe_load(result.stdout), None
+
+
+def root_params(path, values):
+    with open(os.path.join(ROOT, path)) as handle:
+        params = yaml.safe_load(handle)
+    if path == ODF:
+        # The matrix's clusters generator adds the hub's labels.
+        params["metadata"]["labels"] = {"openshiftVersion-major-minor": "4.21"}
+    params["path"] = {"path": os.path.dirname(path), "filename": os.path.basename(path)}
+    params["values"] = dict(values)
+    return params
+
+
+@check("root-render")
+def root_render(inputs):
+    if not os.path.isfile(os.path.join(ROOT, ROOT_APPSET)):
+        fail("%s is missing" % ROOT_APPSET)
+        return
+    renderer = template_patch_renderer()
+    if renderer is None:
+        if not failures or "go build" not in failures[-1]:
+            print("          (skipped: go is not installed)")
+        return
+    appset = load_root()
+    first = appset["spec"]["generators"][0]["git"]
+    paths = [item["path"] for item in first["files"]] + [ODF]
+    for path in paths:
+        patch, error = render_patch(renderer, appset, root_params(path, inputs))
+        if error:
+            fail("%s: templatePatch failed: %s" % (path, error))
+            continue
+        check_application("%s through the root" % path, {"spec": patch["spec"]}, inputs)
+    # A deployment that leaves out an input, or leaves its REQUIRED- default,
+    # gets an error naming it and no Application.
+    for name, values in (("left out", {k: v for k, v in inputs.items() if k != "libraryRevision"}),
+                         ("not set", dict(inputs, libraryRevision="REQUIRED-libraryRevision"))):
+        _, error = render_patch(renderer, appset, root_params("apps/acm/application.yaml", values))
+        if not error or "missing input: libraryRevision" not in error:
+            fail("an input %s must fail with 'missing input: libraryRevision', got %r" % (name, error))
+    # A value that's empty, or that would break the JSON or YAML it's replaced
+    # into, fails naming the input, for every component.
+    for label, value in (("empty", ""), ("a double quote", 'a"b'), ("a single quote", "a'b"),
+                         ("a backslash", "a\\b"), ("an at sign", "a@b")):
+        _, error = render_patch(renderer, appset,
+                                root_params("apps/acm/application.yaml", dict(inputs, libraryRevision=value)))
+        if not error or "invalid input: libraryRevision" not in error:
+            fail("an input with %s must fail with 'invalid input: libraryRevision', got %r" % (label, error))
+
+
+LAB_ROOTS = (os.path.join("bootstrap", "applicationset.yaml"),
+             os.path.join("bootstrap", "dedicated-hub", "applicationset.yaml"))
+
+
+def lab_files(git):
+    """The component files a lab root's git files generator selects."""
+    selected = set()
+    for item in git.get("files", []):
+        matches = {rel(p) for p in glob.glob(os.path.join(ROOT, item["path"]))}
+        if item.get("exclude"):
+            selected -= matches
+        else:
+            selected |= matches
+    return sorted(selected)
+
+
+@check("lab-roots")
+def lab_roots():
+    """Upstream's lab roots (and a fork's, after scripts/set-tenant-repo.sh)
+    set every input themselves: repoURL and targetRevision in each generator's
+    values are this repository, which is also their deployment repository."""
+    renderer = template_patch_renderer()
+    if renderer is None:
+        if not failures or "go build" not in failures[-1]:
+            print("          (skipped: go is not installed)")
+        return
+    for root_path in LAB_ROOTS:
+        appset = load(root_path)
+        for index, generator in enumerate(appset["spec"]["generators"]):
+            git = generator.get("git") or generator["matrix"]["generators"][0]["git"]
+            values = git.get("values") or {}
+            if values.get("repoURL") != git.get("repoURL") or values.get("targetRevision") != git.get("revision"):
+                fail("%s generator %d: values repoURL and targetRevision must equal the generator's" % (root_path, index))
                 continue
-            directory = os.path.join(ROOT, source["path"])
-            if not os.path.isdir(directory):
-                fail("%s: library path %s does not exist" % (where, source["path"]))
-                continue
-            if os.path.isfile(os.path.join(directory, "Chart.yaml")):
-                continue
-            kustomize = source.get("kustomize")
-            if os.path.isfile(os.path.join(directory, "kustomization.yaml")):
-                if "directory" in source:
-                    fail("%s: a kustomize source can't use directory include or exclude" % where)
-                output, error = kustomize_build(directory, (kustomize or {}).get("patches"))
+            lab = {key: value for key, value in values.items() if key not in ("repoURL", "targetRevision")}
+            for kind in ("library", "deployment"):
+                lab[kind + "RepoURL"], lab[kind + "Revision"] = values["repoURL"], values["targetRevision"]
+            for path in lab_files(git):
+                params = root_params(path, values)
+                if "matrix" in generator:
+                    params["metadata"]["labels"] = {"openshiftVersion-major-minor": "4.21"}
+                patch, error = render_patch(renderer, appset, params)
                 if error:
-                    fail("%s: kustomize build %s failed: %s" % (where, source["path"], error.splitlines()[-1]))
+                    fail("%s: %s: templatePatch failed: %s" % (root_path, path, error))
                     continue
-            else:
-                if kustomize:
-                    fail("%s: kustomize options on %s, which has no kustomization.yaml" % (where, source["path"]))
-                output = read_directory(directory, (source.get("directory") or {}).get("recurse", False))
-            scan_text("%s (%s)" % (where, source["path"]), output)
-            check_nested("%s (%s)" % (where, source["path"]), list(yaml.safe_load_all(output)), inputs)
+                check_application("%s through %s" % (path, root_path), {"spec": patch["spec"]}, lab)
 
 
 @check("bare-inputs")
@@ -300,6 +499,9 @@ def main():
     static_revision()
     components(inputs)
     bare_inputs()
+    root(inputs)
+    root_render(inputs)
+    lab_roots()
     failed = sum(1 for _, ok in results if not ok)
     print("inputs tests: %d ok, %d failed" % (len(results) - failed, failed))
     return 1 if failed else 0
