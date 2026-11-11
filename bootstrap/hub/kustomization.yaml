@@ -1,0 +1,6 @@
+# The hub's root ApplicationSet, for a deployment repository to take as a
+# remote base at a pinned commit and patch (README.md).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - applicationset.yaml

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The hub's observability chart (charts/ai-grid-o11y), as a component a
+  # deployment's root can select. Upstream's lab roots generate the same
+  # Application from their own list generator instead of a file, so this one
+  # sits outside apps/*, which their git generator reads.
+  name: ai-grid-o11y
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
+    path: charts/ai-grid-o11y
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management-observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      refresh: true
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
