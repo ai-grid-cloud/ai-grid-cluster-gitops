@@ -56,6 +56,9 @@ spec:
         values:
           repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
+          # The lab's catalog: the console commits models and subscriptions here.
+          catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
+          catalogRevision: main
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -69,6 +72,8 @@ spec:
               values:
                 repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
                 targetRevision: HEAD
+                catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
+                catalogRevision: main
           - clusters:
               selector:
                 matchLabels:
@@ -88,9 +93,10 @@ spec:
   # ODF provides the object storage ACM observability needs, so acm syncs
   # the full apps/acm/manifests. A new grid generates its CA, and grid-bootstrap
   # binds global in place of the rhoai app's binding. acm-models brings the
-  # sample model and the console's catalog (its ApplicationSets and
-  # AppProjects), not its GitOpsCluster: argo-registration registers clusters
-  # here.
+  # console's catalog (its ApplicationSets and AppProjects), not its
+  # GitOpsCluster: argo-registration registers clusters here. It also syncs
+  # the opt-125m sample model from apps/acm-models-samples, which used to share
+  # its directory, so the sample keeps its Application.
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
   # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
@@ -115,12 +121,21 @@ spec:
     {{- if eq .metadata.name "acm-models" }}
     {{- $deletes := list
           "$patch: delete\napiVersion: apps.open-cluster-management.io/v1beta1\nkind: GitOpsCluster\nmetadata:\n  name: acm-models\n  namespace: openshift-gitops\n"
-          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n"
-          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n"
-          "$patch: delete\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n" }}
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n" }}
     {{- $patches := $spec.source.kustomize.patches }}
     {{- range $deletes }}{{ $patches = append $patches (dict "patch" .) }}{{ end }}
     {{- $_ := set $spec.source.kustomize "patches" $patches }}
+    {{- $samples := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/acm-models-samples/hub"
+          "kustomize" (dict "patches" (list (dict "target" (dict "kind" "ConfigMap" "name" "library-inputs")
+            "patch" "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: library-inputs\ndata:\n  libraryRepoURL: '@libraryRepoURL@'\n  libraryRevision: '@libraryRevision@'\n"))) }}
+    {{- $deletes = list
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n" }}
+    {{- $patches = $samples.kustomize.patches }}
+    {{- range $deletes }}{{ $patches = append $patches (dict "patch" .) }}{{ end }}
+    {{- $_ := set $samples.kustomize "patches" $patches }}
+    {{- $_ := set $spec "sources" (list $spec.source $samples) }}
+    {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- if eq .metadata.name "limitador-redis" }}
     {{- $_ := set $spec.source "directory" (dict "exclude" "{04-limitador-redis-secret.yaml,20-limitador-storage.yaml}") }}
@@ -128,7 +143,7 @@ spec:
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    {{- $inputs := dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision }}
+    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
     {{- $json := toJson $spec }}
     {{- range $name, $value := $inputs }}
     {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}

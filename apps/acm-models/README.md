@@ -1,13 +1,17 @@
 # Internal model deployments
 
-This app owns the internal `LLMInferenceService` deployment and its
-model-facing MaaS resources. Supporting namespaces, NetworkPolicies, and the
-Grid `ExternalProvider` are owned by the RHOAI apps.
+This app delivers the provider console's catalog: the models and
+subscriptions the console commits to the catalog repository (below).
+Supporting namespaces, NetworkPolicies, and the Grid `ExternalProvider` are
+owned by the RHOAI apps.
 
-The sample model goes to AI Grid sites where models run (Placement
-`ai-grid-inference`), and its MaaS objects to sites that run MaaS
-(`ai-grid-ingress`); both Placements are `apps/ai-grid-spokes`'. An unlabelled
-hub gets neither.
+The library's sample models, their MaaS objects and upstream lab's sample
+subscriptions are a separate component, `apps/acm-models-samples`, which a
+deployment selects only for a demo. Its sample model goes to AI Grid sites
+where models run (Placement `ai-grid-inference`), and its MaaS objects to
+sites that run MaaS (`ai-grid-ingress`); both Placements are
+`apps/ai-grid-spokes`'. An unlabelled hub gets neither. The rest of this
+README's model notes (scheduler metrics, certificates) describe those samples.
 
 ## Scheduler metrics
 
@@ -38,10 +42,10 @@ Grid operator is successfully scraping provider metrics.
 
 The provider console
 ([ai-grid-cloud/ai-grid-provider-console](https://github.com/ai-grid-cloud/ai-grid-provider-console))
-saves models and subscriptions as commits to a catalog repository,
-[ai-grid-cloud/ai-grid-shared-catalog](https://github.com/ai-grid-cloud/ai-grid-shared-catalog). That URL is the only
-value another environment changes: it appears in the two AppProjects and the three ApplicationSets in
-`hub/catalog-*`, and in the console's `apps/console/application.yaml`.
+saves models and subscriptions as commits to a catalog repository. The deployment names it with the inputs
+`catalogRepoURL` and `catalogRevision` (a branch, since the console pushes to it). `hub/inputs.yaml` carries them into
+the two AppProjects and the three ApplicationSets in `hub/catalog-*`; `apps/console/application.yaml` hands them to the
+console's backend.
 
 The `catalog-*` files in `hub/` deliver it to AI Grid spokes by role (Placements in `apps/ai-grid-spokes`):
 

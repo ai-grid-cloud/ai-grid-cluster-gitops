@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Sample models (facebook-opt-125m on CPU, smollm2 in us-west-2) delivered
+  # to AI Grid sites by role, their MaaS ExternalModels and MaaSModelRefs, and
+  # upstream lab's sample subscriptions and auth policies for its own
+  # organizations. Not for a production deployment: models and subscriptions
+  # belong in the catalog repository, which the console writes. Select it for
+  # a demo; the lab selects it.
+  name: acm-models-samples
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: '@libraryRepoURL@'
+    targetRevision: '@libraryRevision@'
+    path: apps/acm-models-samples/hub
+    # The library's own repository and revision for the ApplicationSets in
+    # this directory (its inputs.yaml), from the root's values.
+    kustomize:
+      patches:
+        - target:
+            kind: ConfigMap
+            name: library-inputs
+          patch: |-
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: library-inputs
+            data:
+              libraryRepoURL: '@libraryRepoURL@'
+              libraryRevision: '@libraryRevision@'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true

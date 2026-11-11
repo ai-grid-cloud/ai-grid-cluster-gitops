@@ -1,22 +1,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: acm-models-maas
+  # Generates one Application for every AI Grid site where models run.
+  name: acm-models-facebook-opt-125m
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Moved here from apps/acm-models: on an existing install that Application's prune
+    # must not delete this before this one adopts it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
-    # Sites that run MaaS: role ingress or combined (apps/ai-grid-spokes).
+    # Sites where models run: role inference or combined (apps/ai-grid-spokes).
     - matrix:
         generators:
           - clusterDecisionResource:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: ai-grid-ingress
+                  cluster.open-cluster-management.io/placement: ai-grid-inference
               requeueAfterSeconds: 60
           - clusters:
               # The cluster's Argo CD Secret, for its labels: a hub that is also a site syncs
@@ -30,16 +34,14 @@ spec:
     preserveResourcesOnDeletion: false
   template:
     metadata:
-      name: 'acm-models-maas-{{.name}}'
+      name: 'acm-models-facebook-opt-125m-{{.name}}'
       namespace: openshift-gitops
     spec:
       project: default
       source:
         repoURL: REQUIRED-libraryRepoURL
         targetRevision: REQUIRED-libraryRevision
-        path: apps/acm-models/maas
-        directory:
-          recurse: true
+        path: apps/acm-models-samples/facebook-opt-125m
       destination:
         server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: models-as-a-service

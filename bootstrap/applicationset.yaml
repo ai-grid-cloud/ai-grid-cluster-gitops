@@ -33,6 +33,9 @@ spec:
             exclude: true
           - path: apps/external-services/application.yaml
             exclude: true
+          # Sample models: acm-models syncs them (see the templatePatch).
+          - path: apps/acm-models-samples/application.yaml
+            exclude: true
           - path: cluster-config/application.yaml
         # This repository is both the library and this root's deployment:
         # components write it as @libraryRepoURL@ at @libraryRevision@, and the
@@ -42,6 +45,9 @@ spec:
         values:
           repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
           targetRevision: HEAD
+          # The lab's catalog: the console commits models and subscriptions here.
+          catalogRepoURL: https://github.com/ai-grid-cloud/ai-grid-shared-catalog.git
+          catalogRevision: main
   template:
     metadata:
       name: '{{.metadata.name}}'
@@ -51,10 +57,20 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
-  # Every @<name>@ a component writes is replaced from $inputs, JSON-escaped.
+  # acm-models also syncs the sample models (apps/acm-models-samples), which
+  # used to share its directory, so they keep their Application. Then every
+  # @<name>@ a component writes is replaced from $inputs, JSON-escaped.
   templatePatch: |
-    {{- $inputs := dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision }}
-    {{- $json := toJson .spec }}
+    {{- $spec := .spec }}
+    {{- if eq .metadata.name "acm-models" }}
+    {{- $samples := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/acm-models-samples/hub"
+          "kustomize" (dict "patches" (list (dict "target" (dict "kind" "ConfigMap" "name" "library-inputs")
+            "patch" "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: library-inputs\ndata:\n  libraryRepoURL: '@libraryRepoURL@'\n  libraryRevision: '@libraryRevision@'\n"))) }}
+    {{- $_ := set $spec "sources" (list $spec.source $samples) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
+    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
+    {{- $json := toJson $spec }}
     {{- range $name, $value := $inputs }}
     {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}
     {{- end }}

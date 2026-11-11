@@ -1,23 +1,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # Generates one Application for every AI Grid site where models run.
-  name: acm-models-facebook-opt-125m
+  # Generates one Application for every cluster selected by the
+  # acm-models-smollm2-135m-instruct Placement.
+  name: acm-models-smollm2-135m-instruct
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Moved here from apps/acm-models: on an existing install that Application's prune
+    # must not delete this before this one adopts it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
-    # Sites where models run: role inference or combined (apps/ai-grid-spokes).
     - matrix:
         generators:
           - clusterDecisionResource:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: ai-grid-inference
+                  cluster.open-cluster-management.io/placement: acm-models-smollm2-135m-instruct
               requeueAfterSeconds: 60
           - clusters:
               # The cluster's Argo CD Secret, for its labels: a hub that is also a site syncs
@@ -31,14 +34,14 @@ spec:
     preserveResourcesOnDeletion: false
   template:
     metadata:
-      name: 'acm-models-facebook-opt-125m-{{.name}}'
+      name: 'acm-models-smollm2-135m-instruct-{{.name}}'
       namespace: openshift-gitops
     spec:
       project: default
       source:
         repoURL: REQUIRED-libraryRepoURL
         targetRevision: REQUIRED-libraryRevision
-        path: apps/acm-models/facebook-opt-125m
+        path: apps/acm-models-samples/smollm2-135m-instruct
       destination:
         server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: models-as-a-service

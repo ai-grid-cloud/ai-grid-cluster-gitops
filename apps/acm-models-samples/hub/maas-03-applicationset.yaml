@@ -1,23 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  # Generates one Application for every cluster selected by the
-  # acm-models-smollm2-135m-instruct Placement.
-  name: acm-models-smollm2-135m-instruct
+  name: acm-models-maas
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Moved here from apps/acm-models: on an existing install that Application's prune
+    # must not delete this before this one adopts it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
+    # Sites that run MaaS: role ingress or combined (apps/ai-grid-spokes).
     - matrix:
         generators:
           - clusterDecisionResource:
               configMapRef: acm-placement
               labelSelector:
                 matchLabels:
-                  cluster.open-cluster-management.io/placement: acm-models-smollm2-135m-instruct
+                  cluster.open-cluster-management.io/placement: ai-grid-ingress
               requeueAfterSeconds: 60
           - clusters:
               # The cluster's Argo CD Secret, for its labels: a hub that is also a site syncs
@@ -31,14 +33,16 @@ spec:
     preserveResourcesOnDeletion: false
   template:
     metadata:
-      name: 'acm-models-smollm2-135m-instruct-{{.name}}'
+      name: 'acm-models-maas-{{.name}}'
       namespace: openshift-gitops
     spec:
       project: default
       source:
         repoURL: REQUIRED-libraryRepoURL
         targetRevision: REQUIRED-libraryRevision
-        path: apps/acm-models/smollm2-135m-instruct
+        path: apps/acm-models-samples/maas
+        directory:
+          recurse: true
       destination:
         server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: models-as-a-service

@@ -31,6 +31,7 @@ spec:
         files:
           - path: apps/acm/application.yaml
           - path: apps/acm-models/application.yaml
+          - path: apps/acm-models-samples/application.yaml
           - path: apps/ai-grid-o11y/application.yaml
           - path: apps/ai-grid-policies/application.yaml
           - path: apps/ai-grid-spokes/application.yaml
@@ -55,6 +56,8 @@ spec:
         values:
           libraryRepoURL: REQUIRED-libraryRepoURL
           libraryRevision: REQUIRED-libraryRevision
+          catalogRepoURL: REQUIRED-catalogRepoURL
+          catalogRevision: REQUIRED-catalogRevision
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -67,6 +70,8 @@ spec:
               values:
                 libraryRepoURL: REQUIRED-libraryRepoURL
                 libraryRevision: REQUIRED-libraryRevision
+                catalogRepoURL: REQUIRED-catalogRepoURL
+                catalogRevision: REQUIRED-catalogRevision
           - clusters:
               selector:
                 matchLabels:
@@ -88,9 +93,9 @@ spec:
   #   the rhoai app's binding.
   # - odf: the operator channel follows the hub's OpenShift minor version; a hub
   #   labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
-  # - acm-models: the sample model and the console's catalog, not the
-  #   GitOpsCluster (argo-registration registers clusters here) or the smollm2
-  #   sample.
+  # - acm-models: the console's catalog, not the GitOpsCluster
+  #   (argo-registration registers clusters here).
+  # - acm-models-samples (a demo's choice): the opt-125m sample, not smollm2.
   # - limitador-redis: Limitador runs on the sites, so no storage config here.
   # - rhoai: grid-bootstrap owns the global binding.
   # Then every @<name>@ is replaced from the generator's values. An input the
@@ -114,7 +119,13 @@ spec:
     {{- if eq .metadata.name "acm-models" }}
     {{- $deletes := list
           "$patch: delete\napiVersion: apps.open-cluster-management.io/v1beta1\nkind: GitOpsCluster\nmetadata:\n  name: acm-models\n  namespace: openshift-gitops\n"
-          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n" }}
+    {{- $patches := $spec.source.kustomize.patches }}
+    {{- range $deletes }}{{ $patches = append $patches (dict "patch" .) }}{{ end }}
+    {{- $_ := set $spec.source.kustomize "patches" $patches }}
+    {{- end }}
+    {{- if eq .metadata.name "acm-models-samples" }}
+    {{- $deletes := list
           "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n"
           "$patch: delete\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n" }}
     {{- $patches := $spec.source.kustomize.patches }}
