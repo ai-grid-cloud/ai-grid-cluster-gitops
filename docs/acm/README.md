@@ -1,5 +1,9 @@
 # Getting started
 
+This guide runs a fork of this repository as its own hub. To install from a deployment repository that pins
+this library instead, see the [component reference](../install/README.md) and the deployment template's
+[install guide](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/README.md).
+
 An AI Grid on ACM takes three steps: a hub, then clusters, then models.
 
 ## Dependencies
