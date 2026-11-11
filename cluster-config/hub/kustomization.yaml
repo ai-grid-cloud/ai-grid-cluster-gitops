@@ -28,3 +28,23 @@ replacements:
         fieldPaths:
           - spec.template.spec.sources.[path=cluster-config/chart].targetRevision
           - spec.template.spec.sources.[ref=values].targetRevision
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.deploymentRepoURL
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: cluster-config
+        fieldPaths:
+          - spec.template.spec.sources.[ref=deployment].repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.deploymentRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: cluster-config
+        fieldPaths:
+          - spec.template.spec.sources.[ref=deployment].targetRevision

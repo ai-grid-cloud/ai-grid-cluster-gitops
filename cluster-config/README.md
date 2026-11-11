@@ -14,8 +14,8 @@ Two owners, two groups:
   default RBAC policy.
 - The `ai-grid-admins` Group is Git-owned. Its members are the
   `cluster_admins` list (per deployment: [`values.yaml`](values.yaml) leaves
-  it empty, a deployment lists its users in
-  [`cluster-admins.yaml`](cluster-admins.yaml)), it receives cluster-admin
+  it empty, and a deployment lists its users in its own repository's
+  `values/cluster-admins.yaml`, the `deploymentRepoURL` input), it receives cluster-admin
   through the Git-owned `cluster-admin-ai-grid-admins` ClusterRoleBinding,
   and Argo CD admin through `spec.rbac.policy.csv` in the ArgoCD CR
   (`apps/gitops-config/manifests/argocd.yaml`).
@@ -35,6 +35,12 @@ Editing `cluster_admins` edits Group membership only; the binding is
   because it is no longer Git-owned, a future removal of `ai-grid-admins`
   would require manual deletion of the Group and its binding.
 
+The deployment's `values/cluster-admins.yaml` is required: without it the hub's
+`cluster-config` Application fails to sync, instead of rendering an empty
+Group. A deployment that wants none ships `cluster_admins: []`. Upstream's lab
+roots read this repository's own
+[`values/cluster-admins.yaml`](../values/cluster-admins.yaml).
+
 ## Submariner gateway nodes
 
 The `submariner-gateway-nodes` policy is distributed to every cluster in the
@@ -53,7 +59,7 @@ instead of node ports.
 
 ### Adding or removing an admin
 
-Edit `cluster-admins.yaml` and commit. The hub's generated Application syncs
+Edit the deployment repository's `values/cluster-admins.yaml` and commit. The hub's generated Application syncs
 automatically (prune and self-heal are enabled):
 
 - Adding a username to `cluster_admins` adds it to the `ai-grid-admins` Group
@@ -101,8 +107,8 @@ Placement, or PlacementBinding resources.
 Local:
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
+helm lint cluster-config/chart -f cluster-config/values.yaml -f <deployment>/values/cluster-admins.yaml
+helm template cluster-config/chart -f cluster-config/values.yaml -f <deployment>/values/cluster-admins.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml \
   --set hubResources.enabled=true
 ```

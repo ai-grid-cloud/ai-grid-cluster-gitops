@@ -29,8 +29,8 @@ compliance, or generation state.
 ## Build, Validation, and Development Commands
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
+helm lint cluster-config/chart -f cluster-config/values.yaml -f values/cluster-admins.yaml
+helm template cluster-config/chart -f cluster-config/values.yaml -f values/cluster-admins.yaml
 bash -n bootstrap.sh docs/acm/cluster-onboarding/import-managed-cluster.sh scripts/set-tenant-repo.sh
 scripts/check-gitops-health-checks.sh
 scripts/set-tenant-repo.sh --check

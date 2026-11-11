@@ -9,6 +9,11 @@ spec:
     - repoURL: '@libraryRepoURL@'
       targetRevision: '@libraryRevision@'
       ref: values
+    # The deployment's grid values: at least external.certManager.ca.mode
+    # (Generate for a new grid, Existing to keep its CA). Required.
+    - repoURL: '@deploymentRepoURL@'
+      targetRevision: '@deploymentRevision@'
+      ref: deployment
     - repoURL: https://github.com/opendatahub-io/odh-gitops.git
       targetRevision: main
       path: charts/rhai-on-openshift-chart/charts/grid-enrollment
@@ -16,6 +21,7 @@ spec:
         releaseName: grid-bootstrap
         valueFiles:
           - $values/apps/grid-bootstrap/values.yaml
+          - $deployment/values/grid-bootstrap.yaml
     - repoURL: '@libraryRepoURL@'
       targetRevision: '@libraryRevision@'
       path: apps/grid-bootstrap/policies

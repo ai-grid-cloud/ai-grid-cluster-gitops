@@ -107,5 +107,5 @@ to Authorino (`kuadrant-system/home-keycloak-ca`) and to the TAC
 authentication proxy (the DSCI custom CA bundle). Nothing is run by hand; see
 `docs/acm/cluster-onboarding/README.md` ("Trusting the MaaS home's ingress
 CA"). A site that needs more CA ConfigMaps lists the complete set in
-`apps/rhoai/values-<cluster>.yaml` under
+its deployment file, `values/clusters/<cluster>/rhoai.yaml`, under
 `dependencies.rhcl.config.authorinoTrustedCA.configMaps`.

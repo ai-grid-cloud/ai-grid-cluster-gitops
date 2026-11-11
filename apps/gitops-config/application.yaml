@@ -1,8 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  # Uses server-side apply so this app owns only the controller sizing, GitOps
-  # admin group membership, and openshift-gitops cluster-set binding.
+  # Uses server-side apply so this app owns only the controller sizing, the
+  # Argo CD admin policy and the openshift-gitops cluster-set binding. Who is
+  # admin is cluster-config's ai-grid-admins Group, from the deployment's
+  # values/cluster-admins.yaml.
   name: gitops-config
   namespace: openshift-gitops
 spec:

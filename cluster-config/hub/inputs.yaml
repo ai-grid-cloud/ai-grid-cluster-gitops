@@ -12,3 +12,5 @@ metadata:
 data:
   libraryRepoURL: REQUIRED-libraryRepoURL
   libraryRevision: REQUIRED-libraryRevision
+  deploymentRepoURL: REQUIRED-deploymentRepoURL
+  deploymentRevision: REQUIRED-deploymentRevision

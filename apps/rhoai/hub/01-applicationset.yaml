@@ -56,19 +56,26 @@ spec:
         - repoURL: REQUIRED-libraryRepoURL
           targetRevision: REQUIRED-libraryRevision
           ref: values
+        # The deployment repository, for each site's own values
+        # (values/clusters/<cluster>/rhoai.yaml), such as its MaaS gateway
+        # hostname prefix.
+        - repoURL: REQUIRED-deploymentRepoURL
+          targetRevision: REQUIRED-deploymentRevision
+          ref: deployment
         # Immutable OCI snapshot from the 3.6.0 dev channel.
         - repoURL: oci://ghcr.io/opendatahub-io/odh-gitops/rhai-on-openshift-chart
           targetRevision: 3.6.0-dev.36.1
           path: .
           helm:
             releaseName: rhai-on-openshift
-            # A per-cluster file is optional, for a temporary override such as an image pin.
+            # The site's file in the deployment repository is optional: an
+            # inference site needs none.
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
               # The site's role (ai-grid/role): ingress, inference or combined.
               - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
-              - $values/apps/rhoai/values-{{ .name }}.yaml
+              - '$deployment/values/clusters/{{ .name }}/rhoai.yaml'
             parameters:
               - name: praxis-gateway.grid.siteName
                 value: '{{ .name }}'
@@ -150,12 +157,15 @@ spec:
           path: apps/rhoai/gateway-hostname
           helm:
             releaseName: rhoai-gateway-hostname
-            # The same files as the RHOAI chart, so this policy sees the site's exposure mode.
+            # The same files as the RHOAI chart, so this policy sees the site's
+            # exposure mode. The hostname prefix is the site's (the chart fails
+            # without one on an ingress or combined site); an inference site has
+            # no file.
             ignoreMissingValueFiles: true
             valueFiles:
               - $values/apps/rhoai/values.yaml
               - '$values/apps/rhoai/roles/{{ index .metadata.labels "ai-grid/role" }}.yaml'
-              - $values/apps/rhoai/values-{{ .name }}.yaml
+              - '$deployment/values/clusters/{{ .name }}/rhoai.yaml'
             parameters:
               - name: clusterNamespace
                 value: '{{ .name }}'

@@ -5,6 +5,9 @@ components:
       gateway:
         name: maas-default-gateway
         namespace: openshift-ingress
+        # The MaaS gateway's hostname is <prefix>.<the site's apps domain>. A
+        # site's deployment file, values/clusters/<cluster>/rhoai.yaml, can set
+        # its own prefix.
         annotations:
           ai-grid/maas-gateway-hostname-prefix: maas
 

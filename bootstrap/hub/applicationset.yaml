@@ -56,6 +56,8 @@ spec:
         values:
           libraryRepoURL: REQUIRED-libraryRepoURL
           libraryRevision: REQUIRED-libraryRevision
+          deploymentRepoURL: REQUIRED-deploymentRepoURL
+          deploymentRevision: REQUIRED-deploymentRevision
           catalogRepoURL: REQUIRED-catalogRepoURL
           catalogRevision: REQUIRED-catalogRevision
     # Only ODF needs cluster metadata. Wait for ACM registration and its
@@ -70,6 +72,8 @@ spec:
               values:
                 libraryRepoURL: REQUIRED-libraryRepoURL
                 libraryRevision: REQUIRED-libraryRevision
+                deploymentRepoURL: REQUIRED-deploymentRepoURL
+                deploymentRevision: REQUIRED-deploymentRevision
                 catalogRepoURL: REQUIRED-catalogRepoURL
                 catalogRevision: REQUIRED-catalogRevision
           - clusters:
@@ -89,25 +93,19 @@ spec:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
   # Per component, for a hub that runs no Grid or RHOAI workloads:
-  # - grid-bootstrap: a new grid generates its CA and binds global in place of
-  #   the rhoai app's binding.
   # - odf: the operator channel follows the hub's OpenShift minor version; a hub
   #   labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
   # - acm-models: the console's catalog, not the GitOpsCluster
   #   (argo-registration registers clusters here).
   # - limitador-redis: Limitador runs on the sites, so no storage config here.
-  # - rhoai: grid-bootstrap owns the global binding.
+  # - rhoai: grid-bootstrap owns the global binding
+  #   (apps/grid-bootstrap/values.yaml, managedClusters.createClusterSetBinding).
   # Then every @<name>@ is replaced from the generator's values. An input the
   # deployment didn't set fails the Application with "missing input: <name>",
   # and an empty value, or one with ", ', \ or @ (which would break the JSON or
   # YAML it lands in), with "invalid input: <name>", instead of creating it.
   templatePatch: |
     {{- $spec := .spec }}
-    {{- if eq .metadata.name "grid-bootstrap" }}
-    {{- range $spec.sources }}{{ if hasKey . "helm" }}
-    {{- $_ := set .helm "parameters" (list (dict "name" "external.certManager.ca.mode" "value" "Generate") (dict "name" "managedClusters.createClusterSetBinding" "value" "true")) }}
-    {{- end }}{{ end }}
-    {{- end }}
     {{- if eq .metadata.name "odf" }}
     {{- $params := list (dict "name" "openshift.version" "value" (index .metadata.labels "openshiftVersion-major-minor")) }}
     {{- if eq (index .metadata.labels "ai-grid/odf-operatorgroup") "existing" }}

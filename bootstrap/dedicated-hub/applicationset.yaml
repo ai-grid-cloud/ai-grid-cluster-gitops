@@ -50,8 +50,9 @@ spec:
           # the writer token. apps/odf, its object storage, is listed below.
           - path: apps/ai-grid-usage-logs/application.yaml
         # This repository is both the library and this root's deployment:
-        # components write it as @libraryRepoURL@ at @libraryRevision@, and the
-        # templatePatch fills those from these two values.
+        # components write it as @libraryRepoURL@ at @libraryRevision@ (and
+        # @deploymentRepoURL@ at @deploymentRevision@), and the templatePatch
+        # fills those from these two values.
         # scripts/set-tenant-repo.sh rewrites them with the generator's
         # repoURL and revision above.
         values:
@@ -144,7 +145,8 @@ spec:
   # console's catalog (its ApplicationSets and AppProjects), not its
   # GitOpsCluster: argo-registration registers clusters here. It also syncs
   # the opt-125m sample model from apps/acm-models-samples, which used to share
-  # its directory, so the sample keeps its Application.
+  # its directory, so the sample keeps its Application. This repository is also
+  # the deployment repository: the lab's values are in values/.
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
   # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
@@ -185,7 +187,8 @@ spec:
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
+    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision
+          "deploymentRepoURL" .values.repoURL "deploymentRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
     {{- $json := toJson $spec }}
     {{- range $name, $value := $inputs }}
     {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}
