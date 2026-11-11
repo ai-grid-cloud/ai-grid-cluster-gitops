@@ -87,6 +87,15 @@ d=$(fixture unset)
 sed -i.bak '/idpCAKey: ca-bundle.crt/d' "$d/root/kustomization.yaml"
 t "an input missing from values fails" 1 "unset inputs: idpCAKey" bash scripts/check-deployment.sh "$d"
 
+d=$(fixture placeholders)
+sed -i.bak -e 's#&deploymentRepoURL https://git.example.com/acme/deployment.git#\&deploymentRepoURL REQUIRED-deploymentRepoURL#' \
+  -e 's#catalogRepoURL: https://git.example.com/acme/catalog.git#catalogRepoURL: REQUIRED-catalogRepoURL#' "$d/root/kustomization.yaml"
+t "placeholder inputs in the root are named" 1 "^unset inputs: catalogRepoURL deploymentRepoURL$" bash scripts/check-deployment.sh "$d"
+
+d=$(fixture file-placeholder)
+mkdir -p "$d/tenant-idp"; printf 'data:\n  portalRedirectURI: REQUIRED-portalRedirectURI\n' > "$d/tenant-idp/settings.yaml"
+t "a placeholder left in a deployment file fails" 1 "^tenant-idp/settings.yaml:2:REQUIRED-portalRedirectURI$" bash scripts/check-deployment.sh "$d"
+
 t "no root/ is a usage error" 2 "Usage" bash scripts/check-deployment.sh "$T/nothing"
 
 d=$(fixture pin)
