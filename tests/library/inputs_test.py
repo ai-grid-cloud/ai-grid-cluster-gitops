@@ -30,6 +30,10 @@ Checks, each reported as ok or FAIL:
                    components checks; an input left out or left REQUIRED- fails
                    with "missing input: <name>", an empty one or one with
                    ", ', \\ or @ with "invalid input: <name>"
+  deployment-values  per-cluster rhoai values and the grid's values (its CA
+                   mode) come from the deployment repository, not the library
+  admins           no user names in cluster-config/ or apps/gitops-config/;
+                   cluster admins come from the deployment's values
   samples          no model, MaaS object or subscription outside the selectable
                    apps/acm-models-samples component
   move-guards      objects moved between Applications carry Prune=false
@@ -279,7 +283,9 @@ def component_files():
 
 
 def check_application(where, app, inputs):
-    """One Application's sources, and what each library source renders."""
+    """One Application's sources, and what each library source renders.
+    Returns the rendered objects of its library sources."""
+    rendered = []
     scan_text(where, yaml.safe_dump(app))
     for index, source in enumerate(sources_of(app.get("spec", {}))):
         source_where = "%s source %d" % (where, index)
@@ -309,7 +315,10 @@ def check_application(where, app, inputs):
         # Scan the objects, not the files' comments.
         output = yaml.safe_dump_all([doc for doc in yaml.safe_load_all(output) if doc])
         scan_text("%s (%s)" % (source_where, source["path"]), output)
-        check_nested("%s (%s)" % (source_where, source["path"]), list(yaml.safe_load_all(output)), inputs)
+        documents = [doc for doc in yaml.safe_load_all(output) if isinstance(doc, dict)]
+        check_nested("%s (%s)" % (source_where, source["path"]), documents, inputs)
+        rendered.extend(documents)
+    return rendered
 
 
 @check("components")
@@ -414,12 +423,26 @@ def root_render(inputs):
     appset = load_root()
     first = appset["spec"]["generators"][0]["git"]
     paths = [item["path"] for item in first["files"]] + [ODF]
+    bindings = []
     for path in paths:
         patch, error = render_patch(renderer, appset, root_params(path, inputs))
         if error:
             fail("%s: templatePatch failed: %s" % (path, error))
             continue
-        check_application("%s through the root" % path, {"spec": patch["spec"]}, inputs)
+        for doc in check_application("%s through the root" % path, {"spec": patch["spec"]}, inputs):
+            meta = doc.get("metadata", {})
+            if (doc.get("kind"), meta.get("namespace"), meta.get("name")) == \
+                    ("ManagedClusterSetBinding", "redhat-ai-grid", "global"):
+                bindings.append(path)
+    # The grid-enrollment invite Placements select through the global cluster
+    # set bound into redhat-ai-grid. The root deletes rhoai's binding, so the
+    # grid-enrollment chart (an external chart) must render it, from the
+    # library's own grid values.
+    grid = load("apps/grid-bootstrap/values.yaml").get("managedClusters", {})
+    if grid.get("createClusterSetBinding") is True:
+        bindings.append("apps/grid-bootstrap (managedClusters.createClusterSetBinding)")
+    if len(bindings) != 1:
+        fail("exactly one component must bind global into redhat-ai-grid, found %s" % (bindings or "none"))
     # A deployment that leaves out an input, or leaves its REQUIRED- default,
     # gets an error naming it and no Application.
     for name, values in (("left out", {k: v for k, v in inputs.items() if k != "libraryRevision"}),
@@ -514,6 +537,78 @@ def bare_inputs():
         fail("no directory declares its inputs (inputs.yaml)")
 
 
+def helm_source(sources, predicate):
+    return next((source for source in sources if predicate(source)), None)
+
+
+@check("deployment-values")
+def deployment_values():
+    """Per-cluster and grid values come from the deployment repository."""
+    appset = load("apps/rhoai/hub/01-applicationset.yaml")
+    sources = appset["spec"]["template"]["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("apps/rhoai/hub/01-applicationset.yaml: no source with ref deployment")
+    site_file = "$deployment/values/clusters/{{ .name }}/rhoai.yaml"
+    for label, predicate in (("rhai-on-openshift", lambda s: (s.get("helm") or {}).get("releaseName") == "rhai-on-openshift"),
+                             ("gateway-hostname", lambda s: s.get("path") == "apps/rhoai/gateway-hostname")):
+        source = helm_source(sources, predicate)
+        helm = (source or {}).get("helm") or {}
+        files = helm.get("valueFiles") or []
+        if not files or files[-1] != site_file:
+            fail("rhoai %s: the last value file must be %s, got %s" % (label, site_file, files))
+        if any("values-{{" in item for item in files):
+            fail("rhoai %s: still reads per-cluster values from the library: %s" % (label, files))
+        if not helm.get("ignoreMissingValueFiles"):
+            fail("rhoai %s: an inference site has no per-cluster file; set ignoreMissingValueFiles" % label)
+    stray = [name for name in os.listdir(os.path.join(ROOT, "apps", "rhoai")) if re.match(r"values-.+\.yaml$", name)]
+    if stray:
+        fail("apps/rhoai holds per-cluster values: %s" % stray)
+
+    app = load("apps/grid-bootstrap/application.yaml")
+    sources = app["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("apps/grid-bootstrap/application.yaml: no source with ref deployment")
+    chart = helm_source(sources, lambda s: "helm" in s)
+    files = (chart or {}).get("helm", {}).get("valueFiles") or []
+    if files != ["$values/apps/grid-bootstrap/values.yaml", "$deployment/values/grid-bootstrap.yaml"]:
+        fail("grid-bootstrap value files are %s" % files)
+    if (chart or {}).get("helm", {}).get("ignoreMissingValueFiles"):
+        fail("grid-bootstrap: the deployment's grid values are required, not optional")
+    ca = (load("apps/grid-bootstrap/values.yaml").get("external") or {}).get("certManager", {}).get("ca") or {}
+    if "mode" in ca or "secretName" in ca:
+        fail("apps/grid-bootstrap/values.yaml chooses the grid CA mode; the deployment states it")
+    if os.path.isfile(os.path.join(ROOT, ROOT_APPSET)) and "external.certManager.ca.mode" in load(ROOT_APPSET)["spec"]["templatePatch"]:
+        fail("the root's templatePatch sets the grid CA mode; the deployment states it")
+
+
+@check("admins")
+def admins():
+    """Who administers a cluster is the deployment's choice."""
+    if os.path.exists(os.path.join(ROOT, "cluster-config", "cluster-admins.yaml")):
+        fail("cluster-config/cluster-admins.yaml lists a deployment's admins")
+    for path in library_files(("cluster-config", os.path.join("apps", "gitops-config"))):
+        if not path.endswith((".yaml", ".yml")) or "/templates/" in path:
+            continue
+        with open(path) as handle:
+            for doc in yaml.safe_load_all(handle):
+                if isinstance(doc, dict) and doc.get("kind") == "Group" and doc.get("users"):
+                    fail("%s: Group %s lists users" % (rel(path), doc["metadata"]["name"]))
+                if isinstance(doc, dict) and doc.get("cluster_admins"):
+                    fail("%s: cluster_admins lists users" % rel(path))
+    appset = load("cluster-config/hub/00-applicationset.yaml")
+    sources = appset["spec"]["template"]["spec"]["sources"]
+    if not any(source.get("ref") == "deployment" for source in sources):
+        fail("cluster-config/hub/00-applicationset.yaml: no source with ref deployment")
+    chart = helm_source(sources, lambda s: "helm" in s)
+    files = (chart or {}).get("helm", {}).get("valueFiles") or []
+    if files != ["$values/cluster-config/values.yaml", "$deployment/values/cluster-admins.yaml"]:
+        fail("cluster-config value files are %s" % files)
+    # Required: a missing or misspelled file would render no binding and prune
+    # every cluster-admin. A deployment that wants none ships cluster_admins: [].
+    if (chart or {}).get("helm", {}).get("ignoreMissingValueFiles"):
+        fail("cluster-config: values/cluster-admins.yaml must be required, not ignoreMissingValueFiles")
+
+
 SAMPLES = os.path.join("apps", "acm-models-samples") + os.sep
 CATALOG_KINDS = ("MaaSSubscription", "MaaSAuthPolicy", "LLMInferenceService", "ExternalModel", "MaaSModelRef")
 
@@ -565,6 +660,8 @@ def main():
     root(inputs)
     root_render(inputs)
     lab_roots()
+    deployment_values()
+    admins()
     samples()
     move_guards()
     failed = sum(1 for _, ok in results if not ok)

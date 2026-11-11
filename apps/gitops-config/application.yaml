@@ -1,8 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  # Uses server-side apply so this app owns only the controller sizing, GitOps
-  # admin group membership, and openshift-gitops cluster-set binding.
+  # Uses server-side apply so this app owns only the controller sizing and the
+  # openshift-gitops cluster-set binding. The cluster-admins Group's members
+  # are the deployment's: it ships that Group as one of its own apps (the lab
+  # roots add bootstrap/lab/gitops-config as a second source).
   name: gitops-config
   namespace: openshift-gitops
 spec:

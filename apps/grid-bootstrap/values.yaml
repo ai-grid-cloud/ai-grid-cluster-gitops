@@ -24,8 +24,11 @@ managedClusters:
   clusterSet: global
   clusterLabel: ai-grid/enabled
   clusterLabelValue: 'true'
-  # The rhoai hub manifests own the shared binding.
-  createClusterSetBinding: false
+  # This release owns the global binding in redhat-ai-grid, which the grid's
+  # invite Placements select through: bootstrap/hub removes the rhoai app's
+  # copy. Upstream's combined lab root keeps rhoai's copy and sets false
+  # (values/grid-bootstrap.yaml).
+  createClusterSetBinding: true
   hubClusterName: local-cluster
 external:
   delivery:
@@ -35,7 +38,5 @@ external:
     issuer:
       create: true
       name: grid-ca
-    ca:
-      # Preserve the existing CA while external issuance takes over identities.
-      mode: Existing
-      secretName: grid-ca-key
+    # ca.mode (Generate for a new grid, Existing to keep its CA) and, for
+    # Existing, ca.secretName are the deployment's: values/grid-bootstrap.yaml.

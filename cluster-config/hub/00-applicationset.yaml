@@ -26,17 +26,22 @@ spec:
           path: cluster-config/chart
           helm:
             releaseName: cluster-admins
-            # cluster-admins.yaml is per deployment and may be absent.
-            ignoreMissingValueFiles: true
+            # The deployment's values/cluster-admins.yaml is required: a missing
+            # or misspelled file fails the sync instead of rendering no binding
+            # and pruning every cluster-admin. For none, it holds
+            # cluster_admins: [].
             valueFiles:
               - $values/cluster-config/values.yaml
-              - $values/cluster-config/cluster-admins.yaml
+              - $deployment/values/cluster-admins.yaml
             parameters:
               - name: hubResources.enabled
                 value: '{{ eq (index .metadata.labels "local-cluster") "true" | toString }}'
         - repoURL: REQUIRED-libraryRepoURL
           targetRevision: REQUIRED-libraryRevision
           ref: values
+        - repoURL: REQUIRED-deploymentRepoURL
+          targetRevision: REQUIRED-deploymentRevision
+          ref: deployment
       destination:
         server: '{{ if eq (index .metadata.labels "local-cluster") "true" }}https://kubernetes.default.svc{{ else }}{{ .server }}{{ end }}'
         namespace: openshift-gitops

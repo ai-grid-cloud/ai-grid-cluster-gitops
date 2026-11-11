@@ -11,8 +11,8 @@ spec:
     repoURL: '@libraryRepoURL@'
     targetRevision: '@libraryRevision@'
     path: apps/rhoai/hub
-    # The library's own repository and revision for the ApplicationSets in
-    # this directory (its inputs.yaml), from the root's values.
+    # The library's and the deployment's repositories and revisions for the
+    # ApplicationSet in this directory (its inputs.yaml), from the root's values.
     kustomize:
       patches:
         - target:
@@ -26,6 +26,8 @@ spec:
             data:
               libraryRepoURL: '@libraryRepoURL@'
               libraryRevision: '@libraryRevision@'
+              deploymentRepoURL: '@deploymentRepoURL@'
+              deploymentRevision: '@deploymentRevision@'
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops

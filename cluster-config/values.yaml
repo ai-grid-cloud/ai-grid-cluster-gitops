@@ -1,8 +1,8 @@
 # Users granted cluster-admin on every cluster the `cluster-config` ApplicationSet
 # selects. Each entry renders one ClusterRoleBinding named `cluster-admin-<user>`.
-# Empty by default: a deployment lists its own users in cluster-admins.yaml,
-# which the ApplicationSet reads when it exists. Removing an entry prunes its
-# binding on the next automated sync.
+# Empty by default: a deployment lists its own users in its repository's
+# values/cluster-admins.yaml, which the ApplicationSet requires (cluster_admins:
+# [] for none). Removing an entry prunes its binding on the next automated sync.
 #
 # Entries must be Kubernetes usernames that are also valid in a DNS-1123
 # resource name (lowercase alphanumeric, '-', or '.'); IdP-qualified names

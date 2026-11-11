@@ -5,3 +5,5 @@ libraryRepoURL: https://example.invalid/library.git
 libraryRevision: 0123456789abcdef0123456789abcdef01234567
 catalogRepoURL: https://example.invalid/catalog.git
 catalogRevision: catalog-revision
+deploymentRepoURL: https://example.invalid/deployment.git
+deploymentRevision: deployment-revision

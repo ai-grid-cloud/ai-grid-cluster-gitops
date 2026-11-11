@@ -38,8 +38,9 @@ spec:
             exclude: true
           - path: cluster-config/application.yaml
         # This repository is both the library and this root's deployment:
-        # components write it as @libraryRepoURL@ at @libraryRevision@, and the
-        # templatePatch fills those from these two values.
+        # components write it as @libraryRepoURL@ at @libraryRevision@ (and
+        # @deploymentRepoURL@ at @deploymentRevision@), and the templatePatch
+        # fills those from these two values.
         # scripts/set-tenant-repo.sh rewrites them with the generator's
         # repoURL and revision above.
         values:
@@ -57,9 +58,11 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
-  # acm-models also syncs the sample models (apps/acm-models-samples), which
-  # used to share its directory, so they keep their Application. Then every
-  # @<name>@ a component writes is replaced from $inputs, JSON-escaped.
+  # acm-models also syncs the sample models (apps/acm-models-samples), and
+  # gitops-config the lab's cluster-admins Group (bootstrap/lab), so they keep
+  # their Application. Then every @<name>@ a component writes is replaced from
+  # $inputs, JSON-escaped. This repository is also the deployment repository:
+  # the lab's values are in values/.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "acm-models" }}
@@ -69,7 +72,13 @@ spec:
     {{- $_ := set $spec "sources" (list $spec.source $samples) }}
     {{- $_ := unset $spec "source" }}
     {{- end }}
-    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
+    {{- if eq .metadata.name "gitops-config" }}
+    {{- $group := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "bootstrap/lab/gitops-config" }}
+    {{- $_ := set $spec "sources" (list $spec.source $group) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
+    {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision
+          "deploymentRepoURL" .values.repoURL "deploymentRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}
     {{- $json := toJson $spec }}
     {{- range $name, $value := $inputs }}
     {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}

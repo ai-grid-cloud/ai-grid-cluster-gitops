@@ -1,4 +1,5 @@
-# This deployment's cluster admins. Overrides cluster_admins in values.yaml.
+# The lab's cluster admins, bound by cluster-config on every cluster. Overrides
+# cluster_admins in cluster-config/values.yaml.
 cluster_admins:
   - khowell
   - aballant

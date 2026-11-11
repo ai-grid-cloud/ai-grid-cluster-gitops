@@ -9,8 +9,12 @@ which deploys the fleet-wide `cluster-config` ApplicationSet.
 Grants `cluster-admin` to a Git-managed list of users through per-user
 `ClusterRoleBinding` objects (`cluster-admin-<user>`). The list is per
 deployment: [`values.yaml`](values.yaml) leaves it empty, and a deployment
-lists its users in [`cluster-admins.yaml`](cluster-admins.yaml). Without that
-file, the chart creates no binding. The `cluster-config`
+lists its users in its own repository's `values/cluster-admins.yaml` (the
+`deploymentRepoURL` input). The file is required: without it every cluster's
+`cluster-config` Application fails to sync, instead of rendering no binding and
+pruning every cluster-admin. A deployment that wants none ships
+`cluster_admins: []`. Upstream's lab roots read this repository's own
+[`values/cluster-admins.yaml`](../values/cluster-admins.yaml). The `cluster-config`
 ApplicationSet generates one automated Application for every cluster secret
 created by the shared GitOpsCluster integration, including the hub.
 The hub uses Argo CD's in-cluster destination so the controller's
@@ -34,7 +38,7 @@ instead of node ports.
 
 ### Adding or removing an admin
 
-Edit `cluster-admins.yaml` and commit. Every generated Application syncs
+Edit the deployment repository's `values/cluster-admins.yaml` and commit. Every generated Application syncs
 automatically (prune and self-heal are enabled):
 
 - Adding a username to `cluster_admins` creates its `ClusterRoleBinding` on
@@ -83,8 +87,8 @@ Placement, or PlacementBinding resources.
 Local:
 
 ```sh
-helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
-helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
+helm lint cluster-config/chart -f cluster-config/values.yaml -f <deployment>/values/cluster-admins.yaml
+helm template cluster-config/chart -f cluster-config/values.yaml -f <deployment>/values/cluster-admins.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml \
   --set hubResources.enabled=true
 ```
