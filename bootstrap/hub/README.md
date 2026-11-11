@@ -34,6 +34,7 @@ creates no Application. A value must be non-empty and must not contain `"`,
 | Input | Meaning |
 |---|---|
 | `libraryRepoURL`, `libraryRevision` | this repository and the pinned commit; every self-reference |
+| `catalogRepoURL`, `catalogRevision` | the repository the console's git writer commits models and subscriptions to, and its branch |
 
 Directories whose manifests take inputs (nested ApplicationSets, Policies) are
 kustomizations with an `inputs.yaml`. A bare `kustomize build` of one shows

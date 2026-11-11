@@ -3,3 +3,5 @@
 # checks that each component resolves to them and to nothing else.
 libraryRepoURL: https://example.invalid/library.git
 libraryRevision: 0123456789abcdef0123456789abcdef01234567
+catalogRepoURL: https://example.invalid/catalog.git
+catalogRevision: catalog-revision
