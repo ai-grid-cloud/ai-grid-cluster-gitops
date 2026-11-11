@@ -45,6 +45,14 @@ spec:
           # apps/ai-grid-o11y's LokiStack needs, and the ACM policy that hands each site
           # the writer token. apps/odf, its object storage, is listed below.
           - path: apps/ai-grid-usage-logs/application.yaml
+        # This repository is both the library and this root's deployment:
+        # components write it as @libraryRepoURL@ at @libraryRevision@, and the
+        # templatePatch fills those from these two values.
+        # scripts/set-tenant-repo.sh rewrites them with the generator's
+        # repoURL and revision above.
+        values:
+          repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          targetRevision: HEAD
     # Only ODF needs cluster metadata. Wait for ACM registration and its
     # version label rather than falling back to the chart's default channel.
     - matrix:
@@ -54,6 +62,10 @@ spec:
               revision: HEAD
               files:
                 - path: apps/odf/application.yaml
+              # As in the first generator: set-tenant-repo.sh rewrites these.
+              values:
+                repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+                targetRevision: HEAD
           - clusters:
               selector:
                 matchLabels:
@@ -79,6 +91,10 @@ spec:
   # Limitador runs on the sites, so limitador-redis leaves out its storage config.
   # ODF's operator channel follows the hub's OpenShift minor version.
   # A hub labelled ai-grid/odf-operatorgroup=existing keeps its own OperatorGroup.
+  # acm-models and rhoai are kustomizations (their inputs), so they leave
+  # objects out with $patch: delete patches rather than directory include or
+  # exclude. Then every @<name>@ a component writes is replaced from $inputs,
+  # JSON-escaped.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "grid-bootstrap" }}
@@ -94,12 +110,24 @@ spec:
     {{- $_ := set $spec.source.helm "parameters" $params }}
     {{- end }}
     {{- if eq .metadata.name "acm-models" }}
-    {{- $_ := set $spec.source "directory" (dict "include" "{facebook-opt-125m-03-applicationset.yaml,maas-03-applicationset.yaml,catalog-03-appprojects.yaml,catalog-04-applicationsets.yaml}") }}
+    {{- $deletes := list
+          "$patch: delete\napiVersion: apps.open-cluster-management.io/v1beta1\nkind: GitOpsCluster\nmetadata:\n  name: acm-models\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-gitops-cluster\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta1\nkind: Placement\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n"
+          "$patch: delete\napiVersion: argoproj.io/v1alpha1\nkind: ApplicationSet\nmetadata:\n  name: acm-models-smollm2-135m-instruct\n  namespace: openshift-gitops\n" }}
+    {{- $patches := $spec.source.kustomize.patches }}
+    {{- range $deletes }}{{ $patches = append $patches (dict "patch" .) }}{{ end }}
+    {{- $_ := set $spec.source.kustomize "patches" $patches }}
     {{- end }}
     {{- if eq .metadata.name "limitador-redis" }}
     {{- $_ := set $spec.source "directory" (dict "exclude" "{04-limitador-redis-secret.yaml,20-limitador-storage.yaml}") }}
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
-    {{- $_ := set $spec.source "directory" (dict "exclude" "00-managed-cluster-set-binding-grid.yaml") }}
+    {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
     {{- end }}
-    spec: {{ $spec | toJson }}
+    {{- $inputs := dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision }}
+    {{- $json := toJson $spec }}
+    {{- range $name, $value := $inputs }}
+    {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}
+    {{- end }}
+    spec: {{ $json }}

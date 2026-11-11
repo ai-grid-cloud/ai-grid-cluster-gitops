@@ -1,0 +1,54 @@
+# A kustomization so apps/acm-models/application.yaml can hand it the library's
+# repository and revision (inputs.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - inputs.yaml
+  - catalog-03-appprojects.yaml
+  - catalog-04-applicationsets.yaml
+  - facebook-opt-125m-03-applicationset.yaml
+  - gitops-cluster.yaml
+  - maas-03-applicationset.yaml
+  - smollm2-135m-instruct-01-placement.yaml
+  - smollm2-135m-instruct-03-applicationset.yaml
+replacements:
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRepoURL
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: acm-models-facebook-opt-125m
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+      - select:
+          kind: ApplicationSet
+          name: acm-models-maas
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+      - select:
+          kind: ApplicationSet
+          name: acm-models-smollm2-135m-instruct
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: acm-models-facebook-opt-125m
+        fieldPaths:
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          name: acm-models-maas
+        fieldPaths:
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          name: acm-models-smollm2-135m-instruct
+        fieldPaths:
+          - spec.template.spec.source.targetRevision

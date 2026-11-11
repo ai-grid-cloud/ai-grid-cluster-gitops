@@ -31,6 +31,14 @@ spec:
           - path: apps/external-services/application.yaml
             exclude: true
           - path: cluster-config/application.yaml
+        # This repository is both the library and this root's deployment:
+        # components write it as @libraryRepoURL@ at @libraryRevision@, and the
+        # templatePatch fills those from these two values.
+        # scripts/set-tenant-repo.sh rewrites them with the generator's
+        # repoURL and revision above.
+        values:
+          repoURL: https://github.com/ai-grid-cloud/ai-grid-cluster-gitops.git
+          targetRevision: HEAD
   template:
     metadata:
       name: '{{.metadata.name}}'
@@ -40,5 +48,11 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
+  # Every @<name>@ a component writes is replaced from $inputs, JSON-escaped.
   templatePatch: |
-    spec: {{ .spec | toJson }}
+    {{- $inputs := dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision }}
+    {{- $json := toJson .spec }}
+    {{- range $name, $value := $inputs }}
+    {{- $json = replace (printf "@%s@" $name) (toJson $value | trimPrefix "\"" | trimSuffix "\"") $json }}
+    {{- end }}
+    spec: {{ $json }}

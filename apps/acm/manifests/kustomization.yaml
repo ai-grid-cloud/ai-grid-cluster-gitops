@@ -1,7 +1,32 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - inputs.yaml
   - core
   - observability
   - search
   - submariner
+# The submariner ApplicationSet reads apps/acm/submariner from the library at
+# the deployment's pinned revision (inputs.yaml, patched by
+# apps/acm/application.yaml).
+replacements:
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRepoURL
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: acm-submariner
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: acm-submariner
+        fieldPaths:
+          - spec.template.spec.source.targetRevision

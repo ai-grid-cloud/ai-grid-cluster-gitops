@@ -1,0 +1,33 @@
+# A kustomization so apps/external-services/application.yaml can hand the
+# ApplicationSet the library's repository and revision (inputs.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - inputs.yaml
+  - 00-namespace.yaml
+  - 01-managed-cluster-set-binding.yaml
+  - 02-placement.yaml
+  - 03-policies.yaml
+  - 04-placement-bindings.yaml
+  - 05-applicationset.yaml
+replacements:
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRepoURL
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: external-services
+        fieldPaths:
+          - spec.template.spec.source.repoURL
+  - source:
+      kind: ConfigMap
+      name: library-inputs
+      fieldPath: data.libraryRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          name: external-services
+        fieldPaths:
+          - spec.template.spec.source.targetRevision
