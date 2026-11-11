@@ -17,7 +17,7 @@ status policies, which report each site's state back to the hub for the provider
 ```
 
 Also add `values/grid-bootstrap.yaml` to your deployment repository
-([fill in the values files](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#5-fill-in-the-values-files)).
+([values files](../appendix-a-inputs.md#files-your-deployment-repository-holds)).
 
 ## Grid bootstrap
 

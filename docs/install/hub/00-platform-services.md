@@ -15,13 +15,13 @@ library's, or the one your platform already runs.
 Requires:
 
 - A git host the hub's Argo CD can read, with your deployment and catalog repositories
-  ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md)).
+  ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/README.md#start-here)).
 - `cluster-admin` on the hub ([before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)).
 
 ## Select it
 
 Add these lines to the `files` list in your `root/kustomization.yaml`
-([select components](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#3-select-components)):
+([select components](README.md#select-components)):
 
 ```yaml
 - path: apps/gitops-config/application.yaml

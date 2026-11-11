@@ -8,7 +8,7 @@ The hub runs everything the sites share and installs the sites. What it runs fal
 
 This part groups both into eight items, numbered in install order. Each item's page says what it is, your options,
 what the example deployment chose, what it requires, and the lines that select it in your deployment repository
-([select components](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#3-select-components)).
+([select components](#select-components)).
 
 ## Control plane: on the ACM hub
 
@@ -39,3 +39,20 @@ With the shared services on a site, other ingress sites get no database read rep
 observability is also outside the control plane: any S3 bucket works ([object storage](01-acm.md#object-storage)).
 
 What the hub installs on each site is in [Spokes](../spokes/README.md).
+
+## Select components
+
+Your root's component list is the `files` of its first generator, in `root/kustomization.yaml`
+([your root](../appendix-a-inputs.md#your-root)). The deployment template selects the example's lines, grouped by
+item. To change an item, swap in the lines from its page.
+
+| Hub item | The example's lines | Change them when |
+|---|---|---|
+| [0. Platform services](00-platform-services.md#select-it) | `apps/gitops-config`, `cluster-config`, `apps/external-secrets` | Add `apps/cert-manager` if the hub has no cert-manager. |
+| [1. ACM](01-acm.md#select-it) | `apps/acm`, `apps/object-storage/s4` | Use `apps/object-storage/odf` or your own bucket instead of S4; add `apps/metallb` for bare-metal sites. |
+| [2. Grid](02-grid.md#select-it) | `apps/grid-bootstrap`, `apps/ai-grid-policies` | Never. |
+| [3. MaaS shared services](03-maas-shared-services.md#select-it) | `apps/maas-db`, `apps/limitador-redis`, `apps/external-services` | To run them on a site instead of the hub, keep `apps/external-services` and label that site ([run them on a site](03-maas-shared-services.md#run-the-shared-services-on-a-site)); otherwise you can leave it out. |
+| [4. Tenant identity](04-tenant-identity.md#select-it) | None: the example's own IdP is its own app, `apps/tenant-idp.yaml` | Add `apps/keycloak` to use the library's Keycloak. |
+| [5. Provider console and model delivery](05-console-and-model-delivery.md#select-it) | `apps/acm-models`, `apps/console` | Leave out `apps/console` with an IdP that isn't Keycloak. |
+| [6. Site delivery](06-site-delivery.md#select-it) | `apps/ai-grid-spokes`, `apps/argo-registration`, `apps/rhoai`, `apps/rhoai-prerequisites` | Never. |
+| [7. Observability and usage logs](07-observability.md#select-it) | None | Add `apps/ai-grid-o11y` and `apps/ai-grid-usage-logs` to turn it on. |

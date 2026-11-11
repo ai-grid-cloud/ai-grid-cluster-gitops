@@ -142,7 +142,7 @@ calls return 401.
 **Cause:** OpenShift AI 3.6 nightlies before FBC `d0ee30a` send the
 portal's token in the wrong header ([RHAI-21554](https://redhat.atlassian.net/browse/RHAI-21554)).
 **Workaround:** pin FBC `d0ee30a` or later; until then, create API keys through the MaaS API
-([troubleshooting](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/10-troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
+([troubleshooting](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/troubleshooting.md#the-org-ui-cant-load-models-or-api-keys)).
 
 **Symptom:** about one call in six fails the TLS handshake or hangs.
 **Cause:** an address of the gateway's load balancer is in a zone with no gateway pod (infrastructure).

@@ -10,7 +10,7 @@ the usual way to issue its certificate.
 | Runs on | ingress and combined sites |
 | Library component | None yet: a values override in `values/clusters/SITE/rhoai.yaml` plus your own `Certificate` |
 | Choices | Bring your own: a DNS-01 ClusterIssuer on the site, or your own certificate. Use ours isn't available yet. |
-| Example chose | A DNS-01 Certificate delivered as its own app ([`apps/site-b-maas-tls.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/apps/site-b-maas-tls.yaml)) |
+| Example chose | A DNS-01 Certificate delivered as its own app; the deployment template's per-site files ([`site-template/`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/tree/main/site-template)) |
 
 ## Use ours
 
@@ -19,22 +19,105 @@ Not available: the library has no input for this certificate yet ([known gaps](h
 ## Bring your own
 
 You need a cert-manager ClusterIssuer on each ingress or combined site that issues publicly trusted certificates by
-**DNS-01**, or a certificate of your own for each site's MaaS hostname
-([before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md#3-accounts-and-credentials)). On each such site:
+**DNS-01**, or a certificate of your own for each site's MaaS hostname. An HTTP-01 issuer can't solve the challenge
+([known issues](#known-issues)). For each such site, add three files to your deployment repository and push them
+before you label the site. The deployment template holds them as `site-template/`, laid out at these paths with
+`SITE` in place of the site's name.
 
-1. Add a `Certificate` in namespace `openshift-ingress` for `HOSTNAME_PREFIX.APPS_DOMAIN`, with
-   `secretName: maas-gateway-public-tls`, to your deployment repository.
-2. Add an Application of your own that delivers it to the site. Your root's own-apps generator picks it up.
-3. Point the gateway's HTTPS listener at the Secret in `values/clusters/SITE/rhoai.yaml`. Helm replaces lists whole, so
-   give both of the chart's listeners.
+1. A `Certificate` for the MaaS hostname, as `sites/SITE/maas-tls/certificate.yaml`:
 
-The templates for all three are in [join each site to the grid, part 1](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/06-join-grid.md#1-add-the-sites-values); the example deployment's
-versions are [`apps/site-b-maas-tls.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/apps/site-b-maas-tls.yaml),
-[`sites/site-b/maas-tls/certificate.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/sites/site-b/maas-tls/certificate.yaml)
-and [`values/clusters/site-b/rhoai.yaml`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/values/clusters/site-b/rhoai.yaml).
+   ```yaml
+   apiVersion: cert-manager.io/v1
+   kind: Certificate
+   metadata:
+     name: maas-gateway-public
+     namespace: openshift-ingress
+   spec:
+     secretName: maas-gateway-public-tls
+     dnsNames:
+       - HOSTNAME_PREFIX.APPS_DOMAIN
+     issuerRef:
+       kind: ClusterIssuer
+       name: DNS01_ISSUER
+   ```
+
+2. An Application that delivers it to the site, as `apps/SITE-maas-tls.yaml`. Your root's own-apps generator picks it
+   up. The hub's Argo CD reaches each site through ACM's cluster proxy:
+
+   ```yaml
+   apiVersion: argoproj.io/v1alpha1
+   kind: Application
+   metadata:
+     name: SITE-maas-tls
+     namespace: openshift-gitops
+   spec:
+     project: default
+     source:
+       repoURL: '@deploymentRepoURL@'
+       targetRevision: '@deploymentRevision@'
+       path: sites/SITE/maas-tls
+     destination:
+       server: https://cluster-proxy-addon-user.multicluster-engine.svc.cluster.local:9092/SITE
+       namespace: openshift-ingress
+     syncPolicy:
+       automated:
+         prune: true
+         selfHeal: true
+   ```
+
+3. The site's values, `values/clusters/SITE/rhoai.yaml`: the MaaS hostname prefix, and the gateway's HTTPS listener
+   pointed at the Certificate's Secret. Helm replaces lists whole, so give both of the chart's listeners:
+
+   ```yaml
+   components:
+     aigateway:
+       modelsAsAService:
+         gateway:
+           annotations:
+             ai-grid/maas-gateway-hostname-prefix: HOSTNAME_PREFIX
+           spec:
+             listeners:
+               - name: http
+                 port: 80
+                 protocol: HTTP
+                 allowedRoutes:
+                   namespaces:
+                     from: Selector
+                     selector:
+                       matchExpressions:
+                         - key: kubernetes.io/metadata.name
+                           operator: In
+                           values: [openshift-ingress, models-as-a-service, redhat-ai-gateway-infra]
+               - name: https
+                 port: 443
+                 protocol: HTTPS
+                 allowedRoutes:
+                   namespaces:
+                     from: Selector
+                     selector:
+                       matchExpressions:
+                         - key: kubernetes.io/metadata.name
+                           operator: In
+                           values: [openshift-ingress, models-as-a-service, redhat-ai-gateway-infra]
+                 tls:
+                   mode: Terminate
+                   certificateRefs:
+                     - group: ""
+                       kind: Secret
+                       name: maas-gateway-public-tls
+   ```
+
+Replace the following:
+
+- `SITE`: the site's ACM cluster name.
+- `HOSTNAME_PREFIX`: the MaaS hostname prefix. With the library's Keycloak, use `maas`
+  ([Keycloak](../hub/04-tenant-identity.md#keycloak)).
+- `APPS_DOMAIN`: the site's apps domain, as `oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'`
+  prints it.
+- `DNS01_ISSUER`: your DNS-01 ClusterIssuer on the site.
 
 If you bring a certificate without cert-manager, create Secret `openshift-ingress/maas-gateway-public-tls`
-(`kubernetes.io/tls`) on the site and skip the Certificate and its Application.
+(`kubernetes.io/tls`) on the site, and leave out the Certificate and its Application.
 
 Use a certificate of its own for the MaaS hostname, not the router's wildcard, so browsers don't reuse one connection
 across hosts.

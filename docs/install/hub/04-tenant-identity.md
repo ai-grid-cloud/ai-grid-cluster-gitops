@@ -18,7 +18,7 @@ For ours:
 ```
 
 For yours, select nothing from the library: run your IdP, or add it as your own app in your deployment repository's
-`apps/`, as the example does. Then set the `idp*` inputs ([set every input](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#4-set-every-input)).
+`apps/`, as the example does. Then set the `idp*` inputs ([inputs](../appendix-a-inputs.md#inputs)).
 
 ## Tenant identity provider
 
@@ -44,7 +44,7 @@ components to select and the `idp*` values to set.
 ### Bring your own
 
 The verified install used its own Keycloak: see the worked example's
-[`idp/`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/tree/main/idp). Your IdP must provide:
+[`idp/`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/tree/main/tenant-idp). Your IdP must provide:
 
 | Requirement | Detail |
 |---|---|
@@ -152,7 +152,7 @@ The verified install brought its own IdP instead, so every step in this section 
    example tenant realms with test users. For anything but a test, use `overlays/core` (only the `saas` realm). The
    root reads the library's `application.yaml` as is, so leave `apps/keycloak` out of `files` and add your own
    Application in your deployment's `apps/` (read by your root's own-apps generator,
-   [section 2](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md#3-select-components)) with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
+   [your root](../appendix-a-inputs.md#your-root)) with `repoURL: '@libraryRepoURL@'`, `targetRevision: '@libraryRevision@'`
    and `path: apps/keycloak/overlays/core`, otherwise matching the library's.
 3. Set the `idp*` inputs in your root's generator `values`:
 

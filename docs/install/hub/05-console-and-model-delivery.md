@@ -8,7 +8,7 @@ sites by role.
 |---|---|
 | Options | The console is optional. Model delivery is required to serve models. |
 | Example chose | Both; no sample models |
-| Requires | Console: a Keycloak tenant IdP with Organizations ([tenant identity](04-tenant-identity.md)), and a token that can write only the catalog repository. Model delivery: a catalog repository ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/02-repositories.md)) and [site delivery](06-site-delivery.md). |
+| Requires | Console: a Keycloak tenant IdP with Organizations ([tenant identity](04-tenant-identity.md)), and a token that can write only the catalog repository. Model delivery: a catalog repository ([create your repositories](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/README.md#start-here)) and [site delivery](06-site-delivery.md). |
 
 ## Select it
 
@@ -102,6 +102,69 @@ You should see one pod `3/3 Running` (sign-in proxy, console and backend), the c
 Secrets. Open `https://HOST` and sign in; the **Clusters** page lists your ManagedClusters, each site Provisioning or
 Provisioned.
 
+#### Call the console's API
+
+Everything the console's pages do goes through its API, so you can script it. The library's
+[`scripts/console-call.sh`](../../../scripts/console-call.sh) signs in as an OpenShift user through the htpasswd
+provider and makes one call:
+
+```sh
+scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE METHOD 'JSON'
+```
+
+Each call returns `HTTP 200` and the object on success. Models and subscriptions are commits to your catalog
+repository.
+
+- Create an organization:
+
+  ```sh
+  scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE \
+    ai_grid.v1.Tenants/Create '{"object":{"metadata":{"name":"ORG_NAME"},"spec":{"domains":["ORG_DOMAIN"]}}}'
+  ```
+
+  Keep the returned `id` as `ORG_ID`. It's the Keycloak organization's ID, and tokens carry it as `org_id`.
+
+- Deploy a model, here the CPU chat model the install was tested with, on one site:
+
+  ```sh
+  scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Models/Create '{
+    "object": {
+      "id": "smollm2-chat",
+      "metadata": {"name": "smollm2-chat", "annotations": {"openshift.io/display-name": "SmolLM2 135M Instruct"}},
+      "spec": {
+        "model": {"uri": "hf://HuggingFaceTB/SmolLM2-135M-Instruct"},
+        "replicas": 1,
+        "main": {
+          "image": "registry.redhat.io/rhaii/vllm-cpu-rhel9@sha256:0ec0f5ff9a5ff263f58db0cfb19e3d7eef24b94c2d8629fe5145f5a8747e28c9",
+          "env": [{"name": "OMP_NUM_THREADS", "value": "4"}, {"name": "VLLM_CPU_KVCACHE_SPACE", "value": "4"}],
+          "requests": {"cpu": "4", "memory": "8Gi"}
+        },
+        "placement": {"label_selector": {"match_expressions": [{"key": "name", "operator": "In", "values": ["SITE"]}]}}
+      }
+    }
+  }'
+  ```
+
+- Subscribe an organization's group to the model:
+
+  ```sh
+  scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE ai_grid.v1.Subscriptions/Create '{
+    "object": {
+      "id": "SUBSCRIPTION_ID",
+      "metadata": {"name": "SUBSCRIPTION_ID"},
+      "spec": {
+        "organization": {"id": "ORG_ID"},
+        "owner": {"groups": ["ai-grid-users"]},
+        "model_refs": [{"name": "smollm2-chat", "token_rate_limits": [{"limit": 100000, "window": "1m"}]}]
+      }
+    }
+  }'
+  ```
+
+Replace `HUB_KUBECONFIG` with a kubeconfig file for the hub, `HUB_ADMIN_PASSWORD_FILE` with the break-glass admin's
+password file ([cluster sign-in and admins](00-platform-services.md#cluster-sign-in-and-admins)), and `SITE` with the
+site's ACM cluster name.
+
 ### Bring your own
 
 Not an option: the library has no contract for another console. The console works only with Keycloak: it creates
@@ -193,7 +256,7 @@ Application deletes its MaaS objects with it, so no tenant access outlives it. T
 
 #### Verify
 
-After the console's first model and subscription ([First use](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/08-first-use.md)), on the hub:
+After the console's first model and subscription ([First use](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/07-first-use.md)), on the hub:
 
 ```sh
 oc -n openshift-gitops get applicationsets.argoproj.io | grep acm-models-catalog
