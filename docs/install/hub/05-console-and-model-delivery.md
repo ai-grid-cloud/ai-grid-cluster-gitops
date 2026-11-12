@@ -155,7 +155,7 @@ repository.
       "spec": {
         "organization": {"id": "ORG_ID"},
         "owner": {"groups": ["ai-grid-users"]},
-        "model_refs": [{"name": "smollm2-chat", "token_rate_limits": [{"limit": 100000, "window": "1m"}]}]
+        "model_refs": [{"name": "smollm2-chat", "token_rate_limits": [{"limit": 1000, "window": "1h"}]}]
       }
     }
   }'
