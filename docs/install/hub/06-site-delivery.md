@@ -185,11 +185,11 @@ login once, on the hub, and this component delivers it and the mirror to every m
    `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
    tested site already had the model image.)*
 
-4. Run the library's [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh) with the auth file, from your
-   deployment checkout:
+4. Run [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) in your deployment repository with the auth file, from
+   your deployment checkout:
 
    ```sh
-   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE ../library/scripts/bootstrap-hub.sh --deployment .
+   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE scripts/bootstrap-hub.sh --deployment .
    ```
 
    Replace the following:

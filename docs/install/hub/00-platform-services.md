@@ -46,8 +46,8 @@ your deployment repository, and the catalog. Every other component depends on it
 
 ### Use ours
 
-1. Install the operator and the root with the library's
-   [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh), described in
+1. Install the operator and the root with [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) in your deployment
+   repository, described in
    [Prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md). For OpenShift GitOps it does the following, from the library at the
    commit your root pins:
 
@@ -202,7 +202,8 @@ oc -n redhat-ai-grid get certificates.cert-manager.io
 
 You should see all three CRDs, the cert-manager pods `Running`, Issuer `grid-ca` `READY` `True`, and every
 Certificate `READY` `True` once grid enrollment is installed. The hub prerequisites check reports `OK` for
-`cert-manager CRDs`:
+`cert-manager CRDs` (run it from your deployment repository;
+[`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)):
 
 ```sh
 scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT
@@ -341,11 +342,11 @@ Add a local sign-in next to your cluster's existing identity providers before yo
 them, on the hub and on each site. If the identity provider you sign in with fails, this one still works. Never delete
 an existing identity provider your platform uses.
 
-The library's [`scripts/add-htpasswd-admin.sh`](../../../scripts/add-htpasswd-admin.sh) does this
+[`scripts/add-htpasswd-admin.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/add-htpasswd-admin.sh) in your deployment repository does this
 ([prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md#1-add-a-break-glass-admin)):
 
 ```sh
-../library/scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
+scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
 ```
 
 Replace the following:

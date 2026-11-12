@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Tests for scripts/check-deployment.sh and bootstrap-hub.sh's pin check,
-# against a fixture deployment that takes this checkout's bootstrap/hub.
+# Tests for scripts/check-revisions.sh, against a fixture deployment that takes
+# this checkout's bootstrap/hub and a stub oc.
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 LIB=$(pwd -P)
@@ -68,40 +68,6 @@ t() { # name want_rc expect_grep cmd...
   else fails=$((fails+1)); echo "   FAIL $name (rc=$rc, wanted $want; output:)"; echo "$out"; fi
 }
 
-d=$(fixture good)
-t "a complete deployment passes" 0 "every repository is an input" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture own-app-token)
-printf 'spec:\n  source:\n    repoURL: '"'"'@deploymentRepoURL@'"'"'\n' > "$d/apps/idp.yaml"
-t "an own app using @deploymentRepoURL@ passes" 0 "every repository is an input" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture copied-app)
-printf 'spec:\n  source:\n    repoURL: https://github.com/someone/example-deployment.git\n' > "$d/apps/idp.yaml"
-t "an own app left pointing at the copied repository fails" 1 "someone/example-deployment" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture copied-self)
-sed -i.bak 's#https://git.example.com/acme/deployment.git, targetRevision#https://github.com/someone/example-deployment.git, targetRevision#' "$d/root/self.yaml"
-t "self.yaml left pointing at the copied repository fails" 1 "someone/example-deployment" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture unset)
-sed -i.bak '/idpCAKey: ca-bundle.crt/d' "$d/root/kustomization.yaml"
-t "an input missing from values fails" 1 "unset inputs: idpCAKey" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture placeholders)
-sed -i.bak -e 's#&deploymentRepoURL https://git.example.com/acme/deployment.git#\&deploymentRepoURL REQUIRED-deploymentRepoURL#' \
-  -e 's#catalogRepoURL: https://git.example.com/acme/catalog.git#catalogRepoURL: REQUIRED-catalogRepoURL#' "$d/root/kustomization.yaml"
-t "placeholder inputs in the root are named" 1 "^unset inputs: catalogRepoURL deploymentRepoURL$" bash scripts/check-deployment.sh "$d"
-
-d=$(fixture file-placeholder)
-mkdir -p "$d/tenant-idp"; printf 'data:\n  portalRedirectURI: REQUIRED-portalRedirectURI\n' > "$d/tenant-idp/settings.yaml"
-t "a placeholder left in a deployment file fails" 1 "^tenant-idp/settings.yaml:2:REQUIRED-portalRedirectURI$" bash scripts/check-deployment.sh "$d"
-
-t "no root/ is a usage error" 2 "Usage" bash scripts/check-deployment.sh "$T/nothing"
-
-d=$(fixture pin)
-t "bootstrap-hub refuses a library checkout off the pin" 1 "isn't at the deployment's libraryRevision $SHA" \
-  env RHOAI_QUAY_AUTH_FILE=/dev/null bash -c 'f=$(mktemp); echo {} > "$f"; RHOAI_QUAY_AUTH_FILE=$f bash scripts/bootstrap-hub.sh --deployment "$0"' "$d"
-
 # check-revisions.sh against a stub oc that prints two Applications.
 mkdir -p "$T/bin"
 apps() { # rev-of-second-app
@@ -118,4 +84,4 @@ t "every library source on the pin" 0 "2 library sources checked, 0 not at 01234
 apps "fedcba9876543210fedcba9876543210fedcba98" > "$T/apps.json"
 t "a source off the pin is named" 1 "OFF  rhoai-site" env PATH="$T/bin:$PATH" bash scripts/check-revisions.sh --deployment "$d"
 
-echo "deployment-scripts tests: $((total-fails)) ok, $fails failed"; exit "$fails"
+echo "check-revisions tests: $((total-fails)) ok, $fails failed"; exit "$fails"

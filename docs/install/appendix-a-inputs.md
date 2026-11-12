@@ -25,7 +25,8 @@ labels. The deployment template already holds every file here, with the example 
   literal URL.
 
 `root/self.yaml` is Application `deployment-root`, which syncs `root/` from your deployment repository with no
-pruning, so the root follows git after `scripts/bootstrap-hub.sh` applies it once.
+pruning, so the root follows git after [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) in your deployment
+repository applies it once.
 
 ## Inputs
 
@@ -56,7 +57,7 @@ Rules:
 - A bare render of the library's `bootstrap/hub` shows each input as `REQUIRED-NAME`, in the `values` of both
   generators, plus the library URL and revision in each generator's own `repoURL` and `revision`, and the root's own
   check for leftover markers.
-- `scripts/check-deployment.sh DEPLOYMENT_DIR` renders your root before you push and reports
+- [`scripts/check-deployment.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-deployment.sh) `DEPLOYMENT_DIR`, in your deployment repository, renders your root before you push and reports
   `unset inputs: NAME ...` for any input still unset or still `REQUIRED-NAME`, and
   `placeholders left in your files:` for any `REQUIRED-NAME` left in your repository's other YAML or JSON files.
 - If you use the library's Keycloak, set the `idp*` inputs to the values its page gives
@@ -70,7 +71,7 @@ Rules:
 | File | Required | Read by | Content |
 |---|---|---|---|
 | `root/kustomization.yaml` | Yes | `deployment-root` | The pin, the selection, the inputs ([your root](#your-root)) |
-| `root/self.yaml` | Yes | `scripts/bootstrap-hub.sh` | Application `deployment-root` |
+| `root/self.yaml` | Yes | [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) | Application `deployment-root` |
 | `values/cluster-admins.yaml` | Yes | `cluster-config` | `cluster_admins:` list of user names, or `[]` ([cluster sign-in and admins](hub/00-platform-services.md#cluster-sign-in-and-admins)) |
 | `values/grid-bootstrap.yaml` | Yes | `grid-bootstrap` | `external.certManager.ca.mode` (`Generate` or `Existing`); `managedClusters.createClusterSetBinding` (default `true`) ([grid bootstrap](hub/02-grid.md#grid-bootstrap)) |
 | `values/clusters/SITE/rhoai.yaml` | No; add it before you label the site | `rhoai` | Values for one site, such as `components.aigateway.modelsAsAService.gateway.annotations.ai-grid/maas-gateway-hostname-prefix` (default `maas`) or the gateway's `spec.listeners` for its certificate ([MaaS gateway certificate](spokes/maas-certificate.md)) |

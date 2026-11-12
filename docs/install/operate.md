@@ -17,7 +17,7 @@ An upgrade is one commit to your deployment repository that moves the library pi
    ```sh
    sed -i.bak "s/OLD_SHA/NEW_SHA/g" root/kustomization.yaml && rm root/kustomization.yaml.bak
    git -C ../library fetch -q && git -C ../library checkout -q NEW_SHA
-   ../library/scripts/check-deployment.sh .
+   scripts/check-deployment.sh .
    scripts/sync-guide-pin.sh
    git commit -am "root: move the library pin to NEW_SHA_SHORT" && git push
    ```

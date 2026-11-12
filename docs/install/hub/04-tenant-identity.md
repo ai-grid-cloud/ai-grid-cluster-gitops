@@ -80,7 +80,8 @@ The verified install used its own Keycloak: see the worked example's
 
 3. For the console, run `apps/console/create-secrets.sh` with your Keycloak's namespace and realm, for example
    `KEYCLOAK_NAMESPACE=tenant-idp KEYCLOAK_REALM=tenants`.
-4. Check the hub has both objects, with their keys:
+4. Check the hub has both objects, with their keys, from your deployment repository
+   ([`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)):
 
    ```sh
    scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT --expect-idp own \
