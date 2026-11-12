@@ -9,7 +9,7 @@ library's, or the one your platform already runs.
 | [OpenShift GitOps](#openshift-gitops) | Installs every component from git | Ours · yours | ours |
 | [cert-manager](#cert-manager) | Issues the grid CA, Keycloak's signing keys and OpenShift AI's monitoring certificates; usually also the MaaS gateway certificates | Ours · the platform's | the platform's |
 | [External Secrets](#external-secrets-operator) | Generates S4's keys and Keycloak's passwords, so no secret goes in git | Ours · yours · skip, if nothing needs it | ours |
-| [Cluster sign-in and admins](#cluster-sign-in-and-admins) | `cluster-admin` on the hub and every site, the break-glass admin, the Submariner gateway node labels | Ours (`cluster-config`) · your own RBAC (still select `cluster-config`) | ours |
+| [Cluster sign-in and admins](#cluster-sign-in-and-admins) | `cluster-admin` on the hub and every site, the Submariner gateway node labels | Ours (`cluster-config`) · your own RBAC (still select `cluster-config`) | ours |
 | [Default StorageClass](#default-storageclass) | Volumes for ACM observability, the databases, Redis and S4 | The platform's | the platform's |
 
 Requires:
@@ -328,7 +328,7 @@ published. Because every generated value is `CreatedOnce`, an operator upgrade d
 
 Cluster administrators sign in to the hub and the sites through OpenShift's own identity providers, and the provider
 console uses that same sign-in. The library's `cluster-config` component binds `cluster-admin` to the users you list on
-every cluster; before you change any identity provider, you add a break-glass admin so you can't lock yourself out.
+every cluster.
 
 | | |
 |---|---|
@@ -336,28 +336,7 @@ every cluster; before you change any identity provider, you add a break-glass ad
 | Library component | `cluster-config` (select `cluster-config/application.yaml`); the identity providers are infrastructure you provide |
 | Choices | Use ours · Bring your own (your own RBAC) |
 
-### Before you start: a break-glass admin
-
-Add a local sign-in next to your cluster's existing identity providers before you install anything that could change
-them, on the hub and on each site. If the identity provider you sign in with fails, this one still works. Never delete
-an existing identity provider your platform uses.
-
-[`scripts/add-htpasswd-admin.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/add-htpasswd-admin.sh) in your deployment repository does this
-([prepare the hub](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/03-prepare-hub.md#1-add-a-break-glass-admin)):
-
-```sh
-scripts/add-htpasswd-admin.sh --kubeconfig KUBECONFIG --password-file PASSWORD_FILE
-```
-
-Replace the following:
-
-- `KUBECONFIG`: a kubeconfig with a `cluster-admin` session on the cluster.
-- `PASSWORD_FILE`: a path outside any git repository for the admin's password. If the file doesn't exist, the script
-  generates a password into it (mode `600`) and never prints it.
-
-The script creates Secret `openshift-config/htpasswd-htpasswd`, appends an `HTPasswd` identity provider named
-`htpasswd` (`mappingMethod: add`) to OAuth `cluster` while keeping every existing provider, grants `cluster-admin` to
-user `admin`, then waits until `admin` can sign in through the new provider. Use `--user` and `--idp` for other names.
+Never delete an identity provider your platform's sign-in depends on.
 
 ### Use ours
 
@@ -372,7 +351,7 @@ user `admin`, then waits until `admin` can sign in through the new provider. Use
      - USERNAME
    ```
 
-   Replace `USERNAME` with each OpenShift user name to bind, such as the break-glass `admin`. For no admins, write
+   Replace `USERNAME` with each OpenShift user name to bind. For no admins, write
    `cluster_admins: []`. Each name must be a valid DNS-1123 name (lowercase letters, digits, `-` and `.`), because it's
    part of the binding's name; a name such as `user@example.com` isn't supported yet.
 
@@ -434,8 +413,8 @@ repository: adding or removing a name takes effect on every cluster at the next 
   **Workaround:** Add the file, with `cluster_admins: []` for none.
 - **Symptom:** You lose cluster access after an identity provider change.
   **Cause:** The provider you signed in with no longer works, and no other one does.
-  **Workaround:** Sign in with the break-glass `htpasswd` admin, then repair the provider. Without one, recover with
-  the installer's `kubeconfig`.
+  **Workaround:** Sign in through another identity provider that still works, then repair the provider. Without one,
+  recover with the installer's `kubeconfig`. Never delete an identity provider your platform's sign-in depends on.
 
 ## Default StorageClass
 

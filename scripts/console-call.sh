@@ -5,8 +5,8 @@
 #   console-call.sh --kubeconfig PATH --password-file PATH [--user admin] METHOD [JSON]
 #
 # METHOD is a Connect path such as ai_grid.v1.Tenants/Create; JSON defaults to {}.
-# The user signs in through the htpasswd provider (the deployment template's
-# scripts/add-htpasswd-admin.sh); the password goes to curl through a netrc file
+# The user signs in with a password through an identity provider that accepts
+# one, such as htpasswd or LDAP; the password goes to curl through a netrc file
 # and the token through a header file, so neither appears on a command line or in the output.
 set -Eeuo pipefail
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }

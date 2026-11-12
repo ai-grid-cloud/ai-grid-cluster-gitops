@@ -16,7 +16,7 @@ library's values, the role's values and your values for that site.
 | Two Submariner gateway nodes | Worker-only nodes are labelled for you; label them by hand on compact clusters and single-node OpenShift ([site networking](networking.md#submariner-gateways)) |
 | DNS with no `NXDOMAIN` on `AAAA` | Every router name answers `AAAA` queries with an address or an empty answer ([site networking](networking.md#dns)) |
 | GPUs, for GPU models | Inference and combined sites only; CPU-only sites serve CPU models ([GPU operator and NFD](openshift-ai.md#nvidia-gpu-operator-and-node-feature-discovery)) |
-| `cluster-admin`, and a break-glass admin | [Cluster sign-in and admins](../hub/00-platform-services.md#cluster-sign-in-and-admins) |
+| `cluster-admin` | [Cluster sign-in and admins](../hub/00-platform-services.md#cluster-sign-in-and-admins) |
 
 ## What you choose per site
 
