@@ -6,6 +6,10 @@ metadata:
   name: global
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    # Needs ACM's CRDs, which a fresh hub doesn't have yet. Skipping the dry
+    # run, and a later wave than the ArgoCD fields, lets the controller's
+    # memory apply first; this object follows on a retry once ACM is in.
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   clusterSet: global
