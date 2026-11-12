@@ -22,8 +22,11 @@ spec:
       # Application must not delete that instance.
       prune: false
       selfHeal: true
+    # On a fresh hub the ManagedClusterSetBinding fails until ACM is in;
+    # refresh retries the newest revision, and 20 retries outlast ACM's install.
     retry:
-      limit: 10
+      refresh: true
+      limit: 20
       backoff:
         duration: 30s
         factor: 2
