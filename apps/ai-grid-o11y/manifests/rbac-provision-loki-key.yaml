@@ -10,6 +10,10 @@ metadata:
   name: provision-loki-key
   namespace: redhat-ods-monitoring
 rules:
+  - apiGroups: ["objectbucket.io"]
+    resources: ["objectbucketclaims"]
+    resourceNames: ["usage-logs-bucket"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["usage-logs-bucket"]

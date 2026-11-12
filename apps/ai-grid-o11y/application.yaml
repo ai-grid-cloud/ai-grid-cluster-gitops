@@ -26,3 +26,6 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - SkipDryRunOnMissingResource=true
+      # Foreground deletion lets the Loki operator recreate children as GC removes them.
+      # Remove the owner first; garbage collection then removes its children asynchronously.
+      - PrunePropagationPolicy=background
