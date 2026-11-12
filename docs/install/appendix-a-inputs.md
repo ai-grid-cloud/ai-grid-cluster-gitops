@@ -57,7 +57,7 @@ Rules:
 - A bare render of the library's `bootstrap/hub` shows each input as `REQUIRED-NAME`, in the `values` of both
   generators, plus the library URL and revision in each generator's own `repoURL` and `revision`, and the root's own
   check for leftover markers.
-- [`scripts/check-deployment.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-deployment.sh) `DEPLOYMENT_DIR`, in your deployment repository, renders your root before you push and reports
+- [`scripts/check-deployment.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-deployment.sh), in your deployment repository, renders your root before you push and reports
   `unset inputs: NAME ...` for any input still unset or still `REQUIRED-NAME`, and
   `placeholders left in your files:` for any `REQUIRED-NAME` left in your repository's other YAML or JSON files.
 - If you use the library's Keycloak, set the `idp*` inputs to the values its page gives

@@ -84,12 +84,12 @@ The verified install used its own Keycloak: see the worked example's
    ([`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)):
 
    ```sh
-   scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT --expect-idp own \
+   scripts/check-prerequisites.sh --step hub --cluster HUB --expect-idp own \
      --idp-secret tenant-idp-client/tenant-idp-client:client-secret \
      --idp-ca openshift-config-managed/default-ingress-cert:ca-bundle.crt
    ```
 
-   Replace `HUB_CONTEXT` with your hub's kubeconfig context. You should see `OK` for `IdP client secret` and `IdP CA`. The check doesn't
+   Replace `HUB` with the hub's name in your deployment repository's `clusters` file. You should see `OK` for `IdP client secret` and `IdP CA`. The check doesn't
    care which product your IdP is.
 5. Check a user's access token. Save one to `TOKEN_FILE` and decode its claims:
 

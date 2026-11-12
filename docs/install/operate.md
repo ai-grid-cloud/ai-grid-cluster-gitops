@@ -17,7 +17,7 @@ An upgrade is one commit to your deployment repository that moves the library pi
    ```sh
    sed -i.bak "s/OLD_SHA/NEW_SHA/g" root/kustomization.yaml && rm root/kustomization.yaml.bak
    git -C ../library fetch -q && git -C ../library checkout -q NEW_SHA
-   scripts/check-deployment.sh .
+   scripts/check-deployment.sh
    scripts/sync-guide-pin.sh
    git commit -am "root: move the library pin to NEW_SHA_SHORT" && git push
    ```
@@ -25,8 +25,11 @@ An upgrade is one commit to your deployment repository that moves the library pi
 3. Wait for Argo CD. `deployment-root` applies the new root, and every component follows, including the Applications
    that nested ApplicationSets generate on the sites.
 
+   From your deployment repository, run [`scripts/check-revisions.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-revisions.sh). It runs the library's
+   `scripts/check-revisions.sh` at your pin against the hub:
+
    ```sh
-   ../library/scripts/check-revisions.sh --deployment . --kubeconfig HUB_KUBECONFIG
+   scripts/check-revisions.sh
    ```
 
    You should see `N library sources checked, 0 not at NEW_SHA7`. Any `OFF` line names an Application that still

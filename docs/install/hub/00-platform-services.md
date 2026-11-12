@@ -206,10 +206,10 @@ Certificate `READY` `True` once grid enrollment is installed. The hub prerequisi
 [`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)):
 
 ```sh
-scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT
+scripts/check-prerequisites.sh --step hub --cluster HUB
 ```
 
-Replace `HUB_CONTEXT` with your hub's kubeconfig context. Run it from a library checkout at your pinned commit.
+Replace `HUB` with the hub's name in your deployment repository's `clusters` file.
 
 ### Bring your own
 

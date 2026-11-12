@@ -43,10 +43,10 @@ provider console and the [observability](07-observability.md) components rely on
    namespace `open-cluster-management-observability`. Select a library option or bring your own bucket; see
    [Object storage](#object-storage). MultiClusterObservability waits until that Secret exists.
 3. Make sure the hub has a default StorageClass. Observability claims a 101 GiB compactor volume and other PVCs without
-   naming a class. Run `scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT` from your deployment
+   naming a class. Run `scripts/check-prerequisites.sh --step hub --cluster HUB` from your deployment
    repository ([`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)).
 
-   Replace `HUB_CONTEXT` with your hub's kubeconfig context.
+   Replace `HUB` with the hub's name in your deployment repository's `clusters` file.
 
 The component reads only `libraryRepoURL` and `libraryRevision`, and no file from your deployment repository. It
 creates the following, in sync-wave order:
@@ -313,10 +313,10 @@ Check it with the verify commands, and with the prerequisites check
 ([`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh)), from your deployment repository:
 
 ```sh
-scripts/check-prerequisites.sh --step hub --context HUB_CONTEXT
+scripts/check-prerequisites.sh --step hub --cluster HUB
 ```
 
-Replace `HUB_CONTEXT` with your hub's kubeconfig context.
+Replace `HUB` with the hub's name in your deployment repository's `clusters` file.
 
 ### Skip
 
