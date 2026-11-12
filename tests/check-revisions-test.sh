@@ -79,7 +79,10 @@ apps() { # rev-of-second-app
 JSON
 }
 d=$(fixture revisions)
-apps "$SHA" > "$T/apps.json"; printf '#!/bin/sh\ncat "%s"\n' "$T/apps.json" > "$T/bin/oc"; chmod +x "$T/bin/oc"
+# The stub hands "oc kustomize" to the real oc and answers everything else.
+real_oc=$(command -v oc) || { echo "check-revisions tests need oc"; exit 1; }
+apps "$SHA" > "$T/apps.json"
+printf '#!/bin/sh\n[ "$1" = kustomize ] && exec "%s" "$@"\ncat "%s"\n' "$real_oc" "$T/apps.json" > "$T/bin/oc"; chmod +x "$T/bin/oc"
 t "every library source on the pin" 0 "2 library sources checked, 0 not at 0123456" env PATH="$T/bin:$PATH" bash scripts/check-revisions.sh --deployment "$d"
 apps "fedcba9876543210fedcba9876543210fedcba98" > "$T/apps.json"
 t "a source off the pin is named" 1 "OFF  rhoai-site" env PATH="$T/bin:$PATH" bash scripts/check-revisions.sh --deployment "$d"
