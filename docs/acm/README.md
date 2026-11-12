@@ -12,8 +12,8 @@ What you bring:
 
 - Hub: an OpenShift cluster with ACM, OpenShift GitOps (Argo CD) and cert-manager.
 - A fork of this repository the hub's Argo CD can read.
-- Pull credentials for quay.io/rhoai, and registry.stage.redhat.io for pre-release
-  model images, given once to the bootstrap script as environment variables.
+- Pull credentials for quay.io/rhoai, and optionally registry.stage.redhat.io for
+  nightly-only model runtime images, given once to the bootstrap script as environment variables.
 - Each site: a default StorageClass. RHOAI monitoring claims 20Gi and 10Gi. A MaaS
   database replica claims 20Gi on an ingress or combined site.
 - Each site: two nodes Submariner can use as gateways, and its cloud prerequisites.

@@ -34,7 +34,7 @@ For all installations, set the pull secrets and run bootstrap:
 
 ```bash
 export RHOAI_QUAY_PULL_SECRET=<base64 of user:password for quay.io/rhoai>
-export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redhat.io>   # needed for model images pulled through the rhaii mirrors
+export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redhat.io>   # optional: only for nightly-only model runtime digests (the rhaii mirrors fall back to registry.redhat.io)
 ./bootstrap.sh
 ```
 

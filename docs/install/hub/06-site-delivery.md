@@ -8,7 +8,7 @@ ApplicationSet, and the registry access and namespaces every cluster needs befor
 |---|---|
 | Options | No choice |
 | Example chose | Ours |
-| Requires | [ACM](01-acm.md); OpenShift GitOps's settings (`apps/gitops-config`, [platform services](00-platform-services.md)); the `quay.io/rhoai` and `registry.stage.redhat.io` logins (pre-release, [before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md)); the grid ([grid bootstrap](02-grid.md)) and the tenant identity inputs ([tenant identity](04-tenant-identity.md)) for OpenShift AI |
+| Requires | [ACM](01-acm.md); OpenShift GitOps's settings (`apps/gitops-config`, [platform services](00-platform-services.md)); the `quay.io/rhoai` login, and optionally `registry.stage.redhat.io` (pre-release, [before you start](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/01-before-you-start.md)); the grid ([grid bootstrap](02-grid.md)) and the tenant identity inputs ([tenant identity](04-tenant-identity.md)) for OpenShift AI |
 
 ## Select it
 
@@ -146,10 +146,11 @@ Both components move with the library pin and need no manual step.
 ## Registry access and OpenShift AI prerequisites
 
 > **Important:** This release installs pre-release OpenShift AI 3.6 builds. Every cluster pulls them from
-> `quay.io/rhoai`, and the image mirror the library delivers sends every `registry.redhat.io/rhaii*` image, model
-> runtimes included, to `registry.stage.redhat.io` with `NeverContactSource`. You need logins for both registries,
-> which Red Hat gives only to early-access partners; ask your Red Hat contact. Without a stage login, model images fail
-> to pull on every site. What changes at general availability (the catalog source, the mirror, which logins you need)
+> `quay.io/rhoai`, which needs a login Red Hat gives only to early-access partners; ask your Red Hat contact. The image
+> mirror the library delivers tries `registry.stage.redhat.io` first for every `registry.redhat.io/rhaii*` image, model
+> runtimes included, and falls back to `registry.redhat.io` (`AllowContactingSource`). Released runtime images, such
+> as the console's CPU default, pull from `registry.redhat.io` with any OpenShift pull secret. A stage login is
+> optional: you need it only for runtime digests that exist only in nightly builds. What changes at general availability (the catalog source, the mirror, which logins you need)
 > isn't decided in the library yet ([known gaps](../known-gaps.md)).
 
 This component delivers, through ACM Policies on the hub, what every managed cluster needs before OpenShift AI installs
@@ -179,11 +180,10 @@ login once, on the hub, and this component delivers it and the mirror to every m
    podman login quay.io/rhoai
    ```
 
-3. Add a `registry.stage.redhat.io` login to the same auth file before you run the bootstrap script:
-   `podman login registry.stage.redhat.io`. The mirror sends every `registry.redhat.io/rhaii*` image, model runtimes
-   included, there and never contacts the source, so every site needs it. `bootstrap-hub.sh` passes it to
-   `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
-   tested site already had the model image.)*
+3. Optional: add a `registry.stage.redhat.io` login to the same auth file before you run the bootstrap script:
+   `podman login registry.stage.redhat.io`. You need it only for model runtime digests that exist only in nightly
+   builds; the mirror tries stage first and falls back to `registry.redhat.io`, where released runtimes, such as the
+   console's CPU default, are. `bootstrap-hub.sh` passes it to `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`.
 
 4. Run [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) in your deployment repository with the auth file, from
    your deployment checkout:
@@ -224,15 +224,18 @@ The registry pieces of the `rhoai-prerequisites` Policy:
 - The hub Secret's registries merged into `openshift-config/pull-secret`. Existing entries stay; the hub's win for
   the registries it holds. A bare `quay.io` entry in the hub Secret lands only as `quay.io/rhoai`, so the cluster's own
   `quay.io` login stays.
-- ImageDigestMirrorSet `quay-registry`: `registry.redhat.io/rhoai` from `quay.io/rhoai`, and
-  `registry.redhat.io/rhaii`, `rhaii-early-access` and `rhaii-fast` from `registry.stage.redhat.io`, all with
-  `mirrorSourcePolicy: NeverContactSource`.
+- ImageDigestMirrorSet `quay-registry`: `registry.redhat.io/rhoai` from `quay.io/rhoai` only
+  (`mirrorSourcePolicy: NeverContactSource`, because the pre-release operator images exist only there), and
+  `registry.redhat.io/rhaii`, `rhaii-early-access` and `rhaii-fast` from `registry.stage.redhat.io` first, then from
+  `registry.redhat.io` (`mirrorSourcePolicy: AllowContactingSource`).
 
 Neither delivery drains or reboots nodes. The Machine Config Operator writes the new pull secret and `registries.conf`
 to each node and reloads CRI-O: a pull secret change never needs a drain or reboot, and adding mirrors that are
 digest-only, as an ImageDigestMirrorSet's are, skips the drain ([OpenShift 4.22, Machine configuration, "About the Machine Config Operator"](https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html-single/machine_configuration/index#about-machine-config-operator_machine-config-overview); the same in 4.21). On the tested site the
 first delivery logged `Changes do not require drain, skipping` and `crio service reloaded` on every node, and no
-node restarted. Removing or changing a mirror later does drain the nodes, one at a time.
+node restarted. Removing or changing a mirror later does drain the nodes, one at a time: a cluster that had the
+library's earlier mirror, with `NeverContactSource` on the `rhaii` entries, drains each node once when it picks up
+this one.
 
 The [README](../../../apps/rhoai-prerequisites/README.md) has the details, including the OpenTelemetry workaround.
 
