@@ -73,8 +73,10 @@ your deployment repository, and the catalog. Every other component depends on it
      they are ready, and sync waves don't wait.
 
    It also creates ManagedClusterSetBinding `openshift-gitops/global`, so Placements in `openshift-gitops` can
-   select clusters from the `global` cluster set. That object needs ACM's CRDs, so the Application retries until
-   [ACM](01-acm.md#red-hat-advanced-cluster-management) is installed.
+   select clusters from the `global` cluster set. That object needs ACM's CRDs, which a fresh hub doesn't have, so it
+   skips Argo CD's dry run: the ArgoCD fields, the controller's memory included, apply at once, and the binding
+   follows on a retry once [ACM](01-acm.md#red-hat-advanced-cluster-management) is installed. Until then the
+   Application shows a failed sync for that one object; it retries for almost 3 hours.
 
 The Application never prunes, so removing it doesn't delete the ArgoCD instance.
 
