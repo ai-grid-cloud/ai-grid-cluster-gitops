@@ -10,13 +10,13 @@ library's values, the role's values and your values for that site.
 
 | Requirement | Details |
 |---|---|
-| OpenShift 4.21 or later | `check-prerequisites.sh --step spoke` checks it ([prepare each site](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/05-prepare-site.md#2-check-the-sites-infrastructure)) |
+| OpenShift 4.21 or later | [`check-prerequisites.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/check-prerequisites.sh) `--step spoke` checks it ([prepare each site](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/docs/install/05-prepare-site.md#2-check-the-sites-infrastructure)) |
 | A default StorageClass | OpenShift AI monitoring claims 20 GiB and 10 GiB; the MaaS database replica on an ingress or combined site claims 20 GiB |
 | A load balancer | Your cloud's, or MetalLB on bare metal ([site networking](networking.md#load-balancers)) |
 | Two Submariner gateway nodes | Worker-only nodes are labelled for you; label them by hand on compact clusters and single-node OpenShift ([site networking](networking.md#submariner-gateways)) |
 | DNS with no `NXDOMAIN` on `AAAA` | Every router name answers `AAAA` queries with an address or an empty answer ([site networking](networking.md#dns)) |
 | GPUs, for GPU models | Inference and combined sites only; CPU-only sites serve CPU models ([GPU operator and NFD](openshift-ai.md#nvidia-gpu-operator-and-node-feature-discovery)) |
-| `cluster-admin`, which you grant on the site yourself, and a break-glass admin | [Cluster sign-in and admins](../hub/00-platform-services.md#cluster-sign-in-and-admins) |
+| `cluster-admin`, which you grant on the site yourself | [Cluster sign-in and admins](../hub/00-platform-services.md#cluster-sign-in-and-admins) |
 
 ## What you choose per site
 

@@ -105,8 +105,8 @@ Provisioned.
 #### Call the console's API
 
 Everything the console's pages do goes through its API, so you can script it. The library's
-[`scripts/console-call.sh`](../../../scripts/console-call.sh) signs in as an OpenShift user through the htpasswd
-provider and makes one call:
+[`scripts/console-call.sh`](../../../scripts/console-call.sh) signs in as an OpenShift user with a password (an
+identity provider that accepts one, such as htpasswd or LDAP) and makes one call:
 
 ```sh
 scripts/console-call.sh --kubeconfig HUB_KUBECONFIG --password-file HUB_ADMIN_PASSWORD_FILE METHOD 'JSON'
@@ -161,8 +161,9 @@ repository.
   }'
   ```
 
-Replace `HUB_KUBECONFIG` with a kubeconfig file for the hub, `HUB_ADMIN_PASSWORD_FILE` with the break-glass admin's
-password file ([cluster sign-in and admins](00-platform-services.md#cluster-sign-in-and-admins)), and `SITE` with the
+Replace `HUB_KUBECONFIG` with a kubeconfig file for the hub, `HUB_ADMIN_PASSWORD_FILE` with a file holding the
+password of a hub user with `cluster-admin` (add `--user USER` if the user isn't `admin`;
+[cluster sign-in and admins](00-platform-services.md#cluster-sign-in-and-admins)), and `SITE` with the
 site's ACM cluster name.
 
 ### Bring your own

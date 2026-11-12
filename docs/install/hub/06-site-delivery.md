@@ -185,18 +185,15 @@ login once, on the hub, and this component delivers it and the mirror to every m
    `create-hub-secret.sh` as `RHOAI_STAGE_PULL_SECRET`, and warns when the auth file has none. *(Unverified: the
    tested site already had the model image.)*
 
-4. Run the library's [`scripts/bootstrap-hub.sh`](../../../scripts/bootstrap-hub.sh) with the auth file, from your
-   deployment checkout:
+4. Run [`scripts/bootstrap-hub.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/bootstrap-hub.sh) in your deployment repository with the auth file, from
+   your deployment checkout:
 
    ```sh
-   KUBECONFIG=HUB_KUBECONFIG RHOAI_QUAY_AUTH_FILE=AUTH_FILE ../library/scripts/bootstrap-hub.sh --deployment .
+   RHOAI_QUAY_AUTH_FILE=AUTH_FILE scripts/bootstrap-hub.sh
    ```
 
-   Replace the following:
-
-   - `HUB_KUBECONFIG`: a kubeconfig with a `cluster-admin` session on the hub.
-   - `AUTH_FILE`: your container auth file, such as `${XDG_RUNTIME_DIR}/containers/auth.json` or
-     `~/.config/containers/auth.json`.
+   It runs against the hub in your `clusters` file, with that cluster's login. Replace `AUTH_FILE` with your
+   container auth file, such as `${XDG_RUNTIME_DIR}/containers/auth.json` or `~/.config/containers/auth.json`.
 
    The script reads the `quay.io/rhoai` entry, never prints it, and runs the library's
    [`create-hub-secret.sh`](../../../apps/rhoai-prerequisites/create-hub-secret.sh). That creates Secret
