@@ -1,7 +1,6 @@
 # Operate
 
-Day-2 tasks for an installed AI Grid. Run the commands from your deployment repository, with the library checked
-out at `../library` as in the install guide.
+Day-2 tasks for an installed AI Grid. Run the commands from your deployment repository.
 
 ## Upgrade AI Grid
 
