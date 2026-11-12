@@ -10,13 +10,14 @@ An upgrade is one commit to your deployment repository that moves the library pi
 1. Read the library's commits between your pin and the new one, for anything that needs a new input, values file or
    manual step.
 
-2. In `root/kustomization.yaml`, replace the old SHA with the new one in all three places: the remote base
-   (`?ref=`), the generator `revision`, and `values.libraryRevision`. `sync-guide-pin.sh` then moves the install guide's
-   links into the library to the new SHA, and the commit carries both.
+2. Set every 40-character library commit in `root/kustomization.yaml` (the `bootstrap/hub` `?ref=`, the generator
+   `revision` and `libraryRevision`) to `NEW_SHA`, then run
+   [`scripts/sync-guide-pin.sh`](https://github.com/ai-grid-cloud/ai-grid-deployment-template/blob/main/scripts/sync-guide-pin.sh)
+   to move the guide's links. The scripts fetch the library at the new pin into `.library/` the next time they need
+   it. The commit carries both changes.
 
    ```sh
    sed -i.bak "s/OLD_SHA/NEW_SHA/g" root/kustomization.yaml && rm root/kustomization.yaml.bak
-   git -C ../library fetch -q && git -C ../library checkout -q NEW_SHA
    scripts/check-deployment.sh
    scripts/sync-guide-pin.sh
    git commit -am "root: move the library pin to NEW_SHA_SHORT" && git push
