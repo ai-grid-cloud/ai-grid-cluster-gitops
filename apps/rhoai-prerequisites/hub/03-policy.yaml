@@ -279,15 +279,15 @@ spec:
                     - source: registry.redhat.io/rhaii
                       mirrors:
                         - registry.stage.redhat.io/rhaii
-                      mirrorSourcePolicy: NeverContactSource
+                      mirrorSourcePolicy: AllowContactingSource
                     - source: registry.redhat.io/rhaii-early-access
                       mirrors:
                         - registry.stage.redhat.io/rhaii-early-access
-                      mirrorSourcePolicy: NeverContactSource
+                      mirrorSourcePolicy: AllowContactingSource
                     - source: registry.redhat.io/rhaii-fast
                       mirrors:
                         - registry.stage.redhat.io/rhaii-fast
-                      mirrorSourcePolicy: NeverContactSource
+                      mirrorSourcePolicy: AllowContactingSource
     - objectDefinition:
         apiVersion: policy.open-cluster-management.io/v1
         kind: ConfigurationPolicy

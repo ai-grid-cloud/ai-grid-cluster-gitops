@@ -21,7 +21,7 @@ delivery and the console are ACM Policies, Placements and ApplicationSets on the
 | [1. ACM, the multicluster engine and Submariner](01-acm.md) | The hub's control plane, its observability, and the tunnels to the sites | Ours, or your existing ACM hub (partly) | Object storage: S4 or ODF on the hub, or any S3 bucket; a load balancer and two gateway nodes per cluster (cloud or MetalLB) | Ours, S4, AWS load balancers |
 | [2. Grid](02-grid.md) | Grid bootstrap and enrollment, and the status policies | No choice (you can bring the CA) | cert-manager (0), ACM (1) | Ours, a new CA |
 | [5. Provider console and model delivery](05-console-and-model-delivery.md) | The provider's admin UI, and delivery of the catalog to the sites | Console optional; model delivery required | Console: Keycloak with Organizations (4) and a token that can write only the catalog repository | Both |
-| [6. Site delivery](06-site-delivery.md) | Site Placements, Argo CD registration, OpenShift AI's ApplicationSet, registry access | No choice | ACM (1); the `quay.io/rhoai` and stage logins (pre-release) | Ours |
+| [6. Site delivery](06-site-delivery.md) | Site Placements, Argo CD registration, OpenShift AI's ApplicationSet, registry access | No choice | ACM (1); the `quay.io/rhoai` login, optionally a stage login (pre-release) | Ours |
 | [7. Observability and usage logs](07-observability.md) | Dashboards for the console's **Monitoring** page, and MaaS usage logs | On or off | ODF object storage | Off |
 
 ## Shared services: on the hub, a site, or yours
