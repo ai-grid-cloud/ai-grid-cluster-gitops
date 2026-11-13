@@ -87,6 +87,23 @@ spec:
               - name: dependencies.clusterObservability.enabled
                 value: '{{ ne (index .metadata.labels "local-cluster") "true" | toString }}'
             values: |
+              components:
+                kserve:
+                  gateway:
+                    annotations:
+                      # The chart profile's annotation plus clientCertificate: Grid presents its
+                      # site certificate on the grid listener and sends no token. tokenSecret
+                      # stays so removing clientCertificate restores the token path. An ingress
+                      # site renders no serving gateway, so the value is unused there.
+                      grid.opendatahub.io/serving: >-
+                        {
+                          "networkName": "grid",
+                          "namespace": "redhat-ai-grid",
+                          "serviceAccount": "grid-model-client",
+                          "tokenSecret": "grid-model-client-token",
+                          "publishMetrics": true,
+                          "clientCertificate": {"listener": "grid", "siteName": {{ .name | quote }}}
+                        }
               praxis-gateway:
                 # The consumer gateway does not authenticate its caller, so only the MaaS gateway's pods reach it.
                 networkPolicy:
