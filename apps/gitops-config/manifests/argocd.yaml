@@ -863,7 +863,19 @@ spec:
               hs.status = "Healthy"
               hs.message = condition.message or "Placement decisions are scheduled"
               return hs
-            elseif condition.status == "False" then
+            end
+            -- A Placement that matches no cluster yet is the normal state of a
+            -- site Placement until the first site is added. Degraded here fails
+            -- the sync task, and Argo CD then never applies the app's later
+            -- waves, including hub-side objects in the same app (the hub's
+            -- image mirror Policy in rhoai-prerequisites, the Loki operator in
+            -- ai-grid-usage-logs). Report it Healthy so those waves proceed.
+            if condition.status == "False" and condition.reason == "NoManagedClusterMatched" then
+              hs.status = "Healthy"
+              hs.message = "No ManagedCluster matches yet: " .. (condition.message or "waiting for a cluster")
+              return hs
+            end
+            if condition.status == "False" then
               hs.status = "Degraded"
               hs.message = condition.message or "Placement decisions are not scheduled"
               return hs
