@@ -38,7 +38,7 @@ export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redha
 ./bootstrap.sh
 ```
 
-bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
+bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs and the Argo CD instance, then installs ACM by hand — the root ApplicationSet cannot, because its cluster generators only see local-cluster once ACM exists — waits for the MultiClusterHub, labels local-cluster per the profile, and applies the root ApplicationSet. Argo then syncs every app from the fork.
 
 After `bootstrap.sh` completes, run this manual check. `READY` confirms registration
 prerequisites only; it does not check MultiClusterHub completion or Argo cluster
@@ -48,20 +48,22 @@ registration. If it reports `NOT READY`, inspect the reported failure before ret
 docs/acm/cluster-onboarding/check-hub-ready.sh --hub-context <hub-context>
 ```
 
-Both profiles wait for the hub's Argo cluster registration and its
+Every profile waits for the hub's Argo cluster registration and its
 `openshiftVersion-major-minor` label before generating ODF, so its operator
 channel matches the hub. ACM and cluster registration start independently.
 
-The root ApplicationSet is the one object Argo does not sync from Git. After a change to bootstrap/applicationset.yaml, or to bootstrap/dedicated-hub/applicationset.yaml on a dedicated hub, apply it again from the revision the hub tracks:
+After bootstrap the root ApplicationSet manages itself: it generates a `root`
+Application that syncs `bootstrap/applicationset.yaml` from Git. If a change to
+that file leaves the appset out of sync in a way self-heal cannot repair, apply
+it again from the revision the hub tracks:
 
 ```bash
-oc apply -f bootstrap/applicationset.yaml                 # combined hub
-oc apply -f bootstrap/dedicated-hub/applicationset.yaml   # dedicated hub
+oc apply -f bootstrap/applicationset.yaml
 ```
 
 Every Application it generates syncs from Git on its own.
 
-Both roots set `preserveResourcesOnDeletion: true`: deleting a root, or removing an app from its generator, removes the Application but leaves its deployed resources running, so clean those up separately. An explicit cascading delete from the Argo UI or API can still delete an Application's unprotected resources.
+The root sets `preserveResourcesOnDeletion: true`: deleting the root, or removing an app from its generator, removes the Application but leaves its deployed resources running, so clean those up separately. An explicit cascading delete from the Argo UI or API can still delete an Application's unprotected resources.
 
 ## Installing ACM
 
@@ -82,7 +84,7 @@ docs/acm/cluster-onboarding/import-managed-cluster.sh --spoke-context <spoke> --
 
 The hub manages the grid: CA, grid ID, policies. It needs no Grid CRDs. Running Grid workloads on it is optional.
 
-Needs ACM as above and cert-manager. On a hub that is also a site, the RHOAI app supplies four things grid-bootstrap depends on: cert-manager, the redhat-ai-grid namespace, ClusterSet global bound into that namespace, and, through rhoai-prerequisites, the quay.io/rhoai mirror and pull Secret its pre-release image needs. A hub that is not a site gets them from the [dedicated-hub profile](#dedicated-hub).
+Needs ACM as above and cert-manager. On a hub that is also a site, the RHOAI app supplies four things grid-bootstrap depends on: cert-manager, the redhat-ai-grid namespace, ClusterSet global bound into that namespace, and, through rhoai-prerequisites, the quay.io/rhoai mirror and pull Secret its pre-release image needs. A hub that is not a site gets them from the is-hub layer of the root ApplicationSet ([hub profiles](#hub-profiles)).
 
 Install grid-enrollment on the hub with the grid-bootstrap app. Its values, [apps/grid-bootstrap/values.yaml](../../../apps/grid-bootstrap/values.yaml):
 
@@ -124,33 +126,78 @@ The hub is a site only if labelled. Proposed: managedClusters.includeHub, defaul
 
 Verify: membership policies Compliant, each member's GridNetwork Active with the grid ID.
 
-## Dedicated hub
+## Hub profiles
 
-A dedicated hub runs ACM, cert-manager and grid-enrollment, and no Grid or RHOAI workloads. Bootstrap it with the dedicated-hub profile:
+`BOOTSTRAP_PROFILE` picks what the hub runs by labelling `local-cluster`; the
+root ApplicationSet layers Applications on those labels:
 
-```bash
-BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh
-```
+| `BOOTSTRAP_PROFILE` | Labels on `local-cluster` | Hub runs |
+|---|---|---|
+| `""` (default) | `ai-grid/is-hub=true`, `ai-grid/is-maas-infra=true` | Everything, including the MaaS state apps |
+| `hub` | `ai-grid/is-hub=true` | Everything but the MaaS state apps |
+| `acm-and-gitops-only` | none | GitOps + ACM only ([foundation only](#foundation-only)) |
 
-Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, acm-models, ai-grid-o11y, ai-grid-policies, ai-grid-spokes, argo-registration, cert-manager, console, external-secrets, gitops-config, grid-bootstrap, keycloak, limitador-redis, maas-db, metallb, odf, rhoai and rhoai-prerequisites. ACM syncs the full [apps/acm/manifests](../../../apps/acm/manifests) — core, observability, search and Submariner — with [apps/odf](../../../apps/odf) supplying the object storage observability needs. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
+The two non-foundation profiles differ only in `ai-grid/is-maas-infra`, which
+adds [apps/maas-db](../../../apps/maas-db), [apps/limitador-redis](../../../apps/limitador-redis)
+and [apps/external-secrets](../../../apps/external-secrets): the MaaS database
+primary, Limitador's Redis and the secret operator. The old `dedicated-hub`
+profile (MaaS state on the hub) maps to the new default `""`; `hub` is the new
+management-only combination. This is a behavior change for hubs bootstrapped
+with the old default profile: their is-hub layer now also installs
+[apps/cert-manager](../../../apps/cert-manager), [apps/argo-registration](../../../apps/argo-registration)
+and [apps/ai-grid-usage-logs](../../../apps/ai-grid-usage-logs).
 
-The root generates all Applications except ODF directly from Git, so ACM and argo-registration can start on a fresh hub without an existing Argo cluster registration. ODF is generated separately once the local-cluster registration carries the openshiftVersion-major-minor label; its operator channel then matches that version. Until registration and the version label are available, ODF is absent and ACM observability may wait for its object storage. Verify that acm and argo-registration exist immediately, then check registration and the version label if odf does not appear. An ApplicationSet success condition alone does not confirm that the expected Applications were generated.
+The is-hub layer generates acm-models, ai-grid-policies, ai-grid-spokes,
+ai-grid-usage-logs, ai-grid-o11y, argo-registration, cert-manager, cluster-config,
+console, gitops-config, grid-bootstrap, keycloak, metallb, rhoai and
+rhoai-prerequisites — ai-grid-o11y through its `$values` source in the appset
+itself.
+The acm Application is generated as soon as ACM registers local-cluster with
+Argo and, because the hub carries `ai-grid/is-hub`, syncs the full
+[apps/acm/manifests](../../../apps/acm/manifests) — core, observability, search
+and Submariner — with [apps/odf](../../../apps/odf) supplying the object storage
+observability needs. On a foundation hub without the label it stays narrowed to
+ACM's OperatorGroup, Subscription and MultiClusterHub.
+
+ODF is generated separately, once the local-cluster registration carries the
+openshiftVersion-major-minor label; its operator channel then matches that
+version. Until registration and the version label are available, ODF is absent
+and ACM observability may wait for its object storage. Verify that acm and
+argo-registration exist immediately, then check registration and the version
+label if odf does not appear. An ApplicationSet success condition alone does
+not confirm that the expected Applications were generated.
 
 ODF installs into openshift-storage, which OLM allows only one OperatorGroup. The ODF app creates that group and never prunes it. On a hub that already has one there, for example from an LVMS install, label the local-cluster ManagedCluster ai-grid/odf-operatorgroup=existing so ODF uses it instead.
 
-[apps/argo-registration](../../../apps/argo-registration) registers every cluster in global with Argo CD, which on a combined hub acm-models does, so the default ApplicationSet skips it. The rhoai app installs RHOAI and the role's Grid gateways on each AI Grid site, as [apps/ai-grid-spokes](../../../apps/ai-grid-spokes) selects them by label and role.
+[apps/argo-registration](../../../apps/argo-registration) registers every cluster in global with Argo CD. [apps/acm-models](../../../apps/acm-models) brings the sample model and its MaaS objects, to AI Grid sites by role, and the provider console's catalog: its AppProjects and ApplicationSets, which deliver the models and subscriptions the console commits (see [Provider console](#provider-console)). Its GitOpsCluster would duplicate argo-registration, so it stays out.
 
-acm-models brings the sample model and its MaaS objects, to AI Grid sites by role, and the provider console's catalog: its AppProjects and ApplicationSets, which deliver the models and subscriptions the console commits (see [Provider console](#provider-console)). Its GitOpsCluster would duplicate argo-registration, so it stays out.
+The default profile runs MaaS's shared state on the hub: the maas-db primary, Keycloak and Limitador's Redis. Sites reach them over Submariner, and ingress and combined sites get a maas-db read replica. To hold that state on one site instead, label it ai-grid/external-services=true and apply [apps/external-services](../../../apps/external-services)/application.yaml, which installs them there. Do not use both. The root ApplicationSet never generates external-services, so a hub that runs the state itself carries no external-services Placement.
 
-The hub runs MaaS's shared state: the maas-db primary, Keycloak and Limitador's Redis. Sites reach them over Submariner, and ingress and combined sites get a maas-db read replica. To hold that state on one site instead, label it ai-grid/external-services=true and apply [apps/external-services](../../../apps/external-services)/application.yaml, which installs them there. Do not use both. Neither root ApplicationSet generates external-services, so a hub that runs the state itself carries no external-services Placement.
-
-The profile sets two grid-bootstrap values for a new grid on its own hub: external.certManager.ca.mode Generate, and managedClusters.createClusterSetBinding true, since no RHOAI app binds ClusterSet global into redhat-ai-grid there. Keep Generate for the life of the hub: its CA is a cert-manager Certificate.
+The root ApplicationSet forces one grid-bootstrap value:
+managedClusters.createClusterSetBinding true. The `global` ManagedClusterSetBinding moves from the rhoai app, whose binding is now excluded, to grid-bootstrap — an ownership handoff of the same resource, not a duplicate; existing grid hubs pick the new owner up on their next sync. external.certManager.ca.mode is no longer forced by the appset: it comes from [apps/grid-bootstrap/values.yaml](../../../apps/grid-bootstrap/values.yaml). The lab keeps `Existing` there; a new grid sets `Generate`, since its CA is a cert-manager Certificate.
 
 rhoai-prerequisites delivers the quay.io/rhoai mirror and pull Secret to every cluster in global, the hub included. The grid-enrollment image needs them, so set RHOAI_QUAY_PULL_SECRET before bootstrap.sh, as for any hub. Without it, grid-bootstrap's CA Job stays in ImagePullBackOff. Applying the mirror reboots each node once, so a single-node hub drops out for a few minutes. To avoid the mirror, pin the grid-enrollment image to the public ODH build in the grid-bootstrap values.
 
 A hub with no load balancer labels local-cluster ai-grid/metallb-pool=<first>-<last> with a free range, so its Submariner gateways get an address.
 
-Verify: an Application for each app in that list, plus dedicated-hub-root and the ones acm-models and the site ApplicationSets generate, Synced and Healthy (console only after [its Secrets](#provider-console) exist), the MultiClusterHub Running, and local-cluster joined and available. Do not label local-cluster with ai-grid/enabled; that label alone would make the hub a site.
+Verify: an Application for each app in that list, plus root and the ones acm-models and the site ApplicationSets generate, Synced and Healthy (console only after [its Secrets](#provider-console) exist), the MultiClusterHub Running, and local-cluster joined and available. Do not label local-cluster with ai-grid/enabled; that label alone would make the hub a site.
+
+## Foundation only
+
+`BOOTSTRAP_PROFILE=acm-and-gitops-only ./bootstrap.sh` prepares a hub that stops
+at OpenShift GitOps, Argo CD and ACM: no grid, no RHOAI, no MaaS state. The
+sequence is owned by `bootstrap.sh`. Before running it, check:
+
+1. `oc --kubeconfig <hub> whoami` confirms the identity and API server you expect.
+2. The `redhat-operators` CatalogSource is Ready and offers
+   `openshift-gitops-operator` `latest` and `advanced-cluster-management`
+   `release-2.17`.
+3. The cluster-wide `cluster-admin` grant in
+   `bootstrap/openshift-gitops-admin.yaml` is approved separately from Argo CD
+   UI access.
+4. No kubeconfig, password or token goes into this repository.
+
+Broaden the hub later by labelling local-cluster, as in the table above.
 
 ## Provider console
 

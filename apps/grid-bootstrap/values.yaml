@@ -24,8 +24,9 @@ managedClusters:
   clusterSet: global
   clusterLabel: ai-grid/enabled
   clusterLabelValue: 'true'
-  # The rhoai hub manifests own the shared binding.
-  createClusterSetBinding: false
+  # grid-bootstrap owns the shared binding; the root ApplicationSet's
+  # templatePatch also forces this true, and the rhoai app excludes its own.
+  createClusterSetBinding: true
   hubClusterName: local-cluster
 external:
   delivery:
