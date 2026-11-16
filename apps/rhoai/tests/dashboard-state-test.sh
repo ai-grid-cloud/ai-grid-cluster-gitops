@@ -75,7 +75,7 @@ PY
 }
 
 for role in ingress combined inference; do
-  want='Managed Managed'
+  want='Removed Managed'
   if [ "$role" = inference ]; then want='Removed Removed'; fi
   if render "$HERE/../values.yaml" "$HERE/../roles/$role.yaml" "$T/$role.yaml" &&
      got=$(states "$T/$role.yaml"); then
