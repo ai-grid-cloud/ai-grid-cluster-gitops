@@ -140,7 +140,8 @@ spec:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
   # ODF provides the object storage ACM observability needs, so acm syncs
-  # the full apps/acm/manifests. A new grid generates its CA, and grid-bootstrap
+  # the full apps/acm/manifests and, as a second source, the ODF object
+  # storage (apps/object-storage/odf), which used to be part of it. A new grid generates its CA, and grid-bootstrap
   # binds global in place of the rhoai app's binding. acm-models brings the
   # console's catalog (its ApplicationSets and AppProjects), not its
   # GitOpsCluster: argo-registration registers clusters here. It also syncs
@@ -186,6 +187,11 @@ spec:
     {{- end }}
     {{- if eq .metadata.name "rhoai" }}
     {{- $_ := set $spec.source.kustomize "patches" (append $spec.source.kustomize.patches (dict "patch" "$patch: delete\napiVersion: cluster.open-cluster-management.io/v1beta2\nkind: ManagedClusterSetBinding\nmetadata:\n  name: global\n  namespace: redhat-ai-grid\n")) }}
+    {{- end }}
+    {{- if eq .metadata.name "acm" }}
+    {{- $storage := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/object-storage/odf/manifests" }}
+    {{- $_ := set $spec "sources" (list $spec.source $storage) }}
+    {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision
           "deploymentRepoURL" .values.repoURL "deploymentRevision" .values.targetRevision) (omit .values "repoURL" "targetRevision") }}

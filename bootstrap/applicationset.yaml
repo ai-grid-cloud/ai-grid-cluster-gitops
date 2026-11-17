@@ -131,10 +131,11 @@ spec:
       destination:
         server: '{{.spec.destination.server}}'
         namespace: '{{.spec.destination.namespace}}'
-  # acm-models also syncs the sample models (apps/acm-models-samples), which
-  # used to share its directory, so they keep their Application. Then every @<name>@ a component writes is replaced from
-  # $inputs, JSON-escaped. This repository is also the deployment repository:
-  # the lab's values are in values/.
+  # acm-models also syncs the sample models (apps/acm-models-samples), and acm
+  # the ODF object storage for observability (apps/object-storage/odf), so
+  # they keep their Application. Then every @<name>@ a component writes is
+  # replaced from $inputs, JSON-escaped. This repository is also the
+  # deployment repository: the lab's values are in values/.
   templatePatch: |
     {{- $spec := .spec }}
     {{- if eq .metadata.name "odf" }}
@@ -149,6 +150,11 @@ spec:
           "kustomize" (dict "patches" (list (dict "target" (dict "kind" "ConfigMap" "name" "library-inputs")
             "patch" "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: library-inputs\ndata:\n  libraryRepoURL: '@libraryRepoURL@'\n  libraryRevision: '@libraryRevision@'\n"))) }}
     {{- $_ := set $spec "sources" (list $spec.source $samples) }}
+    {{- $_ := unset $spec "source" }}
+    {{- end }}
+    {{- if eq .metadata.name "acm" }}
+    {{- $storage := dict "repoURL" "@libraryRepoURL@" "targetRevision" "@libraryRevision@" "path" "apps/object-storage/odf/manifests" }}
+    {{- $_ := set $spec "sources" (list $spec.source $storage) }}
     {{- $_ := unset $spec "source" }}
     {{- end }}
     {{- $inputs := merge (dict "libraryRepoURL" .values.repoURL "libraryRevision" .values.targetRevision
