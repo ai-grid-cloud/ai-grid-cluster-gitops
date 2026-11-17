@@ -79,6 +79,9 @@ metadata:
 EOF
 oc apply -f apps/acm/manifests/core/operator-group.yaml
 oc apply -f apps/acm/manifests/core/subscription.yaml
+# The MultiClusterHub CRD only registers once the ACM operator installs;
+# wait for it before creating the MCH, mirroring the Argo CD CRD waits above.
+wait_for_crd multiclusterhubs.operator.open-cluster-management.io
 oc apply -f apps/acm/manifests/core/multiclusterhub.yaml
 
 # Wait for health: the ACM Subscription's CSV (MCH_READY_TIMEOUT_SECONDS,
