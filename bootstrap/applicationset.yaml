@@ -90,6 +90,9 @@ spec:
                 syncOptions:
                   - CreateNamespace=true
                   - SkipDryRunOnMissingResource=true
+                  # Foreground pruning keeps the LokiStack while its operator recreates the children
+                  # being collected; delete the owner first and let garbage collection follow.
+                  - PrunePropagationPolicy=background
   template:
     metadata:
       name: '{{.metadata.name}}'
