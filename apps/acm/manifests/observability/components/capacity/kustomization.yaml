@@ -1,0 +1,11 @@
+# Optional hub retention profile. Enable in ../../kustomization.yaml after sizing the object store.
+# The base already sets the compactor volume and receiver count; scrape cadence belongs to ScrapeConfigs.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+  - path: multiclusterobservability.yaml
+    target:
+      group: observability.open-cluster-management.io
+      version: v1beta2
+      kind: MultiClusterObservability
+      name: observability

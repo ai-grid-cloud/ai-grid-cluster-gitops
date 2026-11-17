@@ -1,0 +1,10 @@
+apiVersion: observability.open-cluster-management.io/v1beta2
+kind: MultiClusterObservability
+metadata:
+  name: observability
+spec:
+  advanced:
+    retentionConfig:
+      retentionResolutionRaw: 45d
+      retentionResolution5m: 90d
+      retentionResolution1h: 365d

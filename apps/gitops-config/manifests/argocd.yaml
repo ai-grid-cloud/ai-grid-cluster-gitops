@@ -1604,3 +1604,38 @@ spec:
         hs.status = "Progressing"
         hs.message = "Waiting for the MaasTenantConfig Ready condition"
         return hs
+    - group: noobaa.io
+      kind: BackingStore
+      check: |
+        hs = {}
+        if obj.status == nil or obj.status.phase == nil then
+          hs.status = "Progressing"
+          hs.message = "Waiting for the BackingStore phase"
+          return hs
+        end
+        if obj.status.conditions ~= nil then
+          for _, c in ipairs(obj.status.conditions) do
+            if c.type == "Degraded" and c.status == "True" then
+              hs.status = "Degraded"
+              hs.message = c.message or c.reason or "BackingStore is degraded"
+              return hs
+            end
+          end
+        end
+        local mode = ""
+        if obj.status.mode ~= nil and obj.status.mode.modeCode ~= nil then
+          mode = " (mode " .. obj.status.mode.modeCode .. ")"
+        end
+        if obj.status.phase == "Ready" then
+          hs.status = "Healthy"
+          hs.message = "Ready" .. mode
+          return hs
+        end
+        if obj.status.phase == "Rejected" then
+          hs.status = "Degraded"
+          hs.message = "Rejected" .. mode
+          return hs
+        end
+        hs.status = "Progressing"
+        hs.message = obj.status.phase .. mode
+        return hs
