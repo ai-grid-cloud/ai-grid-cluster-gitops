@@ -96,7 +96,8 @@ wait_for_acm_csv() {
     request_timeout=30; [ "$request_timeout" -gt "$remaining" ] && request_timeout=$remaining
     if csv=$(oc --request-timeout="${request_timeout}s" -n open-cluster-management get clusterserviceversions.operators.coreos.com -o name 2>/dev/null | grep -m1 advanced-cluster-management) \
       && [ -n "$csv" ] \
-      && oc --request-timeout="${request_timeout}s" -n open-cluster-management wait --for=condition=Succeeded "$csv" --timeout="${request_timeout}s" 2>/dev/null \
+      && phase=$(oc --request-timeout="${request_timeout}s" -n open-cluster-management get "$csv" -o jsonpath='{.status.phase}' 2>/dev/null) \
+      && [ "$phase" = Succeeded ] \
       && [ "$SECONDS" -lt "$deadline" ]; then
       return 0
     fi
@@ -116,7 +117,7 @@ wait_for_mch() {
   while [ "$SECONDS" -lt "$deadline" ]; do
     remaining=$((deadline - SECONDS)); [ "$remaining" -gt 0 ] || break
     request_timeout=30; [ "$request_timeout" -gt "$remaining" ] && request_timeout=$remaining
-    if oc --request-timeout="${request_timeout}s" -n open-cluster-management wait --for=condition=Available multiclusterhub.operator.open-cluster-management.io/multiclusterhub --timeout="${request_timeout}s" 2>/dev/null \
+    if oc --request-timeout="${request_timeout}s" -n open-cluster-management wait --for=condition=Complete multiclusterhub.operator.open-cluster-management.io/multiclusterhub --timeout="${request_timeout}s" 2>/dev/null \
       && [ "$SECONDS" -lt "$deadline" ]; then
       return 0
     fi
