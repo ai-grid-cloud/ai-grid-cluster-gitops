@@ -30,7 +30,9 @@ Environment:
   REGISTRATION_SA_NAMESPACE    Default for --registration-sa-namespace.
 
 The command prints a summary and exits without changing either cluster unless
---yes is supplied.
+--yes is supplied. With --yes it first labels two of the spoke's worker nodes
+submariner.io/gateway=true, unless two already carry it
+(scripts/label-gateway-nodes.sh).
 EOF
 }
 
@@ -44,6 +46,8 @@ die() {
   printf 'error: %s\n' "$*" >&2
   exit 1
 }
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 hub_context="${HUB_CONTEXT:-}"
 spoke_context="${SPOKE_CONTEXT:-}"
@@ -206,6 +210,7 @@ Spoke context:    $spoke_context
 Cluster name:     $cluster_name
 Bootstrap token:  $use_bootstrap_token
 Action:           $([ "$managed_cluster_exists" = true ] && printf 'resume registration' || printf 'new import')
+Gateway nodes:    label two spoke workers submariner.io/gateway=true if fewer carry it
 
 This may install the klusterlet on the spoke, accept the cluster on the hub,
 and trigger the repository's full application fan-out. Existing registration
@@ -216,6 +221,10 @@ if [ "$confirmed" != true ]; then
   printf '\nNo changes were made. Rerun with --yes to import the cluster.\n'
   exit 0
 fi
+
+# Submariner needs two gateway nodes on the spoke, and its add-on can't label them.
+"$script_dir/../../../scripts/label-gateway-nodes.sh" --context "$spoke_context" ||
+  printf 'warning: could not label Submariner gateway nodes on %s; label two workers submariner.io/gateway=true by hand\n' "$spoke_context" >&2
 
 if [ "$managed_cluster_exists" = false ]; then
   if [ -n "$registration_sa_namespace" ]; then

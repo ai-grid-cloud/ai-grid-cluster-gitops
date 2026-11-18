@@ -8,6 +8,9 @@ case "$profile" in
   ""|dedicated-hub) ;;
   *) echo "ERROR: unknown BOOTSTRAP_PROFILE ${profile}." >&2; exit 1 ;;
 esac
+# Submariner needs two gateway nodes on the hub too (local-cluster), and its add-on can't label them.
+bash scripts/label-gateway-nodes.sh ||
+  echo "WARNING: could not label Submariner gateway nodes on the hub; label two workers submariner.io/gateway=true by hand." >&2
 oc apply -f bootstrap/namespace.yaml
 oc apply -f bootstrap/gitops-operator-group.yaml
 oc apply -f bootstrap/openshift-gitops-sub.yaml

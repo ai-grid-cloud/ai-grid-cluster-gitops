@@ -84,9 +84,16 @@ as an override when present.
   traces on every site. An ingress or combined site claims 20Gi for its MaaS
   database replica. The sample models pull weights at start and claim nothing.
 - Submariner gateway nodes. Every managed cluster gets the add-on with two
-  gateways and Globalnet. Label two workers `submariner.io/gateway=true` on each
-  cluster, the hub included, because the add-on has no cloud credentials to do it. Over it the site reaches the hub's enrollment service
-  and the MaaS database primary.
+  gateways and Globalnet. Over it the site reaches the hub's enrollment service
+  and the MaaS database primary. The add-on has no cloud credentials to label
+  gateway nodes, so `import-managed-cluster.sh --yes` labels two of the spoke's
+  workers `submariner.io/gateway=true`, and `bootstrap.sh` two of the hub's,
+  through `scripts/label-gateway-nodes.sh`. It picks Ready, schedulable workers
+  outside the control plane, nodes without GPUs first, labels only as many as
+  are missing, never removes or changes a label, and does nothing when two
+  nodes already carry it. To choose the nodes yourself, label them before you
+  run the script. A compact cluster or single-node OpenShift has no such
+  workers: the script prints a note, and you label the nodes by hand.
 - A default router the other sites can reach. Peers dial the provider gateway
   through it on 443 with TLS passthrough.
 - DNS that returns valid AAAA records for the router's wildcard names, or
@@ -203,16 +210,19 @@ After reviewing the summary, rerun the command with `--yes`. The script:
    DNS-1123 compliant.
 2. Detects an existing `ManagedCluster` and resumes its registration instead
    of reinstalling the klusterlet.
-3. Gets a hub join token only for a new import.
-4. Installs the klusterlet on the target cluster.
-5. Waits for the `ManagedCluster` to be created.
-6. Accepts the cluster on the hub when `spec.hubAcceptsClient` is false.
-7. Approves the cluster CSR when needed, including Red Hat ACM's
+3. Labels two of the target cluster's workers `submariner.io/gateway=true`
+   unless two nodes already carry it (see
+   [What the site must provide](#what-the-site-must-provide)).
+4. Gets a hub join token only for a new import.
+5. Installs the klusterlet on the target cluster.
+6. Waits for the `ManagedCluster` to be created.
+7. Accepts the cluster on the hub when `spec.hubAcceptsClient` is false.
+8. Approves the cluster CSR when needed, including Red Hat ACM's
    `multicluster-engine` registration service account.
-8. Waits for the `ManagedClusterJoined` condition.
-9. Enables the `application-manager` add-on required by this repository's
-   legacy `GitOpsCluster` integration.
-10. Waits for Argo CD's cluster secret to be created.
+9. Waits for the `ManagedClusterJoined` condition.
+10. Enables the `application-manager` add-on required by this repository's
+    legacy `GitOpsCluster` integration.
+11. Waits for Argo CD's cluster secret to be created.
 
 The script creates no `KlusterletAddonConfig`, so ACM installs no Search
 collector by itself. The hub's `search-collector` policy
@@ -222,7 +232,8 @@ imported with a `KlusterletAddonConfig` keeps whatever that config says.
 
 The script is safe to rerun after a partial import. If the cluster is already
 accepted and joined, it performs no registration changes and returns after
-verifying the joined condition.
+verifying the joined condition; the gateway-node step is a no-op once two
+nodes are labelled.
 
 The script automatically requests a short-lived token from
 `agent-registration-bootstrap` in either the upstream OCM namespace

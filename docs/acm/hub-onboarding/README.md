@@ -38,7 +38,7 @@ export RHOAI_STAGE_PULL_SECRET=<base64 of user:password for registry.stage.redha
 ./bootstrap.sh
 ```
 
-bootstrap.sh installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
+bootstrap.sh first labels two of the hub's worker nodes `submariner.io/gateway=true` for Submariner's gateways (the hub is managed cluster `local-cluster`), unless two already carry it; see [Submariner gateway nodes](../cluster-onboarding/README.md#what-the-site-must-provide). It then installs the openshift-gitops-operator Subscription, waits for the Argo CRDs, and applies a root ApplicationSet over apps/*/application.yaml. Argo then syncs every app from the fork.
 
 After `bootstrap.sh` completes, run this manual check. `READY` confirms registration
 prerequisites only; it does not check MultiClusterHub completion or Argo cluster
