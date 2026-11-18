@@ -74,7 +74,8 @@ as an override when present.
   OperatorGroup and Subscription, which would otherwise be tracked by two
   Argo CD apps and leave `ai-grid-usage-logs` OutOfSync. Nothing else in the
   chart changes; the hub app's operator watches all namespaces, so it serves
-  the site as well.
+  the site as well. The usage-logs Policy also selects `local-cluster` by its
+  role, so the all-in-one's own site gets usage logs like any other site.
 
   Never set it on the default root, or on any other cluster: the default root
   leaves `ai-grid-usage-logs` out, so the chart's copy is the only Loki

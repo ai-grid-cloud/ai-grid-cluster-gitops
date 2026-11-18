@@ -154,7 +154,13 @@ spokePolicy:
           - ingress
           - combined
 
-    excludeLocalCluster: true
+    # false: the role predicate already decides. A dedicated hub carries no
+    # ai-grid/role, so it is not selected; a hub that is also an ingress or
+    # combined site (an all-in-one) is, and gets the usage-log credentials and
+    # read endpoint like any other site. With true, the chart adds
+    # `local-cluster DoesNotExist`, and an all-in-one's own site never gets them:
+    # maas-api has no Loki read settings, and the portal's usage views fail.
+    excludeLocalCluster: false
 
   spoke:
     monitoringNamespace: redhat-ods-monitoring
