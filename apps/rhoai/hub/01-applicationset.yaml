@@ -75,6 +75,13 @@ spec:
               # cluster carries ai-grid/platform-namespaces=true (set before upgrading).
               - name: dependencies.loki.olm.createNamespace
                 value: '{{ if eq (index .metadata.labels "ai-grid/platform-namespaces") "true" }}false{{ else }}true{{ end }}'
+              # An all-in-one (the hub is also a site) gets the Loki operator from the hub's
+              # apps/ai-grid-usage-logs, which owns the same Namespace, OperatorGroup and
+              # Subscription; two Argo CD apps tracking them leave ai-grid-usage-logs OutOfSync.
+              # Such a cluster carries ai-grid/hub-loki-operator=true, and the chart skips only
+              # the operator install. Every other cluster keeps the chart default, auto.
+              - name: dependencies.loki.enabled
+                value: '{{ if eq (index .metadata.labels "ai-grid/hub-loki-operator") "true" }}false{{ else }}auto{{ end }}'
               # RHOAIENG-99507: on the hub, RHACM's multicluster-observability-addon
               # installs Cluster Observability Operator with its own OperatorGroup,
               # which conflicts with the chart's (named after the package) and blocks

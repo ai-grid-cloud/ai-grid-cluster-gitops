@@ -27,7 +27,7 @@ What this app adds is what that one lacks:
 
 | | |
 |---|---|
-| `manifests/00-loki-operator.yaml` | The Loki operator. `apps/ai-grid-o11y` renders a LokiStack but ships no Subscription, and on a dedicated hub nothing else installs one — it otherwise arrives with the RHOAI chart's `dependencies.loki`, which a hub running no RHOAI never pulls in. |
+| `manifests/00-loki-operator.yaml` | The Loki operator. `apps/ai-grid-o11y` renders a LokiStack but ships no Subscription, and on a dedicated hub nothing else installs one — it otherwise arrives with the RHOAI chart's `dependencies.loki`, which a hub running no RHOAI never pulls in. On an all-in-one, label `local-cluster` `ai-grid/hub-loki-operator=true` so the site's chart leaves these objects to this app. |
 | the chart's spoke Policy | Ships the writer token, patches each site's `DSCInitialization` with the exporter configuration, and delivers the read credential — query endpoint, read-only token and the CA bundle that verifies the store Route's certificate — to `redhat-ai-gateway-infra` on every selected site. |
 | `manifests/20-hub-template-rbac.yaml` | Lets ACM resolve the Policy's hub templates: the ingest Route in `redhat-ods-monitoring`, both credentials in `ai-grid-policies`, and the default ingress certificate ConfigMap in `openshift-config-managed` the read credential's CA template falls back to. |
 | `manifests/30-rbac-provision-usage-logs-tokens.yaml` | The identity both token-provisioning Jobs run as: minting tokens for the two `apps/ai-grid-o11y` ServiceAccounts, reading the store Route, and writing the credentials in `ai-grid-policies`. |
