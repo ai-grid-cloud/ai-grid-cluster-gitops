@@ -66,26 +66,66 @@ as an override when present.
   the default and the chart creates it. `redhat-ods-operator` is owned by the
   prerequisites policy on every site and is not affected by this label.
 
-- If the hub is also a site (an all-in-one: `local-cluster` with a role), label
-  it `ai-grid/hub-loki-operator=true` together with the role. The hub's
-  `ai-grid-usage-logs` app installs the Loki operator there, and the label makes
-  the site's rhoai chart skip its own copy of the same Namespace, OperatorGroup
-  and Subscription, which would otherwise be tracked by two Argo CD apps and
-  leave `ai-grid-usage-logs` OutOfSync. Nothing else in the chart changes; the
-  hub app's operator watches all namespaces, so it serves the site as well.
-  Every other cluster leaves the label off.
-  On an all-in-one that already runs with a role, first annotate the three
-  objects so the site app doesn't delete them when it stops rendering them,
-  then add the label:
+- Only on a hub installed with `BOOTSTRAP_PROFILE=dedicated-hub` whose
+  `local-cluster` is also a site: label `local-cluster`
+  `ai-grid/hub-loki-operator=true`. That root includes the hub's
+  `ai-grid-usage-logs` app, which installs the Loki operator, and the label
+  makes the site's rhoai chart skip its own copy of the same Namespace,
+  OperatorGroup and Subscription, which would otherwise be tracked by two
+  Argo CD apps and leave `ai-grid-usage-logs` OutOfSync. Nothing else in the
+  chart changes; the hub app's operator watches all namespaces, so it serves
+  the site as well.
+
+  Never set it on the default root, or on any other cluster: the default root
+  leaves `ai-grid-usage-logs` out, so the chart's copy is the only Loki
+  operator there (`ai-grid-o11y`'s LokiStack needs it), and the label would
+  remove it.
+
+  On a new all-in-one, set the label before the role, or in the same command:
 
   ```bash
-  oc annotate -n openshift-operators-redhat namespace/openshift-operators-redhat \
-    operatorgroup/openshift-operators-redhat subscription/loki-operator \
+  oc label managedcluster local-cluster ai-grid/hub-loki-operator=true ai-grid/role=combined
+  ```
+
+  Setting the role first lets the site app take over the three objects, and
+  the label then makes it prune them.
+
+  On an all-in-one that already runs with a role, protect the three objects
+  first so the site app doesn't delete them when it stops rendering them, then
+  add the label. Use the full resource name: on an ACM hub a bare
+  `subscription` resolves to ACM's `apps.open-cluster-management.io` kind.
+
+  ```bash
+  oc annotate namespace openshift-operators-redhat \
+    argocd.argoproj.io/sync-options=Prune=false
+  oc -n openshift-operators-redhat annotate \
+    operatorgroup.operators.coreos.com/openshift-operators-redhat \
+    subscription.operators.coreos.com/loki-operator \
     argocd.argoproj.io/sync-options=Prune=false
   oc label managedcluster local-cluster ai-grid/hub-loki-operator=true
   ```
 
-  The hub's app then applies the same objects and takes over their tracking.
+  The hub's app then applies the same objects and takes them over. Check that
+  `ai-grid-usage-logs` is Synced and that each object's
+  `argocd.argoproj.io/tracking-id` annotation names it, then remove the
+  annotation you added:
+
+  ```bash
+  oc -n openshift-gitops get applications.argoproj.io ai-grid-usage-logs \
+    -o jsonpath='{.status.sync.status}{"\n"}'
+  oc get namespace/openshift-operators-redhat \
+    -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/tracking-id}{"\n"}'
+  oc -n openshift-operators-redhat get \
+    operatorgroup.operators.coreos.com/openshift-operators-redhat \
+    subscription.operators.coreos.com/loki-operator \
+    -o jsonpath='{range .items[*]}{.metadata.annotations.argocd\.argoproj\.io/tracking-id}{"\n"}{end}'
+  oc annotate namespace openshift-operators-redhat argocd.argoproj.io/sync-options-
+  oc -n openshift-operators-redhat annotate \
+    operatorgroup.operators.coreos.com/openshift-operators-redhat \
+    subscription.operators.coreos.com/loki-operator \
+    argocd.argoproj.io/sync-options-
+  ```
+
   To turn the label off later, set it to `false` rather than removing it: ACM
   copies ManagedCluster labels onto Argo CD's cluster Secret but never removes
   one, so a removed label keeps applying.
