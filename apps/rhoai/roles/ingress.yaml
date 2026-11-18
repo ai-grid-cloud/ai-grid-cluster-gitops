@@ -1,5 +1,11 @@
 profile: ai-grid-ingress
 
+components:
+  dashboard:
+    dsc:
+      standard:
+        managementState: Removed
+
 dependencies:
   rhcl:
     config:
