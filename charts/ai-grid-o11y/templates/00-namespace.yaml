@@ -5,3 +5,5 @@ metadata:
   name: redhat-ods-monitoring
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
+    # RHOAI's monitoring namespace: this app must never prune or delete it.
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
