@@ -31,9 +31,9 @@ member until `ai-grid/enabled` goes too.
 
 The hub runs ACM and Argo CD, and enrolls every site through grid-bootstrap
 (apps/grid-bootstrap): the label makes a cluster a member, and ACM policies
-deliver its identity, CA and GridNetwork. No enrollment service runs. A dedicated hub
-(`BOOTSTRAP_PROFILE=dedicated-hub`) isn't labelled, so it generates `rhoai`
-Applications for its sites only, none for itself.
+deliver its identity, CA and GridNetwork. No enrollment service runs. The hub
+is never labelled a site, so it generates `rhoai` Applications for its sites
+only, none for itself.
 
 The `maas-db` primary on the hub doesn't depend on the hub's labels: it's
 generated for the hub whatever they are, and every object in

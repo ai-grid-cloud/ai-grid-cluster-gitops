@@ -47,8 +47,14 @@ The hub:
 
 - A combined hub is a site too. Label it like any other cluster. The smallest
   grid is one combined hub.
-- A dedicated hub only manages. Bootstrap it with BOOTSTRAP_PROFILE set to
-  dedicated-hub and label the sites. It is never labelled itself.
+- A management-only hub runs the grid stack without the MaaS state apps
+  (maas-db, limitador-redis, external-secrets): bootstrap it with
+  `BOOTSTRAP_PROFILE=hub`. The default `BOOTSTRAP_PROFILE` ("") keeps the MaaS
+  state on the hub, like the old dedicated-hub profile. Either way the hub is
+  never labelled `ai-grid/enabled`, so it is not a site.
+- A foundation hub stops at GitOps and ACM: bootstrap it with
+  `BOOTSTRAP_PROFILE=acm-and-gitops-only` and broaden it later by labelling
+  local-cluster.
 
 The MaaS database primary always runs on the hub. A typical grid is one ingress
 site plus inference sites, or one combined site plus inference sites.
