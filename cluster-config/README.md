@@ -4,6 +4,33 @@ Cluster-level configuration managed separately from the workload apps under
 `apps/`. The `apps` ApplicationSet discovers `cluster-config/application.yaml`,
 which deploys the fleet-wide `cluster-config` ApplicationSet.
 
+## Deployment
+
+Both bootstrap profiles include `cluster-config/application.yaml`: the standard
+root discovers it and the dedicated-hub root lists it explicitly. After the
+tracked Git revision is updated, the root creates the `cluster-config`
+Application, which deploys the ApplicationSet in `cluster-config/hub`.
+
+On an existing hub with OpenShift GitOps installed, you can also bootstrap the
+tracked Application directly, without adding it to the root generator:
+
+```sh
+HUB_CONTEXT='<hub-context>'
+oc --context "$HUB_CONTEXT" apply -f cluster-config/application.yaml
+```
+
+Argo CD then reconciles the ApplicationSet from Git. It generates chart
+Applications once ACM cluster registration supplies Argo cluster Secrets with
+`apps.open-cluster-management.io/acm-cluster=true`.
+
+`hubResources.enabled` controls the resources rendered by the chart; it does
+not create or deploy an Application. The ApplicationSet sets this Helm
+parameter to `true` for a cluster whose registration has `local-cluster=true`
+and `false` for other selected clusters. This parameter overrides the shared
+value in `values.yaml`, so no manual value change is needed for a dedicated hub.
+The `helm template ... --set hubResources.enabled=true` example below previews
+the hub resources locally; it does not deploy them.
+
 ## Cluster admins
 
 Two owners, two groups:
@@ -17,7 +44,7 @@ Two owners, two groups:
   it empty, a deployment lists its users in
   [`cluster-admins.yaml`](cluster-admins.yaml)), it receives cluster-admin
   through the Git-owned `cluster-admin-ai-grid-admins` ClusterRoleBinding,
-  and Argo CD admin through `spec.rbac.policy.csv` in the ArgoCD CR
+  and Argo CD admin through `spec.rbac.policy` in the ArgoCD CR
   (`apps/gitops-config/manifests/argocd.yaml`).
 
 Both the Group and its binding are rendered only when `hubResources.enabled`
@@ -80,9 +107,8 @@ selected cluster therefore receives exactly one generated Application, with
 no duplicate names.
 
 The chart's Submariner gateway policy is hub-only ACM state. The
-`hubResources.enabled` parameter is true only for the hub, so managed
-clusters render only the fleet-wide RBAC and do not receive duplicate Policy,
-Placement, or PlacementBinding resources.
+`hubResources.enabled` parameter is true only for the hub. All current chart
+templates are gated by this parameter, so spokes render no resources.
 
 ### Constraints
 
@@ -104,6 +130,7 @@ Local:
 helm lint cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml -f cluster-config/cluster-admins.yaml
 helm template cluster-config/chart -f cluster-config/values.yaml \
+  -f cluster-config/cluster-admins.yaml \
   --set hubResources.enabled=true
 ```
 

@@ -52,11 +52,16 @@ Both profiles wait for the hub's Argo cluster registration and its
 `openshiftVersion-major-minor` label before generating ODF, so its operator
 channel matches the hub. ACM and cluster registration start independently.
 
-The root ApplicationSet is the one object Argo does not sync from Git. After a change to bootstrap/applicationset.yaml, or to bootstrap/dedicated-hub/applicationset.yaml on a dedicated hub, apply it again from the revision the hub tracks:
+On a combined hub, the root ApplicationSet is applied during bootstrap. After a change to bootstrap/applicationset.yaml, apply it again from the revision the hub tracks:
 
 ```bash
-oc apply -f bootstrap/applicationset.yaml                 # combined hub
-oc apply -f bootstrap/dedicated-hub/applicationset.yaml   # dedicated hub
+oc apply -f bootstrap/applicationset.yaml
+```
+
+On a dedicated hub, the `dedicated-hub-root` Application syncs bootstrap/dedicated-hub/applicationset.yaml from Git automatically after changes are committed and pushed. If an older installation has no `dedicated-hub-root` Application, apply the updated ApplicationSet once from the revision the hub tracks:
+
+```bash
+oc apply -f bootstrap/dedicated-hub/applicationset.yaml
 ```
 
 Every Application it generates syncs from Git on its own.
@@ -132,7 +137,9 @@ A dedicated hub runs ACM, cert-manager and grid-enrollment, and no Grid or RHOAI
 BOOTSTRAP_PROFILE=dedicated-hub ./bootstrap.sh
 ```
 
-Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, acm-models, ai-grid-o11y, ai-grid-policies, ai-grid-spokes, argo-registration, cert-manager, console, external-secrets, gitops-config, grid-bootstrap, keycloak, limitador-redis, maas-db, metallb, odf, rhoai and rhoai-prerequisites. ACM syncs the full [apps/acm/manifests](../../../apps/acm/manifests) — core, observability, search and Submariner — with [apps/odf](../../../apps/odf) supplying the object storage observability needs. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
+Its root ApplicationSet, [bootstrap/dedicated-hub/applicationset.yaml](../../../bootstrap/dedicated-hub/applicationset.yaml), syncs acm, acm-models, ai-grid-o11y, ai-grid-policies, ai-grid-spokes, argo-registration, cert-manager, cluster-config, console, external-secrets, gitops-config, grid-bootstrap, keycloak, limitador-redis, maas-db, metallb, odf, rhoai and rhoai-prerequisites. ACM syncs the full [apps/acm/manifests](../../../apps/acm/manifests) — core, observability, search and Submariner — with [apps/odf](../../../apps/odf) supplying the object storage observability needs. The default ApplicationSet skips [apps/cert-manager](../../../apps/cert-manager), because on a combined hub the RHOAI app installs cert-manager.
+
+[cluster-config](../../../cluster-config) deploys its own ApplicationSet, which waits for ACM cluster registration. On the hub, it loads `cluster-config/cluster-admins.yaml` to populate the `ai-grid-admins` Group and also installs the Submariner gateway-node policy. Together with gitops-config, this grants the listed users cluster-admin and Argo CD admin access.
 
 The root generates all Applications except ODF directly from Git, so ACM and argo-registration can start on a fresh hub without an existing Argo cluster registration. ODF is generated separately once the local-cluster registration carries the openshiftVersion-major-minor label; its operator channel then matches that version. Until registration and the version label are available, ODF is absent and ACM observability may wait for its object storage. Verify that acm and argo-registration exist immediately, then check registration and the version label if odf does not appear. An ApplicationSet success condition alone does not confirm that the expected Applications were generated.
 
