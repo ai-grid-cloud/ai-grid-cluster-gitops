@@ -93,6 +93,8 @@ sort -u "$configured_raw" > "$configured"
 # Application resource health). GridSite is intentionally omitted because site
 # discovery and enrollment can remain Pending independently of GitOps. The other
 # entries are declarative resources whose current CRDs expose no operand status.
+# The monitoring.coreos.com ServiceMonitor and PodMonitor CRDs define
+# status.bindings, but the platform's Prometheus operator leaves it unset.
 cat > "$allowlisted" <<'EOF'
 admissionregistration.k8s.io	ValidatingAdmissionPolicy
 admissionregistration.k8s.io	ValidatingAdmissionPolicyBinding
@@ -102,6 +104,7 @@ grid.praxis.fast	GridSite
 metallb.io	IPAddressPool
 metallb.io	L2Advertisement
 metallb.io	MetalLB
+monitoring.coreos.com	PodMonitor
 monitoring.coreos.com	ServiceMonitor
 monitoring.rhobs	ScrapeConfig
 policy.open-cluster-management.io	PlacementBinding
